@@ -18,6 +18,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartConfig,
 } from '@/components/ui/chart';
 import {
   BarChart,
@@ -33,6 +34,13 @@ import { subDays, format, parseISO } from 'date-fns';
 type AnalyticsDashboardProps = {
   events: Event[];
 };
+
+const chartConfig = {
+  registrations: {
+    label: 'Registrations',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig;
 
 export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
   const totalAttendees = events.reduce(
@@ -71,13 +79,6 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
 
     return Object.keys(data).map((date) => ({ date, registrations: data[date] }));
   }, [events]);
-
-  const chartConfig = {
-    registrations: {
-      label: 'Registrations',
-      color: 'hsl(var(--primary))',
-    },
-  };
 
   return (
     <div className="grid gap-6">
@@ -143,35 +144,34 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
           <CardTitle>Registration Trends</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer>
-                <BarChart data={registrationData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                    dataKey="date"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    fontSize={12}
-                    />
-                    <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    fontSize={12}
-                    />
-                    <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent />}
-                    />
-                    <Bar
-                    dataKey="registrations"
-                    fill="var(--color-primary)"
-                    radius={4}
-                    />
-                </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer config={chartConfig} className="h-[300px] w-full">
+            <BarChart accessibilityLayer data={registrationData}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                fontSize={12}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                fontSize={12}
+                tickFormatter={(value) => value.toString()}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              <Bar
+                dataKey="registrations"
+                fill="var(--color-registrations)"
+                radius={4}
+              />
+            </BarChart>
+          </ChartContainer>
         </CardContent>
       </Card>
     </div>
