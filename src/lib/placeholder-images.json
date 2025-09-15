@@ -1,3 +1,41 @@
+
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "evt-1",
+      "description": "A vibrant conference with a large audience and a speaker on stage.",
+      "imageUrl": "https://picsum.photos/seed/evt-1/600/400",
+      "imageHint": "conference technology"
+    },
+    {
+      "id": "evt-2",
+      "description": "A workshop with people collaborating around a table.",
+      "imageUrl": "https://picsum.photos/seed/evt-2/600/400",
+      "imageHint": "workshop collaboration"
+    },
+    {
+      "id": "evt-3",
+      "description": "An outdoor music festival with a crowd and stage lights.",
+      "imageUrl": "https://picsum.photos/seed/evt-3/600/400",
+      "imageHint": "music festival"
+    },
+    {
+      "id": "evt-4",
+      "description": "A formal networking event with people in business attire.",
+      "imageUrl": "https://picsum.photos/seed/evt-4/600/400",
+      "imageHint": "networking business"
+    },
+    {
+      "id": "evt-5",
+      "description": "A community meetup in a casual setting.",
+      "imageUrl": "https://picsum.photos/seed/evt-5/600/400",
+      "imageHint": "community meetup"
+    },
+    {
+      "id": "evt-6",
+      "description": "A charity gala in an elegantly decorated hall.",
+      "imageUrl": "https://picsum.photos/seed/evt-6/600/400",
+      "imageHint": "charity gala"
+    }
+  ]
 }

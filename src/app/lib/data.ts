@@ -1,0 +1,103 @@
+import { Event } from '@/app/lib/definitions';
+import { subDays, format } from 'date-fns';
+
+const today = new Date();
+
+export const mockEvents: Event[] = [
+  {
+    id: '1',
+    name: 'Tech Innovators Conference 2024',
+    date: format(new Date().setDate(today.getDate() + 30), 'yyyy-MM-dd'),
+    time: '09:00',
+    location: 'Silicon Valley Convention Center',
+    description: 'Join the brightest minds in tech for a day of innovation, networking, and groundbreaking announcements. Discover the future of AI, blockchain, and more.',
+    speaker: 'Dr. Evelyn Reed',
+    status: 'published',
+    imageId: 'evt-1',
+    attendees: [
+      { id: 'a1', name: 'Alice Johnson', email: 'alice@example.com', registeredAt: format(subDays(today, 5), 'yyyy-MM-dd') },
+      { id: 'a2', name: 'Bob Williams', email: 'bob@example.com', registeredAt: format(subDays(today, 10), 'yyyy-MM-dd') },
+      { id: 'a3', name: 'Charlie Brown', email: 'charlie@example.com', registeredAt: format(subDays(today, 2), 'yyyy-MM-dd') },
+    ],
+  },
+  {
+    id: '2',
+    name: 'Creative Design Workshop',
+    date: format(new Date().setDate(today.getDate() + 15), 'yyyy-MM-dd'),
+    time: '13:00',
+    location: 'The Art Space, New York',
+    description: 'A hands-on workshop for designers looking to push their creative boundaries. Learn new techniques in UI/UX and brand identity from industry leaders.',
+    speaker: 'Marco Bianci',
+    status: 'published',
+    imageId: 'evt-2',
+    attendees: [
+      { id: 'b1', name: 'Diana Prince', email: 'diana@example.com', registeredAt: format(subDays(today, 12), 'yyyy-MM-dd') },
+      { id: 'b2', name: 'Edward Nygma', email: 'edward@example.com', registeredAt: format(subDays(today, 3), 'yyyy-MM-dd') },
+    ],
+  },
+  {
+    id: '3',
+    name: 'Indie Music Fest',
+    date: format(new Date().setDate(today.getDate() - 2), 'yyyy-MM-dd'),
+    time: '18:00',
+    location: 'Greenfield Park',
+    description: 'Experience a magical evening with performances from the best up-and-coming indie bands. Food trucks, art installations, and great vibes.',
+    speaker: 'Various Artists',
+    status: 'published',
+    imageId: 'evt-3',
+    attendees: Array.from({ length: 150 }, (_, i) => ({
+      id: `c${i}`,
+      name: `Attendee ${i + 1}`,
+      email: `attendee${i + 1}@musicfest.com`,
+      registeredAt: format(subDays(today, Math.floor(Math.random() * 30) + 1), 'yyyy-MM-dd'),
+    })),
+  },
+  {
+    id: '4',
+    name: 'Future of Business Summit',
+    date: format(new Date().setDate(today.getDate() + 60), 'yyyy-MM-dd'),
+    time: '10:00',
+    location: 'Grand Hyatt, Singapore',
+    description: 'A premier networking event for entrepreneurs and executives. Discuss strategies for sustainable growth and digital transformation.',
+    speaker: 'Ken Adams',
+    status: 'draft',
+    imageId: 'evt-4',
+    attendees: [],
+  },
+  {
+    id: '5',
+    name: 'Local Coders Meetup',
+    date: format(new Date().setDate(today.getDate() + 5), 'yyyy-MM-dd'),
+    time: '19:00',
+    location: 'Downtown Library',
+    description: 'Casual monthly meetup for local developers. This month, we\'re discussing serverless architectures. All skill levels welcome!',
+    speaker: 'Community Lead',
+    status: 'published',
+    imageId: 'evt-5',
+    attendees: [
+      { id: 'd1', name: 'Frank Castle', email: 'frank@example.com', registeredAt: format(subDays(today, 1), 'yyyy-MM-dd') },
+    ],
+  },
+  {
+    id: '6',
+    name: 'Annual Charity Gala',
+    date: format(new Date().setDate(today.getDate() + 45), 'yyyy-MM-dd'),
+    time: '20:00',
+    location: 'The Starlight Ballroom',
+    description: 'An elegant evening of dining and entertainment to support a great cause. Black-tie optional.',
+    speaker: 'Celebrity Host',
+    status: 'canceled',
+    imageId: 'evt-6',
+    attendees: [],
+  },
+];
+
+export const getEvents = async () => {
+  // In a real app, you'd fetch this from a database
+  return Promise.resolve(mockEvents);
+};
+
+export const getEventById = async (id: string) => {
+  // In a real app, you'd fetch this from a database
+  return Promise.resolve(mockEvents.find((event) => event.id === id));
+};
