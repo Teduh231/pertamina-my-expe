@@ -143,9 +143,9 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
           <CardTitle>Registration Trends</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                <BarChart accessibilityLayer data={registrationData}>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer>
+                <BarChart data={registrationData}>
                     <CartesianGrid vertical={false} />
                     <XAxis
                     dataKey="date"
@@ -166,11 +166,11 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
                     />
                     <Bar
                     dataKey="registrations"
-                    fill="var(--color-registrations)"
+                    fill="var(--color-primary)"
                     radius={4}
                     />
                 </BarChart>
-            </ChartContainer>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
