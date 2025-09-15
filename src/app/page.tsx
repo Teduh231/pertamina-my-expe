@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, BarChart, Calendar, ShieldCheck, Download } from 'lucide-react';
+import { CheckCircle, BarChart, Calendar, ShieldCheck, Download, LogIn } from 'lucide-react';
 import Link from 'next/link';
 
 const features = [
@@ -38,9 +38,15 @@ export default function LandingPage() {
            <Calendar className="h-7 w-7 text-primary" />
            <h1 className="text-2xl font-bold">EventFlow</h1>
         </div>
-        <nav>
+        <nav className="flex items-center gap-2">
           <Button asChild variant="ghost">
             <Link href="/dashboard">Dashboard</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+            </Link>
           </Button>
         </nav>
       </header>

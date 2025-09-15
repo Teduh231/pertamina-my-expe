@@ -2,13 +2,14 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart2,
   Calendar,
   PanelLeft,
   Settings,
   Users,
+  LogOut,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -32,9 +33,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { useAuth } from '@/hooks/use-auth';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
 
   const navItems = [
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
@@ -82,12 +92,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-sidebar-accent">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="https://picsum.photos/seed/avatar/40/40" />
-                    <AvatarFallback>EO</AvatarFallback>
+                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
-                    <span className="text-sm font-medium">Event Organizer</span>
+                    <span className="text-sm font-medium">{user?.email}</span>
                     <span className="text-xs text-muted-foreground">
-                      admin@eventflow.com
+                      Event Organizer
                     </span>
                   </div>
                 </div>
@@ -96,10 +106,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Log out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarFooter>
