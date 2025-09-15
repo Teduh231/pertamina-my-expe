@@ -14,16 +14,18 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app;
-if (!getApps().length) {
+// Check if we are in the browser and Firebase has not been initialized.
+if (typeof window !== 'undefined' && !getApps().length) {
     if (!firebaseConfig.apiKey) {
         console.error("Firebase API Key is missing. Please check your .env file.");
         app = null;
     } else {
         app = initializeApp(firebaseConfig);
     }
-} else {
+} else if (getApps().length) {
     app = getApp();
 }
+
 
 const auth = app ? getAuth(app) : null;
 

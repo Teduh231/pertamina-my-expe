@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/app/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 interface AuthContextType {
   user: User | null;
@@ -27,6 +28,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const router = useRouter();
 
   useEffect(() => {
+    if (!auth) {
+        setLoading(false);
+        return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -36,14 +41,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (email: string, pass: string) => {
+    if (!auth) return Promise.reject(new Error("Firebase not initialized"));
     return signInWithEmailAndPassword(auth, email, pass);
   };
 
   const signup = (email: string, pass: string) => {
+    if (!auth) return Promise.reject(new Error("Firebase not initialized"));
     return createUserWithEmailAndPassword(auth, email, pass);
   };
 
   const logout = () => {
+    if (!auth) return Promise.reject(new Error("Firebase not initialized"));
     return signOut(auth);
   };
 
