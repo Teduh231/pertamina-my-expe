@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -74,7 +74,13 @@ export function EventForm({ event }: EventFormProps) {
     });
     
     // In a real app, you might get the new/updated event ID and redirect
-    router.push('/events');
+    if (!event) {
+        // This is a new event, redirect to the main events page
+        router.push('/events');
+    } else {
+        // This is an update, refresh the current page to see changes
+        router.refresh();
+    }
   }
 
   return (

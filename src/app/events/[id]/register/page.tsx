@@ -1,6 +1,5 @@
 import { getEventById } from '@/app/lib/data';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -8,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { AttendeeRegistrationForm } from '@/components/events/attendee-registration-form';
 import { Calendar, MapPin, User, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -25,23 +23,11 @@ export default async function EventRegistrationPage({
     notFound();
   }
 
-  const placeholder = PlaceHolderImages.find(
-    (img) => img.id === event.imageId
-  );
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="relative h-64 md:h-80 w-full">
-        <Image
-          src={placeholder?.imageUrl || ''}
-          alt={event.name}
-          data-ai-hint={placeholder?.imageHint || 'event banner'}
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-        <div className="absolute bottom-0 left-0 p-8 text-white">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight drop-shadow-md">
+      <header className="bg-card border-b py-8">
+        <div className="container mx-auto max-w-6xl text-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
             {event.name}
           </h1>
         </div>

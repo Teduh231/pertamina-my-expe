@@ -1,7 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Event } from '@/app/lib/definitions';
 import {
   Card,
@@ -23,7 +22,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { format, parseISO } from 'date-fns';
 import {
   DropdownMenu,
@@ -74,10 +72,6 @@ export function EventList({ events }: EventListProps) {
     );
   }, [events, searchTerm]);
 
-  const getImage = (imageId: string) => {
-    return PlaceHolderImages.find((img) => img.id === imageId);
-  };
-
   const getStatusVariant = (status: Event['status']) => {
     switch (status) {
       case 'published':
@@ -103,21 +97,9 @@ export function EventList({ events }: EventListProps) {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredEvents.map((event) => {
-          const placeholder = getImage(event.imageId);
           return (
             <Card key={event.id} className="flex flex-col">
-              <CardHeader className="p-0">
-                <div className="relative h-48 w-full">
-                  <Image
-                    src={placeholder?.imageUrl || ''}
-                    alt={placeholder?.description || 'Event image'}
-                    data-ai-hint={placeholder?.imageHint || 'event placeholder'}
-                    fill
-                    className="rounded-t-lg object-cover"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 space-y-3 p-4">
+              <CardHeader className="p-4">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg font-bold leading-tight">
                     <Link href={`/events/${event.id}`} className="hover:underline">
@@ -128,9 +110,11 @@ export function EventList({ events }: EventListProps) {
                     {event.status}
                   </Badge>
                 </div>
-                <CardDescription className="line-clamp-2">
+                <CardDescription className="line-clamp-2 pt-2">
                   {event.description}
                 </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 space-y-3 p-4 pt-0">
                 <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />

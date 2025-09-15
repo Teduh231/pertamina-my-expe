@@ -9,7 +9,6 @@ export type Event = {
   description: string;
   speaker: string;
   status: EventStatus;
-  imageId: string;
   attendees: Attendee[];
 };
 

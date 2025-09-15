@@ -13,7 +13,6 @@ export const mockEvents: Event[] = [
     description: 'Join the brightest minds in tech for a day of innovation, networking, and groundbreaking announcements. Discover the future of AI, blockchain, and more.',
     speaker: 'Dr. Evelyn Reed',
     status: 'published',
-    imageId: 'evt-1',
     attendees: [
       { id: 'a1', name: 'Alice Johnson', email: 'alice@example.com', registeredAt: format(subDays(today, 5), 'yyyy-MM-dd') },
       { id: 'a2', name: 'Bob Williams', email: 'bob@example.com', registeredAt: format(subDays(today, 10), 'yyyy-MM-dd') },
@@ -29,7 +28,6 @@ export const mockEvents: Event[] = [
     description: 'A hands-on workshop for designers looking to push their creative boundaries. Learn new techniques in UI/UX and brand identity from industry leaders.',
     speaker: 'Marco Bianci',
     status: 'published',
-    imageId: 'evt-2',
     attendees: [
       { id: 'b1', name: 'Diana Prince', email: 'diana@example.com', registeredAt: format(subDays(today, 12), 'yyyy-MM-dd') },
       { id: 'b2', name: 'Edward Nygma', email: 'edward@example.com', registeredAt: format(subDays(today, 3), 'yyyy-MM-dd') },
@@ -44,7 +42,6 @@ export const mockEvents: Event[] = [
     description: 'Experience a magical evening with performances from the best up-and-coming indie bands. Food trucks, art installations, and great vibes.',
     speaker: 'Various Artists',
     status: 'published',
-    imageId: 'evt-3',
     attendees: Array.from({ length: 150 }, (_, i) => ({
       id: `c${i}`,
       name: `Attendee ${i + 1}`,
@@ -61,7 +58,6 @@ export const mockEvents: Event[] = [
     description: 'A premier networking event for entrepreneurs and executives. Discuss strategies for sustainable growth and digital transformation.',
     speaker: 'Ken Adams',
     status: 'draft',
-    imageId: 'evt-4',
     attendees: [],
   },
   {
@@ -73,7 +69,6 @@ export const mockEvents: Event[] = [
     description: 'Casual monthly meetup for local developers. This month, we\'re discussing serverless architectures. All skill levels welcome!',
     speaker: 'Community Lead',
     status: 'published',
-    imageId: 'evt-5',
     attendees: [
       { id: 'd1', name: 'Frank Castle', email: 'frank@example.com', registeredAt: format(subDays(today, 1), 'yyyy-MM-dd') },
     ],
@@ -87,7 +82,6 @@ export const mockEvents: Event[] = [
     description: 'An elegant evening of dining and entertainment to support a great cause. Black-tie optional.',
     speaker: 'Celebrity Host',
     status: 'canceled',
-    imageId: 'evt-6',
     attendees: [],
   },
 ];

@@ -6,10 +6,7 @@ import { EventForm } from '@/components/events/event-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Attendee, Event } from '@/app/lib/definitions';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { exportAttendeesToCsv } from '@/app/lib/actions';
 import { AttendeeExportButton } from './_components/attendee-export-button';
 
 function AttendeeTable({ event }: { event: Event }) {
