@@ -14,6 +14,7 @@ import {
   Ticket,
   Trophy,
   ShoppingCart,
+  FileText,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -56,6 +57,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/attendees', icon: Users, label: 'Attendees' },
     { href: '/raffle', icon: Ticket, label: 'Raffle & Prizes' },
     { href: '/pos', icon: ShoppingCart, label: 'POS System' },
+    { href: '/reports', icon: FileText, label: 'Reports' },
   ];
 
   return (
