@@ -51,3 +51,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .btn-fill-center {
+    @apply relative overflow-hidden transition-colors duration-300 ease-out;
+    z-index: 1;
+  }
+
+  .btn-fill-center span {
+    @apply relative z-10;
+  }
+
+  .btn-fill-center::before {
+    content: '';
+    @apply absolute top-1/2 left-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-primary/90 transition-transform duration-300 ease-out;
+  }
+  
+  /* Specific override for outline variant */
+  .btn-fill-center[data-variant="outline"]::before {
+     @apply bg-accent;
+  }
+
+  .btn-fill-center:hover::before {
+    @apply scale-150;
+  }
+  
+  .btn-fill-center[data-variant="outline"]:hover {
+    @apply text-accent-foreground;
+  }
+}

@@ -57,13 +57,15 @@ export default function LandingPage() {
               Streamline your workflow, engage your audience, and host unforgettable events with our AI-powered platform.
             </p>
             <div className="mt-8 flex justify-center gap-4">
-              <Button asChild size="lg">
+              <Button asChild size="lg" className="btn-fill-center">
                 <Link href="/dashboard">
-                  Get Started
+                  <span>Get Started</span>
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="#features">Learn More</Link>
+              <Button asChild size="lg" variant="outline" className="btn-fill-center">
+                <Link href="#features">
+                  <span>Learn More</span>
+                </Link>
               </Button>
             </div>
           </div>
