@@ -50,16 +50,26 @@ export async function getRaffles(): Promise<Raffle[]> {
 
 export async function getProducts(): Promise<Product[]> {
     noStore();
-    const query = supabase.from('products').select('*').order('points', { ascending: true });
-    return supabaseQuery(query);
+    try {
+      const query = supabase.from('products').select('*').order('points', { ascending: true });
+      return await supabaseQuery(query);
+    } catch (error) {
+      console.error("Failed to fetch products, returning empty array:", error);
+      return [];
+    }
 }
 
 export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
     noStore();
-    const query = supabase
-        .from('transactions')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-    return supabaseQuery(query);
+    try {
+        const query = supabase
+            .from('transactions')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+        return await supabaseQuery(query);
+    } catch (error) {
+        console.error("Failed to fetch transactions, returning empty array:", error);
+        return [];
+    }
 }
