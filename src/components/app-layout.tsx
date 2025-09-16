@@ -54,8 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/attendees', icon: Users, label: 'Attendees' },
-    { href: '/raffle', icon: Ticket, label: 'Raffle' },
-    { href: '/prize-history', icon: Trophy, label: 'Prize History' },
+    { href: '/raffle', icon: Ticket, label: 'Raffle & Prizes' },
     { href: '/pos', icon: ShoppingCart, label: 'POS System' },
   ];
 

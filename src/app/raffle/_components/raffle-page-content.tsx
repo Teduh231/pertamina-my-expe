@@ -219,7 +219,6 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
                                     <p key={winner.attendeeId} className="text-muted-foreground truncate" title={`${winner.name} (${winner.email})`}>{winner.name} ({winner.email})</p>
                                 ))}
                             </div>
-                            {raffle.status === 'finished' && raffle.drawnAt && <p className="text-xs text-muted-foreground/70 pt-2">Finished on {format(parseISO(raffle.drawnAt), 'PPP p')}</p>}
                         </div>
                     )}
                  </CardContent>
@@ -253,8 +252,8 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
         {raffles.length === 0 && (
             <Card className="text-center py-12">
                 <CardContent>
-                    <h3 className="text-lg font-medium">No Raffles Found</h3>
-                    <p className="text-sm text-muted-foreground">Create your first raffle to get started.</p>
+                    <h3 className="text-lg font-medium">No Active Raffles</h3>
+                    <p className="text-sm text-muted-foreground">Create a new raffle to get started.</p>
                 </CardContent>
             </Card>
         )}
