@@ -2,48 +2,29 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
+    
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Events collection rules
     match /events/{eventId} {
-      // ANYONE can read a single event if it is published.
-      // AUTHENTICATED users can read any event.
-      allow read: if (resource.data.status == 'published' || isAuthenticated());
-
-      // ONLY AUTHENTICATED users can create, update, or delete events.
+      allow read: if resource.data.status == 'published' || isAuthenticated();
       allow create, update, delete: if isAuthenticated();
 
-      // Attendees subcollection rules
       match /attendees/{attendeeId} {
-        // ANYONE can create (register for) an event.
+        allow read: if isAuthenticated();
         allow create: if true;
-
-        // ONLY AUTHENTICATED users can read the attendee list.
-        allow read, list: if isAuthenticated();
-
-        // No one can update or delete attendee records from the client.
         allow update, delete: if false;
       }
     }
 
-    // Allow AUTHENTICATED users to list all events for the CMS dashboard/views.
-    match /events/{eventId} {
-       allow list: if isAuthenticated();
-    }
-    
-    // Raffles collection rules
     match /raffles/{raffleId} {
-        // Only authenticated users can manage raffles.
-        allow read, list, create, update, delete: if isAuthenticated();
+        allow read, write, create, update, delete: if isAuthenticated();
     }
     
-    // This rule is needed for getEvents() to fetch all attendees efficiently.
-    match /{path=**}/attendees/{attendeeId} {
-        allow read: if isAuthenticated();
+    // Allow authenticated users to list all events
+    match /events/{document=**} {
+      allow read: if isAuthenticated();
     }
   }
 }
