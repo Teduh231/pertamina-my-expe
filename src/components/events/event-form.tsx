@@ -31,7 +31,7 @@ import { createOrUpdateEvent } from '@/app/lib/actions';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
