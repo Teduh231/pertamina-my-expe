@@ -8,30 +8,42 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Events Collection
+    // Events collection rules
     match /events/{eventId} {
-      // ANYONE can read a single event IF it is published.
-      // This is for the public registration page.
-      allow get: if resource.data.status == 'published';
+      // ANYONE can read a single event if it is published.
+      // AUTHENTICATED users can read any event.
+      allow read: if (resource.data.status == 'published' || isAuthenticated());
 
-      // AUTHENTICATED users can perform all actions on events.
-      // This is for the CMS.
-      allow get, list, create, update, delete: if isAuthenticated();
+      // ONLY AUTHENTICATED users can create, update, or delete events.
+      allow create, update, delete: if isAuthenticated();
 
-      // Attendees Subcollection
+      // Attendees subcollection rules
       match /attendees/{attendeeId} {
-        // ANYONE can create an attendee document (register for an event).
-        allow create;
-        
-        // ONLY AUTHENTICATED users can view the attendee list.
-        allow get, list, update, delete: if isAuthenticated();
+        // ANYONE can create (register for) an event.
+        allow create: if true;
+
+        // ONLY AUTHENTICATED users can read the attendee list.
+        allow read, list: if isAuthenticated();
+
+        // No one can update or delete attendee records from the client.
+        allow update, delete: if false;
       }
     }
 
-    // Raffles Collection
+    // Allow AUTHENTICATED users to list all events for the CMS dashboard/views.
+    match /events/{eventId} {
+       allow list: if isAuthenticated();
+    }
+    
+    // Raffles collection rules
     match /raffles/{raffleId} {
-      // ONLY AUTHENTICATED users can manage raffles.
-      allow read, write, create, delete: if isAuthenticated();
+        // Only authenticated users can manage raffles.
+        allow read, list, create, update, delete: if isAuthenticated();
+    }
+    
+    // This rule is needed for getEvents() to fetch all attendees efficiently.
+    match /{path=**}/attendees/{attendeeId} {
+        allow read: if isAuthenticated();
     }
   }
 }
