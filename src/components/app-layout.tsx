@@ -94,8 +94,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="flex-1 transition-all duration-300 ease-in-out md:ml-[var(--sidebar-width-collapsed)] group-data-[state=expanded]/sidebar:md:ml-[var(--sidebar-width)]">
             <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                <SidebarTrigger className="flex md:hidden"/>
                 <div className="flex items-center gap-2">
+                    <SidebarTrigger className="flex md:hidden"/>
                     <h1 className="text-lg font-semibold capitalize">
                         {pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'Dashboard'}
                     </h1>

@@ -135,7 +135,7 @@ const Sidebar = React.forwardRef<
   children,
   ...props
 }, ref) => {
-  const { isMobile, openMobile, setOpenMobile, toggleSidebar } = useSidebar()
+  const { isMobile, openMobile, setOpenMobile } = useSidebar()
 
   if (isMobile) {
     return (
@@ -164,15 +164,6 @@ const Sidebar = React.forwardRef<
     >
       <div className="flex h-full flex-col">
         {children}
-        <div className="mt-auto border-t border-sidebar-border p-3">
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse">
-                        <PanelLeft />
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-        </div>
       </div>
     </div>
   )
