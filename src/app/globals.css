@@ -10,7 +10,7 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 262.1 83.3% 57.8%;
+    --primary: 207 85% 38%; /* Biru #0F6EB5 */
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -18,13 +18,13 @@
     --muted-foreground: 240 3.8% 46.1%;
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 354 83% 52%; /* Merah #EA2036 */
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
+    --ring: 207 85% 38%;
     --radius: 0.5rem;
-    --chart-1: 262.1 83.3% 57.8%;
+    --chart-1: 207 85% 38%;
     --chart-2: 240 4.8% 95.9%;
     --chart-3: 240 5.9% 10%;
     --chart-4: 240 3.8% 46.1%;
@@ -33,12 +33,12 @@
     /* Sidebar colors */
     --sidebar-background: 240 4.8% 95.9%; /* A light grey, same as secondary */
     --sidebar-foreground: 240 5.9% 10%; /* Dark text for readability */
-    --sidebar-primary: 262.1 83.3% 57.8%; /* Same as main primary */
+    --sidebar-primary: 207 85% 38%; /* Same as main primary */
     --sidebar-primary-foreground: 0 0% 98%; /* White text on primary */
     --sidebar-accent: 240 5.9% 90%; /* Slightly darker accent for hover */
     --sidebar-accent-foreground: 240 5.9% 10%; /* Dark text on accent */
     --sidebar-border: 240 5.9% 90%;
-    --sidebar-ring: 240 10% 3.9%;
+    --sidebar-ring: 207 85% 38%;
   }
 
 }
