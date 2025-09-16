@@ -76,7 +76,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={28} height={28} className="shrink-0" />
               <span className="text-lg font-bold group-data-[state=collapsed]/sidebar-wrapper:hidden">EventFlow</span>
             </div>
-            <SidebarTrigger className="group-data-[state=collapsed]/sidebar-wrapper:hidden" />
+            <SidebarTrigger />
           </SidebarHeader>
 
           <SidebarContent>
