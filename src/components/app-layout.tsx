@@ -61,6 +61,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/qr-scanner', icon: QrCode, label: 'QR Scanner' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
+  
+  if (!user) {
+    return <>{children}</>;
+  }
+
 
   return (
     <SidebarProvider>

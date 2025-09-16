@@ -46,9 +46,9 @@ export function SignupForm() {
       await signup(values.email, values.password);
       toast({
         title: 'Account Created!',
-        description: 'You have been successfully signed up.',
+        description: 'Please check your email to verify your account and then log in.',
       });
-      router.push('/dashboard');
+      router.push('/login');
     } catch (error: any) {
       toast({
         variant: 'destructive',

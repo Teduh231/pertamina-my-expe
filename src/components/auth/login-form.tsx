@@ -49,6 +49,7 @@ export function LoginForm() {
         description: 'Welcome back!',
       });
       router.push('/dashboard');
+      router.refresh(); // To ensure layout re-renders with user state
     } catch (error: any) {
       toast({
         variant: 'destructive',

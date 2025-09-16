@@ -1,14 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
-import { auth } from '@/app/lib/firebase';
+import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/app/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
@@ -28,31 +22,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const router = useRouter();
 
   useEffect(() => {
-    if (!auth) {
+    const getSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
         setLoading(false);
-        return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    
+    getSession();
 
-    return () => unsubscribe();
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  const login = (email: string, pass: string) => {
-    if (!auth) return Promise.reject(new Error("Firebase not initialized"));
-    return signInWithEmailAndPassword(auth, email, pass);
+  const login = async (email: string, pass: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
   };
 
-  const signup = (email: string, pass: string) => {
-    if (!auth) return Promise.reject(new Error("Firebase not initialized"));
-    return createUserWithEmailAndPassword(auth, email, pass);
+  const signup = async (email: string, pass: string) => {
+    const { error } = await supabase.auth.signUp({ email, password: pass });
+    if (error) throw error;
   };
 
-  const logout = () => {
-    if (!auth) return Promise.reject(new Error("Firebase not initialized"));
-    return signOut(auth);
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   };
 
   const value = {
@@ -62,6 +64,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signup,
     logout,
   };
+
+  if (loading) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
