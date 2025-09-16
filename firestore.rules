@@ -2,19 +2,27 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /events/{eventId} {
-      // Allow public read for published events, and authenticated read for any event
-      allow read: if request.auth != null || resource.data.status == 'published';
-      // Allow authenticated users to list events
-      allow list: if request.auth != null;
-      // Allow write for authenticated users
-      allow write: if request.auth != null;
 
+    // Events collection
+    match /events/{eventId} {
+      // Anyone can read a single event if it's published.
+      // Needed for the public event registration page.
+      allow get: if resource.data.status == 'published';
+
+      // Authenticated users can read any event and list all events.
+      // Needed for the dashboard, events list, and event management pages.
+      allow list, get: if request.auth != null;
+      
+      // Only authenticated users can create, update, or delete events.
+      allow create, update, delete: if request.auth != null;
+
+      // Attendees subcollection
       match /attendees/{attendeeId} {
-        // Allow anyone to register for an event
-        allow create;
-        // Only authenticated users can manage or view attendees
-        allow read, list, update, delete: if request.auth != null;
+        // Anyone can register as an attendee for an event.
+        allow create: if true;
+        
+        // Only authenticated users (the event manager) can see the list of attendees.
+        allow read, list: if request.auth != null;
       }
     }
   }
