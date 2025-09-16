@@ -6,13 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart2,
   Calendar,
-  PanelLeft,
   Settings,
   Users,
   LogOut,
   PlusCircle,
   Ticket,
-  Trophy,
   ShoppingCart,
   FileText,
   QrCode,
