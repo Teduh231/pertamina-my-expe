@@ -15,6 +15,7 @@ import {
   Trophy,
   ShoppingCart,
   FileText,
+  QrCode,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -57,6 +58,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/attendees', icon: Users, label: 'Attendees' },
     { href: '/raffle', icon: Ticket, label: 'Raffle & Prizes' },
     { href: '/pos', icon: ShoppingCart, label: 'POS System' },
+    { href: '/qr-scanner', icon: QrCode, label: 'QR Scanner' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
 
