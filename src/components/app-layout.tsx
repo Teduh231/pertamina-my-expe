@@ -97,10 +97,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarContent>
 
           <SidebarFooter>
-             <SidebarTrigger className="w-full justify-center group-data-[state=collapsed]/sidebar:w-auto">
-                <PanelLeft className="group-data-[state=expanded]/sidebar:rotate-180 transition-transform duration-300" />
-                <span className="sr-only">Toggle Sidebar</span>
-            </SidebarTrigger>
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton
@@ -147,7 +143,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <div className="flex-1 transition-all duration-300 ease-in-out md:ml-[var(--sidebar-width-collapsed)] group-data-[state=expanded]/sidebar:md:ml-[var(--sidebar-width)]">
             <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-card px-4 sm:px-6">
-                <SidebarTrigger className="md:hidden" />
+                <SidebarTrigger />
                 <div className="flex-1">
                 <h1 className="text-lg font-semibold capitalize">
                     {pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'Dashboard'}
