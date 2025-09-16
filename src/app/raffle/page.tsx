@@ -1,6 +1,5 @@
 import { getEvents, getRaffles } from '@/app/lib/data';
 import { AppLayout } from '@/components/app-layout';
-import { ProtectedRoute } from '@/hooks/use-auth';
 import { RafflePageContent } from './_components/raffle-page-content';
 import type { Event, Raffle } from '@/app/lib/definitions';
 import { Separator } from '@/components/ui/separator';
@@ -14,12 +13,10 @@ export default async function RafflePage() {
   const finishedRaffles = allRaffles.filter(r => r.status === 'finished' && r.winners.length > 0);
 
   return (
-    <ProtectedRoute>
-      <AppLayout>
-        <RafflePageContent allEvents={events} raffles={allRaffles} />
-        {finishedRaffles.length > 0 && <Separator className="my-8" />}
-        {finishedRaffles.length > 0 && <PrizeHistoryContent raffles={finishedRaffles} />}
-      </AppLayout>
-    </ProtectedRoute>
+    <AppLayout>
+      <RafflePageContent allEvents={events} raffles={allRaffles} />
+      {finishedRaffles.length > 0 && <Separator className="my-8" />}
+      {finishedRaffles.length > 0 && <PrizeHistoryContent raffles={finishedRaffles} />}
+    </AppLayout>
   );
 }

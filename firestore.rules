@@ -7,24 +7,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    match /events/{eventId} {
-      allow read: if resource.data.status == 'published' || isAuthenticated();
-      allow create, update, delete: if isAuthenticated();
-
-      match /attendees/{attendeeId} {
-        allow read: if isAuthenticated();
-        allow create: if true;
-        allow update, delete: if false;
-      }
-    }
-
-    match /raffles/{raffleId} {
-        allow read, write, create, update, delete: if isAuthenticated();
-    }
-    
-    // Allow authenticated users to list all events
-    match /events/{document=**} {
-      allow read: if isAuthenticated();
+    // Allow public read access to all collections for now
+    // Restrict writes to authenticated users
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
   }
 }
