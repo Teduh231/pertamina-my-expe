@@ -26,7 +26,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
-  SidebarInset,
 } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -76,7 +75,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={28} height={28} className="shrink-0" />
               <span className="text-lg font-bold group-data-[state=collapsed]/sidebar:hidden">EventFlow</span>
             </div>
-            <SidebarTrigger />
           </SidebarHeader>
 
           <SidebarContent>
@@ -99,6 +97,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarContent>
 
           <SidebarFooter>
+             <SidebarTrigger className="w-full justify-center group-data-[state=collapsed]/sidebar:w-auto">
+                <PanelLeft className="group-data-[state=expanded]/sidebar:rotate-180 transition-transform duration-300" />
+                <span className="sr-only">Toggle Sidebar</span>
+            </SidebarTrigger>
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton

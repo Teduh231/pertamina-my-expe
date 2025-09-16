@@ -107,9 +107,10 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full",
+              "group/sidebar w-full",
               className
             )}
+            data-state={state}
             ref={ref}
             {...props}
           >
@@ -154,9 +155,9 @@ const Sidebar = React.forwardRef<
       ref={ref}
       data-collapsible={collapsible}
       className={cn(
-        "fixed top-0 left-0 z-20 hidden h-full flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out md:flex",
-        "group-data-[state=expanded]/sidebar-wrapper:w-[var(--sidebar-width)]",
-        "group-data-[state=collapsed]/sidebar-wrapper:w-[var(--sidebar-width-collapsed)]",
+        "fixed top-0 left-0 z-20 h-full flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out hidden md:flex",
+        "group-data-[state=expanded]/sidebar:w-[var(--sidebar-width)]",
+        "group-data-[state=collapsed]/sidebar:w-[var(--sidebar-width-collapsed)]",
         className
       )}
       {...props}
@@ -202,8 +203,8 @@ const SidebarInset = React.forwardRef<
       ref={ref}
       className={cn(
         "flex-1 transition-all duration-300 ease-in-out",
-        "md:group-data-[state=expanded]/sidebar-wrapper:ml-[var(--sidebar-width)]",
-        "md:group-data-[state=collapsed]/sidebar-wrapper:ml-[var(--sidebar-width-collapsed)]",
+        "md:group-data-[state=expanded]/sidebar:ml-[var(--sidebar-width)]",
+        "md:group-data-[state=collapsed]/sidebar:ml-[var(--sidebar-width-collapsed)]",
         className
       )}
       {...props}
@@ -220,7 +221,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       className={cn("flex items-center justify-between border-b border-sidebar-border p-3",
-       "group-data-[state=collapsed]/sidebar-wrapper:justify-center",
+       "group-data-[state=collapsed]/sidebar:justify-center",
       className)}
       {...props}
     />
