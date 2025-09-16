@@ -126,14 +126,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
-          <header className="flex h-14 items-center gap-4 border-b bg-card px-6">
+          <header className="flex h-14 items-center gap-4 border-b bg-card px-4 sm:px-6">
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1">
               <h1 className="text-lg font-semibold capitalize">
                 {pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard'}
               </h1>
             </div>
-            <Button asChild>
+            <Button asChild size="sm">
                 <Link href="/events/new">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Create Event

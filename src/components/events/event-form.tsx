@@ -92,7 +92,7 @@ export function EventForm({ event }: EventFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-8">
+            <div className="space-y-8 flex flex-col">
                 <FormField
                   control={form.control}
                   name="name"
@@ -110,12 +110,12 @@ export function EventForm({ event }: EventFormProps) {
                   control={form.control}
                   name="description"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col flex-1">
                       <FormLabel>Description</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Tell us more about this event..."
-                          className="resize-none"
+                          className="resize-none flex-1"
                           {...field}
                         />
                       </FormControl>

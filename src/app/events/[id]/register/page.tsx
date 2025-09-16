@@ -25,9 +25,9 @@ export default async function EventRegistrationPage({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="bg-card border-b py-8">
-        <div className="container mx-auto max-w-6xl text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+      <header className="bg-card border-b py-6 md:py-8">
+        <div className="container mx-auto max-w-6xl text-center px-4">
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
             {event.name}
           </h1>
         </div>
@@ -65,7 +65,7 @@ export default async function EventRegistrationPage({
           </div>
 
           <div className="lg:col-span-1 mt-8 lg:mt-0">
-            <Card className="shadow-2xl">
+            <Card className="shadow-lg lg:shadow-2xl">
               <CardHeader>
                 <CardTitle className="text-2xl text-center">Register for this Event</CardTitle>
                 <CardDescription className="text-center">

@@ -83,23 +83,23 @@ export function AttendeeList({ events }: { events: Event[] }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <CardTitle>All Attendees ({allAttendees.length})</CardTitle>
           <CardDescription>
             A list of all attendees registered for your events.
           </CardDescription>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 w-full md:w-auto">
           <Input
             placeholder="Search attendees..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="w-full md:max-w-sm"
           />
-          <Button onClick={() => exportAllAttendeesToCsv(filteredAttendees)} disabled={filteredAttendees.length === 0}>
+          <Button onClick={() => exportAllAttendeesToCsv(filteredAttendees)} disabled={filteredAttendees.length === 0} size="sm">
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
           </Button>
         </div>
       </CardHeader>
@@ -108,23 +108,26 @@ export function AttendeeList({ events }: { events: Event[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead className="hidden sm:table-cell">Email</TableHead>
               <TableHead>Event</TableHead>
-              <TableHead>Registered On</TableHead>
+              <TableHead className="hidden md:table-cell">Registered On</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAttendees.length > 0 ? (
               filteredAttendees.map((attendee) => (
                 <TableRow key={attendee.id + attendee.eventId}>
-                  <TableCell className="font-medium">{attendee.name}</TableCell>
-                  <TableCell>{attendee.email}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>{attendee.name}</div>
+                    <div className="text-muted-foreground text-sm sm:hidden">{attendee.email}</div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">{attendee.email}</TableCell>
                   <TableCell>
                     <Link href={`/events/${attendee.eventId}`} className="hover:underline text-primary">
                         {attendee.eventName}
                     </Link>
                   </TableCell>
-                  <TableCell>{format(parseISO(attendee.registeredAt), 'PPP')}</TableCell>
+                  <TableCell className="hidden md:table-cell">{format(parseISO(attendee.registeredAt), 'PPP')}</TableCell>
                 </TableRow>
               ))
             ) : (

@@ -38,9 +38,10 @@ export function AttendeeExportButton({ eventId, eventName, ...props }: AttendeeE
     };
 
     return (
-        <Button onClick={handleExport} {...props}>
+        <Button onClick={handleExport} {...props} size="sm">
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
+             <span className="inline sm:hidden">Export</span>
         </Button>
     );
 }
