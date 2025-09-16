@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -74,6 +74,8 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
             numberOfWinners: 1,
         },
     });
+    
+    const activeRaffles = useMemo(() => raffles.filter(r => r.status === 'active'), [raffles]);
 
     const getStatusVariant = (status: Raffle['status']) => {
         switch (status) {
@@ -197,7 +199,7 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
       </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {raffles.map(raffle => (
+            {activeRaffles.map(raffle => (
                  <Card key={raffle.id} className="flex flex-col">
                  <CardHeader>
                    <div className="flex items-center justify-between">
@@ -249,7 +251,7 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
                </Card>
             ))}
         </div>
-        {raffles.length === 0 && (
+        {activeRaffles.length === 0 && (
             <Card className="text-center py-12">
                 <CardContent>
                     <h3 className="text-lg font-medium">No Active Raffles</h3>

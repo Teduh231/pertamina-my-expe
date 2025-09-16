@@ -3,27 +3,35 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Events collection
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Events Collection
     match /events/{eventId} {
-      // Anyone can read a single event if it's published.
-      // Needed for the public event registration page.
+      // ANYONE can read a single event IF it is published.
+      // This is for the public registration page.
       allow get: if resource.data.status == 'published';
 
-      // Authenticated users can read any event and list all events.
-      // Needed for the dashboard, events list, and event management pages.
-      allow list, get: if request.auth != null;
-      
-      // Only authenticated users can create, update, or delete events.
-      allow create, update, delete: if request.auth != null;
+      // AUTHENTICATED users can perform all actions on events.
+      // This is for the CMS.
+      allow get, list, create, update, delete: if isAuthenticated();
 
-      // Attendees subcollection
+      // Attendees Subcollection
       match /attendees/{attendeeId} {
-        // Anyone can register as an attendee for an event.
-        allow create: if true;
+        // ANYONE can create an attendee document (register for an event).
+        allow create;
         
-        // Only authenticated users (the event manager) can see the list of attendees.
-        allow read, list: if request.auth != null;
+        // ONLY AUTHENTICATED users can view the attendee list.
+        allow get, list, update, delete: if isAuthenticated();
       }
+    }
+
+    // Raffles Collection
+    match /raffles/{raffleId} {
+      // ONLY AUTHENTICATED users can manage raffles.
+      allow read, write, create, delete: if isAuthenticated();
     }
   }
 }

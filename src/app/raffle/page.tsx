@@ -10,16 +10,15 @@ export default async function RafflePage() {
   const events: Event[] = await getEvents();
   const allRaffles: Raffle[] = await getRaffles();
 
-  const activeRaffles = allRaffles.filter(r => r.status === 'active');
+  // Filter raffles on the client-side component if needed, or pass all and let the component sort
   const finishedRaffles = allRaffles.filter(r => r.status === 'finished' && r.winners.length > 0);
-
 
   return (
     <ProtectedRoute>
       <AppLayout>
-        <RafflePageContent allEvents={events} raffles={activeRaffles} />
-        <Separator className="my-8" />
-        <PrizeHistoryContent raffles={finishedRaffles} />
+        <RafflePageContent allEvents={events} raffles={allRaffles} />
+        {finishedRaffles.length > 0 && <Separator className="my-8" />}
+        {finishedRaffles.length > 0 && <PrizeHistoryContent raffles={finishedRaffles} />}
       </AppLayout>
     </ProtectedRoute>
   );

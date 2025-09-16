@@ -1,6 +1,6 @@
 import { Event, Attendee, Raffle } from '@/app/lib/definitions';
 import { db } from './firebase';
-import { collection, getDocs, doc, getDoc, collectionGroup, query, where, orderBy, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, collectionGroup, query, where, orderBy, setDoc } from 'firebase/firestore';
 import { subDays, format } from 'date-fns';
 
 const today = new Date();
@@ -97,6 +97,7 @@ export async function getEvents(): Promise<Event[]> {
     if (eventSnapshot.empty) {
       console.log('No events found in Firestore. Seeding mock data...');
       await seedMockEvents();
+      // Re-fetch after seeding
       const seededSnapshot = await getDocs(eventsCollection);
       return getEventsFromSnapshot(seededSnapshot);
     }
@@ -106,15 +107,15 @@ export async function getEvents(): Promise<Event[]> {
   } catch (error) {
     console.error("Error fetching events:", error);
     // Fallback to mock data if Firestore fails
+    console.log("Falling back to mock data due to Firestore error.");
     return mockEvents;
   }
 }
 
 async function seedMockEvents() {
-    const eventsCollection = collection(db, 'events');
     for (const event of mockEvents) {
         const { id, attendees, ...eventData } = event;
-        const eventDocRef = doc(eventsCollection, id);
+        const eventDocRef = doc(db, 'events', id);
         await setDoc(eventDocRef, eventData);
         if (attendees && attendees.length > 0) {
             const attendeesCollection = collection(eventDocRef, 'attendees');
@@ -134,13 +135,18 @@ async function getEventsFromSnapshot(eventSnapshot: any): Promise<Event[]> {
       attendees: [] // attendees will be fetched separately
     })) as Event[];
 
-    // Fetch all attendees for all events in parallel
+    // Fetch all attendees for all events in parallel using a collection group query.
+    // This is much more efficient than fetching attendees for each event one by one.
     const allAttendeesQuery = query(collectionGroup(db, 'attendees'));
     const allAttendeesSnapshot = await getDocs(allAttendeesQuery);
+    
     const attendeesMap = new Map<string, Attendee[]>();
 
     allAttendeesSnapshot.forEach(doc => {
         const attendee = { id: doc.id, ...doc.data() } as Attendee;
+        // The path to an attendee is 'events/{eventId}/attendees/{attendeeId}'
+        // So the parent of an attendee doc is the 'attendees' collection,
+        // and the parent of that is the event document.
         const eventId = doc.ref.parent.parent?.id;
         if (eventId) {
             if (!attendeesMap.has(eventId)) {
@@ -150,7 +156,7 @@ async function getEventsFromSnapshot(eventSnapshot: any): Promise<Event[]> {
         }
     });
 
-    // Attach attendees to their respective events
+    // Attach the fetched attendees to their respective events
     eventsList.forEach(event => {
         event.attendees = attendeesMap.get(event.id) || [];
     });
@@ -184,14 +190,19 @@ export async function getEventById(id: string): Promise<Event | undefined> {
   } catch (error) {
     console.error("Error fetching event by ID:", error);
     // Fallback to mock data if Firestore fails
-    return mockEvents.find(event => event.id === id);
+    const mockEvent = mockEvents.find(event => event.id === id);
+    if(mockEvent) {
+      console.log(`Falling back to mock data for event ID: ${id}`);
+    }
+    return mockEvent;
   }
 }
 
 export async function getRaffles(): Promise<Raffle[]> {
     try {
       const rafflesCollection = collection(db, 'raffles');
-      const raffleSnapshot = await getDocs(query(rafflesCollection, orderBy('drawnAt', 'desc')));
+      // Order by status first, then by drawnAt if it exists
+      const raffleSnapshot = await getDocs(query(rafflesCollection, orderBy('status'), orderBy('drawnAt', 'desc')));
       
       if (raffleSnapshot.empty) {
         return [];
