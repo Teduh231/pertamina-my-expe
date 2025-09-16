@@ -12,7 +12,8 @@ import {
   LogOut,
   PlusCircle,
   Ticket,
-  Trophy
+  Trophy,
+  ShoppingCart,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -55,6 +56,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/attendees', icon: Users, label: 'Attendees' },
     { href: '/raffle', icon: Ticket, label: 'Raffle' },
     { href: '/prize-history', icon: Trophy, label: 'Prize History' },
+    { href: '/pos', icon: ShoppingCart, label: 'POS System' },
   ];
 
   return (
