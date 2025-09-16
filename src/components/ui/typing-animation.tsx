@@ -3,22 +3,40 @@
 
 import { useState, useEffect } from 'react';
 
-export function TypingAnimation({ text, speed = 50 }: { text: string, speed?: number }) {
+export function TypingAnimation({ text, speed = 150, deleteSpeed = 75, delay = 2000 }: { text: string, speed?: number, deleteSpeed?: number, delay?: number }) {
   const [displayedText, setDisplayedText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    let i = 0;
-    const typingInterval = setInterval(() => {
-      if (i < text.length) {
-        setDisplayedText(text.substring(0, i + 1));
-        i++;
+    if (isDeleting) {
+      if (index > 0) {
+        const timeout = setTimeout(() => {
+          setDisplayedText(text.substring(0, index - 1));
+          setIndex(index - 1);
+        }, deleteSpeed);
+        return () => clearTimeout(timeout);
       } else {
-        clearInterval(typingInterval);
+        setIsDeleting(false);
       }
-    }, speed);
+    } else {
+      if (index < text.length) {
+        const timeout = setTimeout(() => {
+          setDisplayedText(text.substring(0, index + 1));
+          setIndex(index + 1);
+        }, speed);
+        return () => clearTimeout(timeout);
+      } else {
+        const timeout = setTimeout(() => setIsDeleting(true), delay);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [index, isDeleting, text, speed, deleteSpeed, delay]);
 
-    return () => clearInterval(typingInterval);
-  }, [text, speed]);
-
-  return <span>{displayedText}</span>;
+  return (
+    <span>
+      {displayedText}
+      <span className="animate-pulse">|</span>
+    </span>
+  );
 }
