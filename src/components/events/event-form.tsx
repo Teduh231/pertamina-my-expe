@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
+import { createOrUpdateEvent } from '@/app/lib/actions';
 
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
@@ -62,24 +63,28 @@ export function EventForm({ event }: EventFormProps) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log(values);
-    
+    const result = await createOrUpdateEvent(values, event?.id);
     setIsSubmitting(false);
 
-    toast({
-      title: `Event ${event ? 'updated' : 'created'} successfully!`,
-      description: `"${values.name}" is now saved.`,
-    });
-    
-    // In a real app, you might get the new/updated event ID and redirect
-    if (!event) {
-        // This is a new event, redirect to the main events page
-        router.push('/events');
-    } else {
+    if (result.success) {
+      toast({
+        title: `Event ${event ? 'updated' : 'created'} successfully!`,
+        description: `"${values.name}" is now saved.`,
+      });
+
+      if (!event && result.eventId) {
+        // This is a new event, redirect to the new event's management page
+        router.push(`/events/${result.eventId}`);
+      } else {
         // This is an update, refresh the current page to see changes
         router.refresh();
+      }
+    } else {
+      toast({
+        title: `Error ${event ? 'updating' : 'creating'} event`,
+        description: result.error || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
     }
   }
 

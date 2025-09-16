@@ -1,6 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { connectAuthEmulator } from "firebase/auth";
+import { connectFirestoreEmulator } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -13,20 +16,16 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app;
-// Check if we are in the browser and Firebase has not been initialized.
-if (typeof window !== 'undefined' && !getApps().length) {
-    if (!firebaseConfig.apiKey) {
-        console.error("Firebase API Key is missing. Please check your .env file.");
-        app = null;
-    } else {
-        app = initializeApp(firebaseConfig);
-    }
-} else if (getApps().length) {
-    app = getApp();
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Check if we are in a development environment and not in a server-side rendering context
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    // Point to the emulators
+    // connectAuthEmulator(auth, "http://localhost:9099");
+    // connectFirestoreEmulator(db, 'localhost', 8080);
 }
 
 
-const auth = app ? getAuth(app) : null;
-
-export { app, auth };
+export { app, auth, db };

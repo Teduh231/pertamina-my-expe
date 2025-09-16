@@ -3,6 +3,9 @@
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
 import { Attendee, Event } from './definitions';
 import { getEventById } from './data';
+import { db } from './firebase';
+import { collection, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { revalidatePath } from 'next/cache';
 
 export async function detectPiiInField(fieldName: string, fieldValue: string) {
   if (!fieldValue || fieldValue.trim().length < 3) {
@@ -45,4 +48,49 @@ export async function exportAttendeesToCsv(eventId: string): Promise<string> {
     }
 
     return csvRows.join('\n');
+}
+
+export async function createOrUpdateEvent(eventData: Omit<Event, 'id' | 'attendees'>, eventId?: string) {
+  try {
+    if (eventId) {
+      // Update existing event
+      const eventRef = doc(db, 'events', eventId);
+      await updateDoc(eventRef, eventData);
+      revalidatePath(`/events/${eventId}`);
+      revalidatePath('/events');
+      revalidatePath('/dashboard');
+      return { success: true, eventId };
+    } else {
+      // Create new event
+      const docRef = await addDoc(collection(db, 'events'), eventData);
+      revalidatePath('/events');
+      revalidatePath('/dashboard');
+      return { success: true, eventId: docRef.id };
+    }
+  } catch (error) {
+    console.error("Error saving event: ", error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registeredAt'>) {
+    try {
+        const eventRef = doc(db, 'events', eventId);
+        const attendeesCollectionRef = collection(eventRef, 'attendees');
+
+        const newAttendee = {
+            ...attendeeData,
+            registeredAt: new Date().toISOString()
+        }
+
+        await addDoc(attendeesCollectionRef, newAttendee);
+
+        revalidatePath(`/events/${eventId}/register`);
+        revalidatePath(`/events/${eventId}`);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error registering attendee: ", error);
+        return { success: false, error: (error as Error).message };
+    }
 }

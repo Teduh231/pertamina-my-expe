@@ -1,4 +1,6 @@
-import { Event } from '@/app/lib/definitions';
+import { Event, Attendee } from '@/app/lib/definitions';
+import { db } from './firebase';
+import { collection, getDocs, doc, getDoc, collectionGroup, query } from 'firebase/firestore';
 import { subDays, format } from 'date-fns';
 
 const today = new Date();
@@ -86,12 +88,86 @@ export const mockEvents: Event[] = [
   },
 ];
 
-export const getEvents = async () => {
-  // In a real app, you'd fetch this from a database
-  return Promise.resolve(mockEvents);
-};
 
-export const getEventById = async (id: string) => {
-  // In a real app, you'd fetch this from a database
-  return Promise.resolve(mockEvents.find((event) => event.id === id));
-};
+export async function getEvents(): Promise<Event[]> {
+  try {
+    const eventsCollection = collection(db, 'events');
+    const eventSnapshot = await getDocs(eventsCollection);
+    
+    if (eventSnapshot.empty) {
+      console.log('No events found in Firestore. Seeding mock data...');
+      // await seedMockData();
+      // const seededSnapshot = await getDocs(eventsCollection);
+      // return getEventsFromSnapshot(seededSnapshot);
+       return mockEvents; // Returning mock data if firestore is empty
+    }
+
+    return getEventsFromSnapshot(eventSnapshot);
+
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    // Fallback to mock data if Firestore fails
+    return mockEvents;
+  }
+}
+
+async function getEventsFromSnapshot(eventSnapshot: any): Promise<Event[]> {
+    const eventsList = eventSnapshot.docs.map((doc: any) => ({
+      id: doc.id,
+      ...doc.data(),
+      attendees: [] // attendees will be fetched separately
+    })) as Event[];
+
+    // Fetch all attendees for all events in parallel
+    const allAttendeesQuery = query(collectionGroup(db, 'attendees'));
+    const allAttendeesSnapshot = await getDocs(allAttendeesQuery);
+    const attendeesMap = new Map<string, Attendee[]>();
+
+    allAttendeesSnapshot.forEach(doc => {
+        const attendee = { id: doc.id, ...doc.data() } as Attendee;
+        const eventId = doc.ref.parent.parent?.id;
+        if (eventId) {
+            if (!attendeesMap.has(eventId)) {
+                attendeesMap.set(eventId, []);
+            }
+            attendeesMap.get(eventId)!.push(attendee);
+        }
+    });
+
+    // Attach attendees to their respective events
+    eventsList.forEach(event => {
+        event.attendees = attendeesMap.get(event.id) || [];
+    });
+
+    return eventsList;
+}
+
+export async function getEventById(id: string): Promise<Event | undefined> {
+  try {
+    const eventDocRef = doc(db, 'events', id);
+    const eventDoc = await getDoc(eventDocRef);
+
+    if (!eventDoc.exists()) {
+      return undefined;
+    }
+
+    const eventData = eventDoc.data() as Omit<Event, 'id' | 'attendees'>;
+
+    const attendeesCollectionRef = collection(eventDocRef, 'attendees');
+    const attendeeSnapshot = await getDocs(attendeesCollectionRef);
+    const attendees = attendeeSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Attendee[];
+
+    return {
+      id: eventDoc.id,
+      ...eventData,
+      attendees,
+    };
+  } catch (error) {
+    console.error("Error fetching event by ID:", error);
+    // Fallback to mock data if Firestore fails
+    return mockEvents.find(event => event.id === id);
+  }
+}

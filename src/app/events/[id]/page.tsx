@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Attendee, Event } from '@/app/lib/definitions';
 import { format, parseISO } from 'date-fns';
 import { AttendeeExportButton } from './_components/attendee-export-button';
+import { ProtectedRoute } from '@/hooks/use-auth';
 
 function AttendeeTable({ event }: { event: Event }) {
     return (
@@ -56,6 +57,10 @@ function AttendeeTable({ event }: { event: Event }) {
 }
 
 export default async function ManageEventPage({ params }: { params: { id: string } }) {
+  if (params.id === 'new') {
+    notFound();
+  }
+  
   const event = await getEventById(params.id);
 
   if (!event) {
@@ -63,29 +68,31 @@ export default async function ManageEventPage({ params }: { params: { id: string
   }
 
   return (
-    <AppLayout>
-        <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-                <TabsTrigger value="details">Event Details</TabsTrigger>
-                <TabsTrigger value="attendees">Attendees</TabsTrigger>
-            </TabsList>
-            <TabsContent value="details" className="mt-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Manage Event</CardTitle>
-                        <CardDescription>
-                            Edit the details for your event below. Changes will be saved upon submission.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <EventForm event={event} />
-                    </CardContent>
-                </Card>
-            </TabsContent>
-            <TabsContent value="attendees" className="mt-6">
-               <AttendeeTable event={event} />
-            </TabsContent>
-        </Tabs>
-    </AppLayout>
+    <ProtectedRoute>
+        <AppLayout>
+            <Tabs defaultValue="details" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 max-w-md">
+                    <TabsTrigger value="details">Event Details</TabsTrigger>
+                    <TabsTrigger value="attendees">Attendees</TabsTrigger>
+                </TabsList>
+                <TabsContent value="details" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Manage Event</CardTitle>
+                            <CardDescription>
+                                Edit the details for your event below. Changes will be saved upon submission.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <EventForm event={event} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="attendees" className="mt-6">
+                   <AttendeeTable event={event} />
+                </TabsContent>
+            </Tabs>
+        </AppLayout>
+    </ProtectedRoute>
   );
 }

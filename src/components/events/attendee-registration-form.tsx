@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Event } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
-import { detectPiiInField } from '@/app/lib/actions';
+import { detectPiiInField, registerAttendee } from '@/app/lib/actions';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
@@ -88,18 +88,25 @@ export function AttendeeRegistrationForm({ event }: RegistrationFormProps) {
     }
 
     setIsSubmitting(true);
-    // In a real app, you would send this to your backend
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log(values);
+    const { piiConsent, ...attendeeData } = values;
+    const result = await registerAttendee(event.id, attendeeData);
     setIsSubmitting(false);
 
-    toast({
-      title: 'Registration Successful!',
-      description: `Thank you for registering for ${event.name}. A confirmation has been sent to your email.`,
-      variant: 'default',
-    });
-    form.reset();
-    setShowPiiWarning(false);
+    if (result.success) {
+        toast({
+            title: 'Registration Successful!',
+            description: `Thank you for registering for ${event.name}. A confirmation has been sent to your email.`,
+            variant: 'default',
+        });
+        form.reset();
+        setShowPiiWarning(false);
+    } else {
+        toast({
+            title: 'Registration Failed',
+            description: result.error || 'An unexpected error occurred. Please try again.',
+            variant: 'destructive',
+        });
+    }
   }
 
   return (

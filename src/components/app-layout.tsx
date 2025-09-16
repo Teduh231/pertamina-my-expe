@@ -10,6 +10,7 @@ import {
   Settings,
   Users,
   LogOut,
+  PlusCircle
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -122,10 +123,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1">
               <h1 className="text-lg font-semibold capitalize">
-                {pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard'}
+                {pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard'}
               </h1>
             </div>
-            <Button>Create Event</Button>
+            <Button asChild>
+                <Link href="/events/new">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Create Event
+                </Link>
+            </Button>
           </header>
           <main className="flex-1 overflow-auto p-4 md:p-6">
             {children}
