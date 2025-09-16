@@ -57,12 +57,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/qr-scanner', icon: QrCode, label: 'QR Scanner' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
-  
-  if (!user) {
-    // For pages like login, signup, landing, we don't want the app layout
-    return <>{children}</>;
-  }
-
 
   return (
     <SidebarProvider>
@@ -104,11 +98,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <SidebarTrigger className="hidden md:flex"/>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                                 <Avatar className="h-9 w-9 shrink-0">
-                                    <AvatarImage src={`https://i.pravatar.cc/150?u=${user.email}`} />
+                                    <AvatarImage src={`https://i.pravatar.cc/150?u=${user?.email}`} />
                                     <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                                 </Avatar>
                             </Button>

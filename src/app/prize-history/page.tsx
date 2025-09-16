@@ -2,6 +2,7 @@ import { getRaffles } from '@/app/lib/data';
 import { AppLayout } from '@/components/app-layout';
 import type { Raffle } from '@/app/lib/definitions';
 import { PrizeHistoryContent } from './_components/prize-history-content';
+import { ProtectedRoute } from '@/hooks/use-auth';
 
 
 export default async function PrizeHistoryPage() {
@@ -10,8 +11,10 @@ export default async function PrizeHistoryPage() {
   const finishedRaffles = raffles.filter(r => r.status === 'finished' && r.winners.length > 0);
 
   return (
-    <AppLayout>
-      <PrizeHistoryContent raffles={finishedRaffles} />
-    </AppLayout>
+    <ProtectedRoute>
+      <AppLayout>
+        <PrizeHistoryContent raffles={finishedRaffles} />
+      </AppLayout>
+    </ProtectedRoute>
   );
 }
