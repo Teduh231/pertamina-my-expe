@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, BarChart, Calendar, ShieldCheck, Download, LogIn } from 'lucide-react';
@@ -37,19 +38,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2">
               <Calendar className="h-7 w-7 text-primary" />
-              <h1 className="text-2xl font-bold">EventFlow</h1>
             </div>
-            <nav className="flex items-center gap-2">
-              <Button asChild variant="ghost">
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login
-                </Link>
-              </Button>
-            </nav>
         </div>
       </header>
       <main className="flex-1">
