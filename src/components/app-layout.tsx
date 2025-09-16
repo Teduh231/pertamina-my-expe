@@ -72,9 +72,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen">
         <Sidebar>
           <SidebarHeader>
-            <div className="flex items-center gap-2 group-data-[state=expanded]/sidebar-wrapper:w-full">
+            <div className="flex items-center gap-2 group-data-[state=expanded]/sidebar:w-full">
               <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={28} height={28} className="shrink-0" />
-              <span className="text-lg font-bold group-data-[state=collapsed]/sidebar-wrapper:hidden">EventFlow</span>
+              <span className="text-lg font-bold group-data-[state=collapsed]/sidebar:hidden">EventFlow</span>
             </div>
             <SidebarTrigger />
           </SidebarHeader>
@@ -90,7 +90,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href={item.href}>
                       <item.icon className="shrink-0" />
-                      <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">{item.label}</span>
+                      <span className="group-data-[state=collapsed]/sidebar:hidden">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -108,7 +108,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     >
                         <Link href="#">
                         <Settings className="shrink-0" />
-                        <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">Settings</span>
+                        <span className="group-data-[state=collapsed]/sidebar:hidden">Settings</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -121,7 +121,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         <AvatarImage src="https://picsum.photos/seed/avatar/40/40" />
                                         <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
-                                    <div className="flex flex-col text-left group-data-[state=collapsed]/sidebar-wrapper:hidden">
+                                    <div className="flex flex-col text-left group-data-[state=collapsed]/sidebar:hidden">
                                         <span className="text-sm font-medium truncate">{user?.email}</span>
                                     </div>
                                 </div>
@@ -143,7 +143,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex-1 transition-all duration-300 ease-in-out md:group-data-[state=expanded]/sidebar-wrapper:ml-[var(--sidebar-width)] md:group-data-[state=collapsed]/sidebar-wrapper:ml-[var(--sidebar-width-collapsed)]">
+        <div className="flex-1 transition-all duration-300 ease-in-out md:ml-[var(--sidebar-width-collapsed)] group-data-[state=expanded]/sidebar:md:ml-[var(--sidebar-width)]">
             <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-card px-4 sm:px-6">
                 <SidebarTrigger className="md:hidden" />
                 <div className="flex-1">
