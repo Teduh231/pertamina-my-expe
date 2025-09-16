@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   FileText,
   QrCode,
+  PanelLeft
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -61,6 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
   
   if (!user) {
+    // For pages like login, signup, landing, we don't want the app layout
     return <>{children}</>;
   }
 
