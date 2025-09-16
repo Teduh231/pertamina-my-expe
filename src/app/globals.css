@@ -96,7 +96,7 @@
 
   .btn-fill-center::before {
     content: '';
-    @apply absolute top-1/2 left-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-primary/90 transition-transform duration-500 ease-out;
+    @apply absolute top-1/2 left-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-primary/90 transition-transform duration-700 ease-out;
   }
   
   /* Specific override for outline variant */
