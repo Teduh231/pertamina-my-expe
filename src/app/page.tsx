@@ -1,8 +1,10 @@
 
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, BarChart, Calendar, ShieldCheck, Download, LogIn } from 'lucide-react';
+import { CheckCircle, BarChart, Calendar, ShieldCheck, Download } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const features = [
   {
@@ -37,7 +39,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2">
-              <Calendar className="h-7 w-7 text-primary" />
+              <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={32} height={32} />
             </div>
         </div>
       </header>
@@ -62,7 +64,7 @@ export default function LandingPage() {
                   <span>Get Started</span>
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="btn-fill-center">
+              <Button asChild size="lg" className="btn-fill-center border border-input bg-background hover:text-accent-foreground">
                 <Link href="#features">
                   <span>Learn More</span>
                 </Link>
