@@ -101,8 +101,8 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
   }, [allWinners, searchTerm]);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="bg-secondary/30">
+      <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <CardTitle>Prize History</CardTitle>
           <CardDescription>

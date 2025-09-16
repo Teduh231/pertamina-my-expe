@@ -40,6 +40,23 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+function StatCard({ title, value, subtext, icon: Icon }: { title: string, value: string | number, subtext: string, icon: React.ElementType }) {
+    return (
+        <Card className="bg-secondary/30 hover:border-primary/50 transition-all border-2 border-transparent">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+            <p className="text-xs text-muted-foreground">
+              {subtext}
+            </p>
+          </CardContent>
+        </Card>
+    )
+}
+
 export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
   const totalAttendees = events.reduce(
     (acc, event) => acc + (event.attendees?.length || 0),
@@ -79,100 +96,50 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
   }, [events]);
 
   return (
-    <div className="grid gap-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{events.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {publishedEvents} published events
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Attendees
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAttendees}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all events
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Upcoming Events
-            </CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{upcomingEvents}</div>
-            <p className="text-xs text-muted-foreground">
-              Ready to host
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Canceled Events
-            </CardTitle>
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {events.filter((e) => e.status === 'canceled').length}
-            </div>
-            <p className="text-xs text-muted-foreground">This year</p>
-          </CardContent>
-        </Card>
-      </div>
+    <>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total Events" value={events.length} subtext={`${publishedEvents} published events`} icon={Calendar} />
+            <StatCard title="Total Attendees" value={totalAttendees} subtext="Across all events" icon={Users} />
+            <StatCard title="Upcoming Events" value={upcomingEvents} subtext="Ready to host" icon={CheckCircle} />
+            <StatCard title="Canceled Events" value={events.filter((e) => e.status === 'canceled').length} subtext="This year" icon={XCircle} />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Registration Trends</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig} className="h-[300px] w-full">
-            <BarChart accessibilityLayer data={registrationData}>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="date"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={12}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={12}
-                allowDecimals={false}
-                tickFormatter={(value) => value.toString()}
-              />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="dot" />}
-              />
-              <Bar
-                dataKey="registrations"
-                fill="var(--color-registrations)"
-                radius={4}
-              />
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-    </div>
+        <Card className="lg:col-span-3 bg-secondary/30">
+            <CardHeader>
+            <CardTitle>Registration Trends</CardTitle>
+            </CardHeader>
+            <CardContent>
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <BarChart accessibilityLayer data={registrationData}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
+                <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    fontSize={12}
+                />
+                <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    fontSize={12}
+                    allowDecimals={false}
+                    tickFormatter={(value) => value.toString()}
+                />
+                <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Bar
+                    dataKey="registrations"
+                    fill="var(--color-registrations)"
+                    radius={4}
+                />
+                </BarChart>
+            </ChartContainer>
+            </CardContent>
+        </Card>
+    </>
   );
 }

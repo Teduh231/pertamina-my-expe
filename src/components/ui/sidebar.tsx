@@ -102,7 +102,7 @@ const SidebarProvider = React.forwardRef<
             style={
               {
                 "--sidebar-width": "16rem",
-                "--sidebar-width-collapsed": "3.5rem",
+                "--sidebar-width-collapsed": "4rem",
                 "--sidebar-width-mobile": "18rem",
               } as React.CSSProperties
             }
@@ -135,7 +135,7 @@ const Sidebar = React.forwardRef<
   children,
   ...props
 }, ref) => {
-  const { isMobile, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, openMobile, setOpenMobile, toggleSidebar } = useSidebar()
 
   if (isMobile) {
     return (
@@ -155,14 +155,25 @@ const Sidebar = React.forwardRef<
       ref={ref}
       data-collapsible={collapsible}
       className={cn(
-        "fixed top-0 left-0 z-20 h-full flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out hidden md:flex",
+        "fixed top-0 left-0 z-50 h-full flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out hidden md:flex",
         "group-data-[state=expanded]/sidebar:w-[var(--sidebar-width)]",
         "group-data-[state=collapsed]/sidebar:w-[var(--sidebar-width-collapsed)]",
         className
       )}
       {...props}
     >
-      {children}
+      <div className="flex h-full flex-col">
+        {children}
+        <div className="mt-auto border-t border-sidebar-border p-3">
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse">
+                        <PanelLeft />
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        </div>
+      </div>
     </div>
   )
 })
@@ -179,7 +190,7 @@ const SidebarTrigger = React.forwardRef<
       ref={ref}
       variant="ghost"
       size="icon"
-      className={cn("h-8 w-8", className)}
+      className={cn("h-9 w-9", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
@@ -220,8 +231,7 @@ const SidebarHeader = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("flex items-center justify-between border-b border-sidebar-border p-3",
-       "group-data-[state=collapsed]/sidebar:justify-center",
+      className={cn("flex h-16 items-center justify-center border-b border-sidebar-border p-3",
       className)}
       {...props}
     />
@@ -267,7 +277,7 @@ const SidebarMenu = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ul
     ref={ref}
-    className={cn("flex w-full min-w-0 flex-col gap-2", className)}
+    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
     {...props}
   />
 ))
@@ -287,7 +297,7 @@ SidebarMenuItem.displayName = "SidebarMenuItem"
 
 
 const sidebarMenuButtonVariants = cva(
-  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[active=true]:bg-sidebar-accent group-data-[active=true]:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar:justify-center",
+  "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[active=true]:bg-sidebar-accent group-data-[active=true]:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar:justify-center",
   {
     variants: {
       variant: {

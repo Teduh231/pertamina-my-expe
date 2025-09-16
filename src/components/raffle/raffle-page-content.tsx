@@ -138,7 +138,7 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Raffle Management</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Raffle Management</h2>
           <p className="text-muted-foreground">
             Create, manage, and draw winners for your event raffles.
           </p>
@@ -203,7 +203,7 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {activeRaffles.map(raffle => (
-                 <Card key={raffle.id} className="flex flex-col">
+                 <Card key={raffle.id} className="flex flex-col bg-secondary/30">
                  <CardHeader>
                    <div className="flex items-center justify-between">
                      <CardTitle className="text-xl">{raffle.eventName}</CardTitle>
@@ -255,7 +255,7 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
             ))}
         </div>
         {activeRaffles.length === 0 && (
-            <Card className="text-center py-12">
+            <Card className="text-center py-12 bg-secondary/30">
                 <CardContent>
                     <h3 className="text-lg font-medium">No Active Raffles</h3>
                     <p className="text-sm text-muted-foreground">Create a new raffle to get started.</p>

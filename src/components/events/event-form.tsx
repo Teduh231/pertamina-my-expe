@@ -36,7 +36,7 @@ import { format } from 'date-fns';
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid date format.' }),
+  date: z.date({ required_error: 'A date is required.'}),
   time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM).' }),
   location: z.string().min(3, { message: 'Location is required.' }),
   speaker: z.string().min(2, { message: 'Speaker name is required.' }),
@@ -45,9 +45,10 @@ const formSchema = z.object({
 
 type EventFormProps = {
   event?: Event;
+  onFinished?: () => void;
 };
 
-export function EventForm({ event }: EventFormProps) {
+export function EventForm({ event, onFinished }: EventFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -57,7 +58,7 @@ export function EventForm({ event }: EventFormProps) {
     defaultValues: {
       name: event?.name || '',
       description: event?.description || '',
-      date: event?.date || '',
+      date: event?.date ? parseISO(event.date) : undefined,
       time: event?.time || '',
       location: event?.location || '',
       speaker: event?.speaker || '',
@@ -67,7 +68,13 @@ export function EventForm({ event }: EventFormProps) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    const result = await createOrUpdateEvent(values, event?.id);
+    
+    const dataToSubmit = {
+      ...values,
+      date: format(values.date, 'yyyy-MM-dd'),
+    };
+
+    const result = await createOrUpdateEvent(dataToSubmit, event?.id);
     setIsSubmitting(false);
 
     if (result.success) {
@@ -75,13 +82,9 @@ export function EventForm({ event }: EventFormProps) {
         title: `Event ${event ? 'updated' : 'created'} successfully!`,
         description: `"${values.name}" is now saved.`,
       });
-
-      if (!event && result.eventId) {
-        // This is a new event, redirect to the new event's management page
-        router.push(`/events/${result.eventId}`);
-      } else {
-        // This is an update, refresh the current page to see changes
-        router.refresh();
+      router.refresh();
+      if (onFinished) {
+        onFinished();
       }
     } else {
       toast({
@@ -119,7 +122,7 @@ export function EventForm({ event }: EventFormProps) {
                       <FormControl>
                         <Textarea
                           placeholder="Tell us more about this event..."
-                          className="resize-none flex-1"
+                          className="resize-none flex-1 min-h-[150px]"
                           {...field}
                         />
                       </FormControl>
@@ -147,7 +150,7 @@ export function EventForm({ event }: EventFormProps) {
                                 )}
                                 >
                                 {field.value ? (
-                                    format(new Date(field.value), "PPP")
+                                    format(field.value, "PPP")
                                 ) : (
                                     <span>Pick a date</span>
                                 )}
@@ -158,12 +161,8 @@ export function EventForm({ event }: EventFormProps) {
                             <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                                 mode="single"
-                                selected={field.value ? new Date(field.value) : undefined}
-                                onSelect={(date) => {
-                                    if (date) {
-                                        field.onChange(format(date, 'yyyy-MM-dd'));
-                                    }
-                                }}
+                                selected={field.value}
+                                onSelect={field.onChange}
                                 disabled={(date) =>
                                 date < new Date(new Date().setHours(0,0,0,0))
                                 }
@@ -237,7 +236,7 @@ export function EventForm({ event }: EventFormProps) {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        'Draft' events are hidden from the public.
+                        'Draft' events are hidden. 'Published' are visible to the public.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -248,7 +247,7 @@ export function EventForm({ event }: EventFormProps) {
         </div>
         
         <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={onFinished}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {event ? 'Save Changes' : 'Create Event'}

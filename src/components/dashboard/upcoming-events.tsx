@@ -17,7 +17,7 @@ import {
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Users as UsersIcon } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
 
 export function UpcomingEvents({ events }: { events: Event[] }) {
@@ -27,7 +27,7 @@ export function UpcomingEvents({ events }: { events: Event[] }) {
     .slice(0, 5);
 
   return (
-    <Card>
+    <Card className="lg:col-span-2 bg-secondary/30">
       <CardHeader className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-2">
         <div>
             <CardTitle>Upcoming Events</CardTitle>
@@ -43,66 +43,35 @@ export function UpcomingEvents({ events }: { events: Event[] }) {
          </Button>
       </CardHeader>
       <CardContent>
-        <div className="block md:hidden">
-            <div className="space-y-4">
-            {upcomingEvents.length > 0 ? (
-                upcomingEvents.map((event) => (
-                    <div key={event.id} className="border rounded-lg p-4 flex justify-between items-start">
+        <div className="space-y-4">
+        {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event) => (
+                <div key={event.id} className="border-b last:border-b-0 pb-4 last:pb-0">
+                    <div className="flex justify-between items-start">
                         <div className="space-y-1">
-                            <p className="font-medium">{event.name}</p>
-                            <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'PPP')}</p>
-                            <p className="text-sm text-muted-foreground">{event.location}</p>
-                            <Badge variant="outline">{event.attendees?.length || 0} Attendees</Badge>
+                            <Link href={`/events`} className="font-medium hover:underline">{event.name}</Link>
+                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                {format(parseISO(event.date), 'PPP')}
+                            </p>
                         </div>
-                         <Button asChild size="sm" variant="ghost">
-                            <Link href={`/events/${event.id}`}>Manage</Link>
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="flex items-center gap-1.5">
+                                <UsersIcon className="h-3 w-3"/>
+                                {event.attendees?.length || 0}
+                            </Badge>
+                             <Button asChild size="sm" variant="ghost">
+                                <Link href={`/events`}>Manage</Link>
+                            </Button>
+                        </div>
                     </div>
-                ))
-            ) : (
-                 <div className="text-center text-muted-foreground py-12">
-                    <p>No upcoming events scheduled.</p>
                 </div>
-            )}
+            ))
+        ) : (
+             <div className="text-center text-muted-foreground py-12">
+                <p>No upcoming events scheduled.</p>
             </div>
-        </div>
-        <div className="hidden md:block">
-            <Table>
-            <TableHeader>
-                <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Attendees</TableHead>
-                <TableHead></TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {upcomingEvents.length > 0 ? (
-                upcomingEvents.map((event) => (
-                    <TableRow key={event.id}>
-                    <TableCell className="font-medium">{event.name}</TableCell>
-                    <TableCell>{format(parseISO(event.date), 'PPP')}</TableCell>
-                    <TableCell>{event.location}</TableCell>
-                    <TableCell>
-                        <Badge variant="outline">{event.attendees?.length || 0}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <Button asChild size="sm" variant="ghost">
-                            <Link href={`/events/${event.id}`}>Manage</Link>
-                        </Button>
-                    </TableCell>
-                    </TableRow>
-                ))
-                ) : (
-                <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                    No upcoming events scheduled.
-                    </TableCell>
-                </TableRow>
-                )}
-            </TableBody>
-            </Table>
+        )}
         </div>
       </CardContent>
     </Card>
