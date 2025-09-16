@@ -64,7 +64,7 @@ export default function LandingPage() {
                   <span>Get Started</span>
                 </Link>
               </Button>
-              <Button asChild size="lg" className="btn-fill-center border border-input bg-background hover:text-accent-foreground">
+              <Button asChild size="lg" className="btn-fill-center border border-input bg-background text-foreground hover:bg-transparent">
                 <Link href="#features">
                   <span>Learn More</span>
                 </Link>

@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 240 100% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -23,7 +23,6 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 206 82% 38%;
-    --radius: 0.5rem;
     --chart-1: 206 82% 38%;
     --chart-2: 354 82% 52%;
     --chart-3: 217 33% 17%;
@@ -105,5 +104,9 @@
   
   .btn-fill-center:hover {
     @apply text-primary-foreground;
+  }
+
+  .btn-fill-center.hover\:bg-transparent:hover {
+    @apply bg-transparent;
   }
 }
