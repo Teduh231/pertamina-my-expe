@@ -195,26 +195,6 @@ const SidebarTrigger = React.forwardRef<
 })
 SidebarTrigger.displayName = "SidebarTrigger"
 
-const SidebarInset = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"main">
->(({ className, ...props }, ref) => {
-    const { state } = useSidebar();
-  return (
-    <main
-      ref={ref}
-      className={cn(
-        "flex-1 transition-all duration-300 ease-in-out",
-        "md:group-data-[state=expanded]/sidebar:ml-[var(--sidebar-width)]",
-        "md:group-data-[state=collapsed]/sidebar:ml-[var(--sidebar-width-collapsed)]",
-        className
-      )}
-      {...props}
-    />
-  )
-})
-SidebarInset.displayName = "SidebarInset"
-
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
@@ -229,21 +209,6 @@ const SidebarHeader = React.forwardRef<
   )
 })
 SidebarHeader.displayName = "SidebarHeader"
-
-const SidebarFooter = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className={cn("flex flex-col gap-2 p-3 mt-auto border-t border-sidebar-border", className)}
-      {...props}
-    />
-  )
-})
-SidebarFooter.displayName = "SidebarFooter"
-
 
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
@@ -364,9 +329,7 @@ SidebarMenuButton.displayName = "SidebarMenuButton"
 export {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,

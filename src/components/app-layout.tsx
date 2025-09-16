@@ -12,6 +12,7 @@ import {
   FileText,
   QrCode,
   LogOut,
+  Gift,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -50,8 +51,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/attendees', icon: Users, label: 'Attendees' },
-    { href: '/raffle', icon: Ticket, label: 'Raffle & Prizes' },
-    { href: '/pos', icon: ShoppingCart, label: 'POS System' },
+    { href: '/raffle', icon: Ticket, label: 'Raffle' },
+    { href: '/prize-history', icon: Gift, label: 'Prize History' },
+    { href: '/pos', icon: ShoppingCart, label: 'POS' },
     { href: '/qr-scanner', icon: QrCode, label: 'QR Scanner' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
@@ -69,7 +71,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarHeader>
              <Link href="/dashboard" className="flex items-center gap-2">
                 <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={28} height={28} className="shrink-0" />
-                <span className="font-semibold text-lg group-data-[state=collapsed]/sidebar:opacity-0 group-data-[state=collapsed]/sidebar:w-0 transition-opacity duration-300">EventFlow</span>
              </Link>
           </SidebarHeader>
 
