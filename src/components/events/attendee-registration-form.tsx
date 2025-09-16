@@ -25,7 +25,7 @@ const formSchema = z
   .object({
     name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
     email: z.string().email({ message: 'Please enter a valid email address.' }),
-    customResponse: z.string().optional(),
+    custom_response: z.string().optional(),
     piiConsent: z.boolean().default(false),
   })
   .refine(
@@ -54,7 +54,7 @@ export function AttendeeRegistrationForm({ event }: RegistrationFormProps) {
     defaultValues: {
       name: '',
       email: '',
-      customResponse: '',
+      custom_response: '',
       piiConsent: false,
     },
   });
@@ -140,7 +140,7 @@ export function AttendeeRegistrationForm({ event }: RegistrationFormProps) {
         />
         <FormField
           control={form.control}
-          name="customResponse"
+          name="custom_response"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Dietary Restrictions or Special Requests</FormLabel>

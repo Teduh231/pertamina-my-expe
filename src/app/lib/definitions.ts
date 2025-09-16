@@ -10,14 +10,16 @@ export type Event = {
   speaker: string;
   status: EventStatus;
   attendees: Attendee[];
+  created_at: string;
 };
 
 export type Attendee = {
   id: string;
+  event_id: string;
   name: string;
   email: string;
-  registeredAt: string;
-  customResponse?: string;
+  registered_at: string;
+  custom_response?: string;
 };
 
 export type RaffleWinner = {
@@ -29,12 +31,13 @@ export type RaffleWinner = {
 export type RaffleStatus = 'upcoming' | 'active' | 'finished';
 
 export type Raffle = {
-  id: string;
-  eventId: string;
+  id:string;
+  event_id: string;
   eventName: string;
   prize: string;
-  numberOfWinners: number;
+  number_of_winners: number;
   status: RaffleStatus;
   winners: RaffleWinner[];
-  drawnAt: string | null;
+  drawn_at: string | null;
+  created_at: string;
 };

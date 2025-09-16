@@ -2,8 +2,10 @@
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
 import { Attendee, Event, Raffle, RaffleWinner } from './definitions';
-import { getEventById, getEvents } from './data';
+import { getEventById } from './data';
 import { revalidatePath } from 'next/cache';
+import { supabase } from './supabase';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function detectPiiInField(fieldName: string, fieldValue: string) {
   // This function still uses AI, but doesn't write to DB. Keeping it as is.
@@ -21,20 +23,31 @@ export async function detectPiiInField(fieldName: string, fieldValue: string) {
 }
 
 export async function exportAttendeesToCsv(eventId: string): Promise<string> {
+    noStore();
     const event = await getEventById(eventId);
 
     if (!event) {
         throw new Error('Event not found');
     }
+    
+    const { data: attendees, error } = await supabase
+        .from('attendees')
+        .select('*')
+        .eq('event_id', eventId);
 
-    if (event.attendees.length === 0) {
-        return "id,name,email,registeredAt,customResponse\n";
+    if (error) {
+        console.error('Supabase error fetching attendees:', error);
+        throw new Error('Could not fetch attendees for CSV export.');
     }
 
-    const headers = Object.keys(event.attendees[0]);
+    if (attendees.length === 0) {
+        return "id,name,email,registered_at,custom_response\n";
+    }
+
+    const headers = Object.keys(attendees[0]);
     const csvRows = [headers.join(',')];
 
-    for (const attendee of event.attendees) {
+    for (const attendee of attendees) {
         const values = headers.map(header => {
             const value = attendee[header as keyof Attendee];
             // Handle values that might contain commas
@@ -49,48 +62,123 @@ export async function exportAttendeesToCsv(eventId: string): Promise<string> {
     return csvRows.join('\n');
 }
 
-export async function createOrUpdateEvent(eventData: Omit<Event, 'id' | 'attendees'>, eventId?: string) {
-  console.log("Static mode: Pretending to save event.");
+export async function createOrUpdateEvent(eventData: Omit<Event, 'id' | 'attendees' | 'created_at'>, eventId?: string) {
   if (eventId) {
-    // In a real app, you would update the static mock data store here
+    // Update existing event
+    const { error } = await supabase
+      .from('events')
+      .update(eventData)
+      .eq('id', eventId);
+    
+    if (error) {
+      console.error('Supabase error updating event:', error);
+      return { success: false, error: 'Database error: Could not update event.' };
+    }
     revalidatePath(`/events/${eventId}`);
-    revalidatePath('/events');
-    revalidatePath('/dashboard');
-    return { success: true, eventId };
   } else {
-    const newId = `evt-${Date.now()}`;
-    // In a real app, you would add to the static mock data store here
-    revalidatePath('/events');
-    revalidatePath('/dashboard');
-    return { success: true, eventId: newId };
+    // Create new event
+    const { data, error } = await supabase
+      .from('events')
+      .insert([eventData])
+      .select('id')
+      .single();
+
+    if (error) {
+        console.error('Supabase error creating event:', error);
+        return { success: false, error: 'Database error: Could not create event.' };
+    }
+    eventId = data.id;
   }
+
+  revalidatePath('/events');
+  revalidatePath('/dashboard');
+  return { success: true, eventId };
 }
 
-export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registeredAt'>) {
-    console.log("Static mode: Pretending to register attendee.");
-    // In a real app, you would add to the static mock data store here
+export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at'>) {
+    const { error } = await supabase.from('attendees').insert([{ ...attendeeData, event_id: eventId }]);
+
+    if (error) {
+        console.error('Supabase error registering attendee:', error);
+        // Handle specific errors, e.g., unique constraint violation for email per event
+        if (error.code === '23505') { // unique_violation
+            return { success: false, error: 'This email address has already been registered for this event.' };
+        }
+        return { success: false, error: 'Database error: Could not register attendee.' };
+    }
+
     revalidatePath(`/events/${eventId}/register`);
     revalidatePath(`/events/${eventId}`);
+    revalidatePath('/attendees');
+    revalidatePath('/dashboard');
     return { success: true };
 }
 
-export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'winners' | 'drawnAt'>) {
-    console.log("Static mode: Pretending to create raffle.");
+export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'winners' | 'drawn_at'>) {
+    const { error } = await supabase.from('raffles').insert([raffleData]);
+    if (error) {
+        console.error('Supabase error creating raffle:', error);
+        return { success: false, error: 'Database error: Could not create raffle.' };
+    }
     revalidatePath('/raffle');
+    revalidatePath('/prize-history');
     return { success: true };
 }
 
 export async function drawRaffleWinner(raffleId: string) {
-    console.log("Static mode: Pretending to draw winner.");
-    
-    // This is a simplified static logic. In a real scenario, this would be more complex.
-    const winner = {
-        id: 'temp-winner-id',
-        name: 'Static Winner',
-        email: 'winner@example.com',
-        registeredAt: new Date().toISOString()
-    }
-    
+  noStore();
+  const { data: raffle, error: raffleError } = await supabase
+    .from('raffles')
+    .select('*, events(id, name, attendees(id, name, email))')
+    .eq('id', raffleId)
+    .single();
+
+  if (raffleError || !raffle) {
+    console.error('Error fetching raffle:', raffleError);
+    return { success: false, error: 'Could not find the specified raffle.' };
+  }
+
+  const drawnWinnerIds = raffle.winners?.map((w: RaffleWinner) => w.attendeeId) || [];
+  const eligibleAttendees = raffle.events.attendees.filter(
+    (attendee: Attendee) => !drawnWinnerIds.includes(attendee.id)
+  );
+
+  if (eligibleAttendees.length === 0) {
+    await supabase.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
     revalidatePath('/raffle');
-    return { success: true, winner };
+    revalidatePath('/prize-history');
+    return { success: true, message: 'No more eligible attendees to draw.' };
+  }
+  
+  const winnerIndex = Math.floor(Math.random() * eligibleAttendees.length);
+  const winner = eligibleAttendees[winnerIndex];
+
+  const newWinner: RaffleWinner = {
+    attendeeId: winner.id,
+    name: winner.name,
+    email: winner.email,
+  };
+
+  const updatedWinners = [...drawnWinnerIds.map(id => raffle.winners.find(w => w.attendeeId === id)), newWinner];
+
+  const updatedRaffle: Partial<Raffle> = {
+    winners: updatedWinners,
+    status: updatedWinners.length >= raffle.number_of_winners ? 'finished' : 'active',
+    drawn_at: updatedWinners.length >= raffle.number_of_winners ? new Date().toISOString() : null,
+  };
+
+  const { error: updateError } = await supabase
+    .from('raffles')
+    .update(updatedRaffle)
+    .eq('id', raffleId);
+
+  if (updateError) {
+    console.error('Error updating raffle:', updateError);
+    return { success: false, error: 'Could not save the winner.' };
+  }
+  
+  revalidatePath('/raffle');
+  revalidatePath('/prize-history');
+  
+  return { success: true, winner: newWinner };
 }

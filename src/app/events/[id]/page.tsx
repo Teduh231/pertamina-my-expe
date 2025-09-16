@@ -10,16 +10,17 @@ import { format, parseISO } from 'date-fns';
 import { AttendeeExportButton } from './_components/attendee-export-button';
 
 function AttendeeTable({ event }: { event: Event }) {
+    const attendees = event.attendees || [];
     return (
         <Card>
             <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <CardTitle>Attendees ({event.attendees.length})</CardTitle>
+                    <CardTitle>Attendees ({attendees.length})</CardTitle>
                     <CardDescription>
                         List of registered attendees for "{event.name}".
                     </CardDescription>
                 </div>
-                <AttendeeExportButton eventId={event.id} eventName={event.name} disabled={event.attendees.length === 0} />
+                <AttendeeExportButton eventId={event.id} eventName={event.name} disabled={attendees.length === 0} />
             </CardHeader>
             <CardContent>
                 <div className="hidden md:block">
@@ -33,13 +34,13 @@ function AttendeeTable({ event }: { event: Event }) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {event.attendees.length > 0 ? (
-                                event.attendees.map((attendee: Attendee) => (
+                            {attendees.length > 0 ? (
+                                attendees.map((attendee: Attendee) => (
                                     <TableRow key={attendee.id}>
                                         <TableCell className="font-medium">{attendee.name}</TableCell>
                                         <TableCell>{attendee.email}</TableCell>
-                                        <TableCell>{format(parseISO(attendee.registeredAt), 'PPP')}</TableCell>
-                                        <TableCell>{attendee.customResponse || 'N/A'}</TableCell>
+                                        <TableCell>{format(parseISO(attendee.registered_at), 'PPP')}</TableCell>
+                                        <TableCell>{attendee.custom_response || 'N/A'}</TableCell>
                                     </TableRow>
                                 ))
                             ) : (
@@ -54,13 +55,13 @@ function AttendeeTable({ event }: { event: Event }) {
                 </div>
                  <div className="block md:hidden">
                     <div className="space-y-4">
-                        {event.attendees.length > 0 ? (
-                            event.attendees.map((attendee: Attendee) => (
+                        {attendees.length > 0 ? (
+                            attendees.map((attendee: Attendee) => (
                                 <div key={attendee.id} className="border rounded-lg p-4 text-sm">
                                     <p className="font-medium">{attendee.name}</p>
                                     <p className="text-muted-foreground">{attendee.email}</p>
-                                    <p className="text-muted-foreground text-xs mt-2">Registered: {format(parseISO(attendee.registeredAt), 'PPP')}</p>
-                                    {attendee.customResponse && <p className="text-muted-foreground text-xs mt-1">Response: {attendee.customResponse}</p>}
+                                    <p className="text-muted-foreground text-xs mt-2">Registered: {format(parseISO(attendee.registered_at), 'PPP')}</p>
+                                    {attendee.custom_response && <p className="text-muted-foreground text-xs mt-1">Response: {attendee.custom_response}</p>}
                                 </div>
                             ))
                         ) : (

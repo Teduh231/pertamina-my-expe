@@ -28,7 +28,7 @@ function exportAllAttendeesToCsv(attendees: AttendeeWithEvent[]): void {
   if (attendees.length === 0) {
     return;
   }
-  const headers = ['name', 'email', 'eventName', 'registeredAt'];
+  const headers = ['name', 'email', 'eventName', 'registered_at'];
   const csvRows = [headers.join(',')];
 
   for (const attendee of attendees) {
@@ -36,7 +36,7 @@ function exportAllAttendeesToCsv(attendees: AttendeeWithEvent[]): void {
       attendee.name,
       attendee.email,
       attendee.eventName,
-      attendee.registeredAt
+      attendee.registered_at
     ].map(value => {
       if (typeof value === 'string' && value.includes(',')) {
         return `"${value}"`;
@@ -60,9 +60,9 @@ function exportAllAttendeesToCsv(attendees: AttendeeWithEvent[]): void {
 export function AttendeeList({ events }: { events: Event[] }) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const allAttendees = useMemo(() => {
+  const allAttendees: AttendeeWithEvent[] = useMemo(() => {
     return events.flatMap(event =>
-      event.attendees.map(attendee => ({
+      (event.attendees || []).map(attendee => ({
         ...attendee,
         eventName: event.name,
         eventId: event.id,
@@ -127,7 +127,7 @@ export function AttendeeList({ events }: { events: Event[] }) {
                         {attendee.eventName}
                     </Link>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{format(parseISO(attendee.registeredAt), 'PPP')}</TableCell>
+                  <TableCell className="hidden md:table-cell">{format(parseISO(attendee.registered_at), 'PPP')}</TableCell>
                 </TableRow>
               ))
             ) : (

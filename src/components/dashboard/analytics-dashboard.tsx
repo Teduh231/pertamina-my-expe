@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  BarChart as BarChartIcon,
   Calendar,
   CheckCircle,
   Users,
@@ -26,7 +25,6 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  ResponsiveContainer,
 } from 'recharts';
 import { Event } from '@/app/lib/definitions';
 import { subDays, format, parseISO } from 'date-fns';
@@ -44,7 +42,7 @@ const chartConfig = {
 
 export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
   const totalAttendees = events.reduce(
-    (acc, event) => acc + event.attendees.length,
+    (acc, event) => acc + (event.attendees?.length || 0),
     0
   );
   const publishedEvents = events.filter(
@@ -63,9 +61,9 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
     }
 
     events.forEach((event) => {
-      event.attendees.forEach((attendee) => {
-        if (attendee.registeredAt) {
-            const registrationDate = parseISO(attendee.registeredAt);
+      (event.attendees || []).forEach((attendee) => {
+        if (attendee.registered_at) {
+            const registrationDate = parseISO(attendee.registered_at);
             const diff = today.getTime() - registrationDate.getTime();
             if (diff / (1000 * 3600 * 24) < 15) {
               const dateStr = format(registrationDate, 'MMM d');
@@ -159,6 +157,7 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
                 axisLine={false}
                 tickMargin={8}
                 fontSize={12}
+                allowDecimals={false}
                 tickFormatter={(value) => value.toString()}
               />
               <ChartTooltip

@@ -17,7 +17,7 @@ import {
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { ArrowRight, Calendar } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
 
 export function UpcomingEvents({ events }: { events: Event[] }) {
@@ -52,7 +52,7 @@ export function UpcomingEvents({ events }: { events: Event[] }) {
                             <p className="font-medium">{event.name}</p>
                             <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'PPP')}</p>
                             <p className="text-sm text-muted-foreground">{event.location}</p>
-                            <Badge variant="outline">{event.attendees.length} Attendees</Badge>
+                            <Badge variant="outline">{event.attendees?.length || 0} Attendees</Badge>
                         </div>
                          <Button asChild size="sm" variant="ghost">
                             <Link href={`/events/${event.id}`}>Manage</Link>
@@ -85,7 +85,7 @@ export function UpcomingEvents({ events }: { events: Event[] }) {
                     <TableCell>{format(parseISO(event.date), 'PPP')}</TableCell>
                     <TableCell>{event.location}</TableCell>
                     <TableCell>
-                        <Badge variant="outline">{event.attendees.length}</Badge>
+                        <Badge variant="outline">{event.attendees?.length || 0}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                         <Button asChild size="sm" variant="ghost">

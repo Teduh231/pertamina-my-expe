@@ -65,6 +65,7 @@ export function EventList({ events }: EventListProps) {
   };
 
   const filteredEvents = useMemo(() => {
+    if (!events) return [];
     return events.filter((event) =>
       event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,6 +98,7 @@ export function EventList({ events }: EventListProps) {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredEvents.map((event) => {
+          const attendeeCount = event.attendees?.length || 0;
           return (
             <Card key={event.id} className="flex flex-col">
               <CardHeader className="p-4">
@@ -128,18 +130,18 @@ export function EventList({ events }: EventListProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    <span>{event.attendees.length} Attendees</span>
+                    <span>{attendeeCount} Attendees</span>
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0">
                 <div className="flex w-full justify-end gap-2">
-                  <Link href={`/events/${event.id}/register`} target="_blank">
-                    <Button variant="outline" size="sm">
+                  <Button asChild variant="outline" size="sm" disabled={event.status !== 'published'}>
+                    <Link href={`/events/${event.id}/register`} target="_blank">
                       <Eye className="mr-2 h-4 w-4" />
                       Public View
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -155,7 +157,7 @@ export function EventList({ events }: EventListProps) {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleExport(event.id, event.name)}
-                        disabled={event.attendees.length === 0}
+                        disabled={attendeeCount === 0}
                       >
                         <Download className="mr-2 h-4 w-4" />
                         <span>Export Attendees</span>
