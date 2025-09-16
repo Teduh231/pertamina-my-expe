@@ -10,7 +10,8 @@ import {
   Settings,
   Users,
   LogOut,
-  PlusCircle
+  PlusCircle,
+  Ticket
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -51,6 +52,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/attendees', icon: Users, label: 'Attendees' },
+    { href: '/raffle', icon: Ticket, label: 'Raffle' },
   ];
 
   return (

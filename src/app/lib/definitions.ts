@@ -19,3 +19,20 @@ export type Attendee = {
   registeredAt: string;
   customResponse?: string;
 };
+
+export type RaffleWinner = {
+  attendeeId: string;
+  name: string;
+  email: string;
+};
+
+export type Raffle = {
+  id: string;
+  eventId: string;
+  eventName: string;
+  prize: string;
+  numberOfWinners: number;
+  status: 'upcoming' | 'active' | 'finished';
+  winners: RaffleWinner[];
+  drawnAt: string | null;
+};
