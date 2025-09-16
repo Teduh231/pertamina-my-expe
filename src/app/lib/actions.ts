@@ -1,7 +1,7 @@
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Attendee, Event, Raffle, RaffleWinner } from './definitions';
+import { Attendee, Event, Product, Raffle, RaffleWinner, Transaction } from './definitions';
 import { getEventById } from './data';
 import { revalidatePath } from 'next/cache';
 import { supabase } from './supabase';
@@ -181,4 +181,35 @@ export async function drawRaffleWinner(raffleId: string) {
   revalidatePath('/prize-history');
   
   return { success: true, winner: newWinner };
+}
+
+export async function redeemProduct(productId: string, userId: string, productName: string, points: number) {
+    const { data: transaction, error } = await supabase
+      .from('transactions')
+      .insert([{
+          user_id: userId, // This would be the actual user's ID
+          user_name: 'John Doe', // Placeholder, you'd fetch the user's name
+          product_name: productName,
+          points: points,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+        console.error('Supabase error creating transaction:', error);
+        return { success: false, error: 'Database error: Could not redeem product.' };
+    }
+
+    const { error: stockError } = await supabase.rpc('decrement_product_stock', { p_id: productId });
+    
+    if (stockError) {
+        console.error('Supabase error decrementing stock:', stockError);
+        // Optionally, you could try to revert the transaction here
+        return { success: false, error: 'Database error: Could not update stock.' };
+    }
+
+    revalidatePath('/pos');
+    revalidatePath('/qr-scanner');
+
+    return { success: true, transaction };
 }

@@ -41,3 +41,20 @@ export type Raffle = {
   drawn_at: string | null;
   created_at: string;
 };
+
+export type Product = {
+  id: string;
+  name: string;
+  points: number;
+  stock: number;
+  created_at: string;
+};
+
+export type Transaction = {
+  id: string;
+  user_id: string;
+  user_name: string;
+  product_name: string;
+  points: number;
+  created_at: string;
+};

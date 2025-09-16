@@ -1,4 +1,4 @@
-import { Event, Attendee, Raffle } from '@/app/lib/definitions';
+import { Event, Attendee, Raffle, Product, Transaction } from '@/app/lib/definitions';
 import { supabase } from './supabase';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -46,4 +46,20 @@ export async function getRaffles(): Promise<Raffle[]> {
     ...raffle,
     eventName: raffle.events?.name,
   }));
+}
+
+export async function getProducts(): Promise<Product[]> {
+    noStore();
+    const query = supabase.from('products').select('*').order('points', { ascending: true });
+    return supabaseQuery(query);
+}
+
+export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
+    noStore();
+    const query = supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+    return supabaseQuery(query);
 }
