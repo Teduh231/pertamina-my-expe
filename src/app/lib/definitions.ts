@@ -26,13 +26,15 @@ export type RaffleWinner = {
   email: string;
 };
 
+export type RaffleStatus = 'upcoming' | 'active' | 'finished';
+
 export type Raffle = {
   id: string;
   eventId: string;
   eventName: string;
   prize: string;
   numberOfWinners: number;
-  status: 'upcoming' | 'active' | 'finished';
+  status: RaffleStatus;
   winners: RaffleWinner[];
   drawnAt: string | null;
 };

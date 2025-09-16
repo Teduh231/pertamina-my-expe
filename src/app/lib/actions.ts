@@ -1,10 +1,10 @@
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Attendee, Event } from './definitions';
-import { getEventById } from './data';
+import { Attendee, Event, Raffle, RaffleWinner } from './definitions';
+import { getEventById, getEvents } from './data';
 import { db } from './firebase';
-import { collection, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, setDoc, getDocs } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 
 export async function detectPiiInField(fieldName: string, fieldValue: string) {
@@ -91,6 +91,78 @@ export async function registerAttendee(eventId: string, attendeeData: Omit<Atten
         return { success: true };
     } catch (error) {
         console.error("Error registering attendee: ", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'winners' | 'drawnAt'>) {
+    try {
+        const newRaffle: Omit<Raffle, 'id'> = {
+            ...raffleData,
+            status: 'active',
+            winners: [],
+            drawnAt: null,
+        }
+        await addDoc(collection(db, 'raffles'), newRaffle);
+        revalidatePath('/raffle');
+        return { success: true };
+    } catch (error) {
+        console.error("Error creating raffle: ", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+export async function drawRaffleWinner(raffleId: string) {
+    try {
+        const raffleRef = doc(db, 'raffles', raffleId);
+        const raffleDoc = await getDoc(raffleRef);
+        if (!raffleDoc.exists()) {
+            throw new Error("Raffle not found");
+        }
+        const raffle = { id: raffleDoc.id, ...raffleDoc.data() } as Raffle;
+
+        if (raffle.status !== 'active') {
+            throw new Error("Raffle is not active");
+        }
+
+        const event = await getEventById(raffle.eventId);
+        if (!event) {
+            throw new Error("Event not found");
+        }
+
+        const eligibleAttendees = event.attendees.filter(
+            attendee => !raffle.winners.some(winner => winner.attendeeId === attendee.id)
+        );
+
+        if (eligibleAttendees.length === 0) {
+            await updateDoc(raffleRef, { status: 'finished' });
+            revalidatePath('/raffle');
+            return { success: true, message: 'No more eligible attendees to draw.' };
+        }
+
+        const winnerIndex = Math.floor(Math.random() * eligibleAttendees.length);
+        const winner = eligibleAttendees[winnerIndex];
+
+        const newWinner: RaffleWinner = {
+            attendeeId: winner.id,
+            name: winner.name,
+            email: winner.email,
+        };
+
+        const updatedWinners = [...raffle.winners, newWinner];
+        const newStatus = updatedWinners.length >= raffle.numberOfWinners ? 'finished' : 'active';
+
+        await updateDoc(raffleRef, {
+            winners: updatedWinners,
+            status: newStatus,
+            drawnAt: newStatus === 'finished' ? new Date().toISOString() : null
+        });
+
+        revalidatePath('/raffle');
+        return { success: true, winner };
+
+    } catch (error) {
+        console.error("Error drawing winner:", error);
         return { success: false, error: (error as Error).message };
     }
 }
