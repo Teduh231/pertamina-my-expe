@@ -53,7 +53,7 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="relative py-20 md:py-32 text-center overflow-hidden">
+        <section className="relative py-20 md:py-32 text-center">
           <div className="absolute inset-0 z-0">
               <div className="absolute inset-0 bg-background [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
               <div
@@ -68,8 +68,10 @@ export default function LandingPage() {
               Streamline your workflow, engage your audience, and host unforgettable events with our AI-powered platform.
             </p>
             <div className="mt-8 flex justify-center gap-4">
-              <Button asChild size="lg">
-                <Link href="/dashboard">Get Started</Link>
+              <Button asChild size="lg" className="btn-split-text" data-text="Get Started">
+                <Link href="/dashboard">
+                  <span>Get Started</span>
+                </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
                 <Link href="#features">Learn More</Link>
