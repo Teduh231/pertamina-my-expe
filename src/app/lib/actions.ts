@@ -3,11 +3,10 @@
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
 import { Attendee, Event, Raffle, RaffleWinner } from './definitions';
 import { getEventById, getEvents } from './data';
-import { db } from './firebase';
-import { collection, addDoc, doc, updateDoc, setDoc, getDocs } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 
 export async function detectPiiInField(fieldName: string, fieldValue: string) {
+  // This function still uses AI, but doesn't write to DB. Keeping it as is.
   if (!fieldValue || fieldValue.trim().length < 3) {
     return { mayContainPii: false };
   }
@@ -51,118 +50,47 @@ export async function exportAttendeesToCsv(eventId: string): Promise<string> {
 }
 
 export async function createOrUpdateEvent(eventData: Omit<Event, 'id' | 'attendees'>, eventId?: string) {
-  try {
-    if (eventId) {
-      // Update existing event
-      const eventRef = doc(db, 'events', eventId);
-      await updateDoc(eventRef, eventData);
-      revalidatePath(`/events/${eventId}`);
-      revalidatePath('/events');
-      revalidatePath('/dashboard');
-      return { success: true, eventId };
-    } else {
-      // Create new event
-      const docRef = await addDoc(collection(db, 'events'), eventData);
-      revalidatePath('/events');
-      revalidatePath('/dashboard');
-      return { success: true, eventId: docRef.id };
-    }
-  } catch (error) {
-    console.error("Error saving event: ", error);
-    return { success: false, error: (error as Error).message };
+  console.log("Static mode: Pretending to save event.");
+  if (eventId) {
+    // In a real app, you would update the static mock data store here
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath('/events');
+    revalidatePath('/dashboard');
+    return { success: true, eventId };
+  } else {
+    const newId = `evt-${Date.now()}`;
+    // In a real app, you would add to the static mock data store here
+    revalidatePath('/events');
+    revalidatePath('/dashboard');
+    return { success: true, eventId: newId };
   }
 }
 
 export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registeredAt'>) {
-    try {
-        const eventRef = doc(db, 'events', eventId);
-        const attendeesCollectionRef = collection(eventRef, 'attendees');
-
-        const newAttendee = {
-            ...attendeeData,
-            registeredAt: new Date().toISOString()
-        }
-
-        await addDoc(attendeesCollectionRef, newAttendee);
-
-        revalidatePath(`/events/${eventId}/register`);
-        revalidatePath(`/events/${eventId}`);
-
-        return { success: true };
-    } catch (error) {
-        console.error("Error registering attendee: ", error);
-        return { success: false, error: (error as Error).message };
-    }
+    console.log("Static mode: Pretending to register attendee.");
+    // In a real app, you would add to the static mock data store here
+    revalidatePath(`/events/${eventId}/register`);
+    revalidatePath(`/events/${eventId}`);
+    return { success: true };
 }
 
 export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'winners' | 'drawnAt'>) {
-    try {
-        const newRaffle: Omit<Raffle, 'id'> = {
-            ...raffleData,
-            status: 'active',
-            winners: [],
-            drawnAt: null,
-        }
-        await addDoc(collection(db, 'raffles'), newRaffle);
-        revalidatePath('/raffle');
-        return { success: true };
-    } catch (error) {
-        console.error("Error creating raffle: ", error);
-        return { success: false, error: (error as Error).message };
-    }
+    console.log("Static mode: Pretending to create raffle.");
+    revalidatePath('/raffle');
+    return { success: true };
 }
 
 export async function drawRaffleWinner(raffleId: string) {
-    try {
-        const raffleRef = doc(db, 'raffles', raffleId);
-        const raffleDoc = await getDoc(raffleRef);
-        if (!raffleDoc.exists()) {
-            throw new Error("Raffle not found");
-        }
-        const raffle = { id: raffleDoc.id, ...raffleDoc.data() } as Raffle;
-
-        if (raffle.status !== 'active') {
-            throw new Error("Raffle is not active");
-        }
-
-        const event = await getEventById(raffle.eventId);
-        if (!event) {
-            throw new Error("Event not found");
-        }
-
-        const eligibleAttendees = event.attendees.filter(
-            attendee => !raffle.winners.some(winner => winner.attendeeId === attendee.id)
-        );
-
-        if (eligibleAttendees.length === 0) {
-            await updateDoc(raffleRef, { status: 'finished' });
-            revalidatePath('/raffle');
-            return { success: true, message: 'No more eligible attendees to draw.' };
-        }
-
-        const winnerIndex = Math.floor(Math.random() * eligibleAttendees.length);
-        const winner = eligibleAttendees[winnerIndex];
-
-        const newWinner: RaffleWinner = {
-            attendeeId: winner.id,
-            name: winner.name,
-            email: winner.email,
-        };
-
-        const updatedWinners = [...raffle.winners, newWinner];
-        const newStatus = updatedWinners.length >= raffle.numberOfWinners ? 'finished' : 'active';
-
-        await updateDoc(raffleRef, {
-            winners: updatedWinners,
-            status: newStatus,
-            drawnAt: newStatus === 'finished' ? new Date().toISOString() : null
-        });
-
-        revalidatePath('/raffle');
-        return { success: true, winner };
-
-    } catch (error) {
-        console.error("Error drawing winner:", error);
-        return { success: false, error: (error as Error).message };
+    console.log("Static mode: Pretending to draw winner.");
+    
+    // This is a simplified static logic. In a real scenario, this would be more complex.
+    const winner = {
+        id: 'temp-winner-id',
+        name: 'Static Winner',
+        email: 'winner@example.com',
+        registeredAt: new Date().toISOString()
     }
+    
+    revalidatePath('/raffle');
+    return { success: true, winner };
 }
