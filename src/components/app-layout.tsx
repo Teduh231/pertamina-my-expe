@@ -67,8 +67,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen bg-background">
         <Sidebar>
           <SidebarHeader>
-             <Link href="/dashboard">
+             <Link href="/dashboard" className="flex items-center gap-2">
                 <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={28} height={28} className="shrink-0" />
+                <span className="font-semibold text-lg group-data-[state=collapsed]/sidebar:opacity-0 group-data-[state=collapsed]/sidebar:w-0 transition-opacity duration-300">EventFlow</span>
              </Link>
           </SidebarHeader>
 
@@ -95,6 +96,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 transition-all duration-300 ease-in-out md:ml-[var(--sidebar-width-collapsed)] group-data-[state=expanded]/sidebar:md:ml-[var(--sidebar-width)]">
             <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                 <div className="flex items-center gap-2">
+                    <SidebarTrigger className="hidden md:flex"/>
                     <SidebarTrigger className="flex md:hidden"/>
                     <h1 className="text-lg font-semibold capitalize">
                         {pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'Dashboard'}

@@ -222,7 +222,7 @@ const SidebarHeader = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("flex h-16 items-center justify-center border-b border-sidebar-border p-3",
+      className={cn("flex h-16 items-center border-b border-sidebar-border p-3 justify-center",
       className)}
       {...props}
     />
