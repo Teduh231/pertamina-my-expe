@@ -140,7 +140,7 @@ export function EventList({ events }: EventListProps) {
         {filteredEvents.map((event) => {
           const attendeeCount = event.attendees?.length || 0;
           return (
-            <Card key={event.id} className="flex flex-col bg-secondary/30 hover:border-primary/50 transition-all border-2 border-transparent">
+            <Card key={event.id} className="flex flex-col bg-card hover:border-primary/50 transition-all border-2 border-transparent">
               <CardHeader className="p-4">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg font-bold leading-tight">
