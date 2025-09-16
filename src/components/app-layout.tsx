@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
+import Image from 'next/image';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -49,7 +50,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     await logout();
     router.push('/login');
   };
-
 
   const navItems = [
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
@@ -70,36 +70,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
-        <Sidebar collapsible="icon">
+        <Sidebar>
           <SidebarHeader>
-              <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-sidebar-accent">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://picsum.photos/seed/avatar/40/40" />
-                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
-                    <span className="text-sm font-medium">{user?.email}</span>
-                    <span className="text-xs text-muted-foreground">
-                      Event Organizer
-                    </span>
-                  </div>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="start">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            </SidebarHeader>
+            <div className="flex items-center gap-2 group-data-[state=expanded]/sidebar-wrapper:w-full">
+              <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={28} height={28} className="shrink-0" />
+              <span className="text-lg font-bold group-data-[state=collapsed]/sidebar-wrapper:hidden">EventFlow</span>
+            </div>
+            <SidebarTrigger className="group-data-[state=collapsed]/sidebar-wrapper:hidden" />
+          </SidebarHeader>
+
           <SidebarContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -110,50 +89,79 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     tooltip={item.label}
                   >
                     <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
+                      <item.icon className="shrink-0" />
+                      <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarContent>
+
           <SidebarFooter>
             <SidebarMenu>
-              <SidebarMenuItem>
-                 <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/settings')}
-                    tooltip="Settings"
-                  >
-                    <Link href="#">
-                      <Settings />
-                      <span>Settings</span>
-                    </Link>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith('/settings')}
+                        tooltip="Settings"
+                    >
+                        <Link href="#">
+                        <Settings className="shrink-0" />
+                        <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">Settings</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <SidebarMenuButton asChild tooltip="My Account">
+                                <div>
+                                    <Avatar className="h-8 w-8 shrink-0">
+                                        <AvatarImage src="https://picsum.photos/seed/avatar/40/40" />
+                                        <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex flex-col text-left group-data-[state=collapsed]/sidebar-wrapper:hidden">
+                                        <span className="text-sm font-medium truncate">{user?.email}</span>
+                                    </div>
+                                </div>
+                            </SidebarMenuButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right" align="start">
+                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>Profile</DropdownMenuItem>
+                            <DropdownMenuItem>Settings</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Log out
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset>
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-card px-4 sm:px-6">
-            <SidebarTrigger className="md:hidden" />
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold capitalize">
-                {pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard'}
-              </h1>
-            </div>
-            <Button asChild size="sm">
-                <Link href="/events/new">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Create Event
-                </Link>
-            </Button>
-          </header>
-          <main className="flex-1 overflow-auto p-4 md:p-6">
-            {children}
-          </main>
-        </SidebarInset>
+        <div className="flex-1 transition-all duration-300 ease-in-out md:group-data-[state=expanded]/sidebar-wrapper:ml-[var(--sidebar-width)] md:group-data-[state=collapsed]/sidebar-wrapper:ml-[var(--sidebar-width-collapsed)]">
+            <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-card px-4 sm:px-6">
+                <SidebarTrigger className="md:hidden" />
+                <div className="flex-1">
+                <h1 className="text-lg font-semibold capitalize">
+                    {pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'Dashboard'}
+                </h1>
+                </div>
+                <Button asChild size="sm">
+                    <Link href="/events/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create Event
+                    </Link>
+                </Button>
+            </header>
+            <main className="flex-1 overflow-auto p-4 md:p-6">
+                {children}
+            </main>
+        </div>
       </div>
     </SidebarProvider>
   );
