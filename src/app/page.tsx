@@ -57,9 +57,9 @@ export default function LandingPage() {
               Streamline your workflow, engage your audience, and host unforgettable events with our AI-powered platform.
             </p>
             <div className="mt-8 flex justify-center gap-4">
-              <Button asChild size="lg" className="btn-split-text" data-text="Get Started">
+              <Button asChild size="lg">
                 <Link href="/dashboard">
-                  <span>Get Started</span>
+                  Get Started
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
