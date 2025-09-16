@@ -25,9 +25,13 @@ import {
 import { Event } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import React from 'react';
 import { createOrUpdateEvent } from '@/app/lib/actions';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
@@ -126,19 +130,51 @@ export function EventForm({ event }: EventFormProps) {
             </div>
             <div className="space-y-8">
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
+                 <FormField
                     control={form.control}
                     name="date"
                     render={({ field }) => (
-                      <FormItem>
+                        <FormItem className="flex flex-col">
                         <FormLabel>Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                )}
+                                >
+                                {field.value ? (
+                                    format(new Date(field.value), "PPP")
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value ? new Date(field.value) : undefined}
+                                onSelect={(date) => {
+                                    if (date) {
+                                        field.onChange(format(date, 'yyyy-MM-dd'));
+                                    }
+                                }}
+                                disabled={(date) =>
+                                date < new Date(new Date().setHours(0,0,0,0))
+                                }
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
+                    />
                   <FormField
                     control={form.control}
                     name="time"
