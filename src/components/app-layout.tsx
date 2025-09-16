@@ -71,39 +71,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen">
         <Sidebar collapsible="icon">
-          <SidebarContent>
-            <SidebarHeader>
-              <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
-                <Link href="/dashboard" className="flex items-center gap-2">
-                  <Calendar className="h-6 w-6 text-primary" />
-                  <h1 className="text-lg font-bold">EventFlow</h1>
-                </Link>
-              </div>
-               <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
-                 <Link href="/dashboard" className="flex items-center gap-2">
-                   <Calendar className="h-6 w-6 text-primary" />
-                 </Link>
-              </div>
-            </SidebarHeader>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter>
-            <DropdownMenu>
+          <SidebarHeader>
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-sidebar-accent">
                   <Avatar className="h-8 w-8">
@@ -130,6 +99,40 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(item.href)}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                 <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/settings')}
+                    tooltip="Settings"
+                  >
+                    <Link href="#">
+                      <Settings />
+                      <span>Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
