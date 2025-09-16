@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, BarChart, Calendar, ShieldCheck, Download } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { TypingAnimation } from '@/components/ui/typing-animation';
 
 const features = [
   {
@@ -34,6 +35,7 @@ const features = [
 ];
 
 export default function LandingPage() {
+  const heroTitle = "The Future of Event Management is Here";
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,13 +50,15 @@ export default function LandingPage() {
           <div className="absolute inset-0 z-0">
               <div className="absolute inset-0 bg-background [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
               <div
-                  className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iaHNsYSgyNDAsIDUuOSUsIDkwJSwgMC40KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PHBhdGggZD0iTSAwIDAgTCA0MCAwIDQwIDQwIDAgNDAgMCAwIiBmaWxsPSJub25lIiBzdHJva2U9ImhzbGEoMjQwLCA1JyslLCA5MCUsIDAuNCkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')]">
+                  className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iaHNsYSgyMjIsIDQ3JSwgMTElLCAwLjA0KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PHBhdGggZD0iTSAwIDAgTCA0MCAwIDQwIDQwIDAgNDAgMCAwIiBmaWxsPSJub25lIiBzdHJva2U9ImhzbGEoMjIyLCA0NyUsIDExJSwgMC4wNCkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')]">
               </div>
           </div>
           <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground">
-              The Future of Event Management is Here
-            </h1>
+            <div className="flex justify-center items-center min-h-[144px] md:min-h-[160px]">
+                <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground">
+                    <TypingAnimation text={heroTitle} />
+                </h1>
+            </div>
             <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
               Streamline your workflow, engage your audience, and host unforgettable events with our AI-powered platform.
             </p>
