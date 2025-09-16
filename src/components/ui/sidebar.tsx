@@ -404,7 +404,7 @@ const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:px-2",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2",
         className
       )}
       {...props}
@@ -560,7 +560,7 @@ const SidebarMenuButton = React.forwardRef<
     // Find the span with the label and add a class to it
     const childrenWithClass = React.Children.map(children, (child) => {
         if (React.isValidElement(child) && child.type === 'span') {
-            return React.cloneElement(child as React.ReactElement, { className: 'group-data-[collapsible=icon]:hidden' });
+            return React.cloneElement(child as React.ReactElement, { className: cn(child.props.className, 'group-data-[collapsible=icon]:hidden') });
         }
         return child;
     });
