@@ -52,17 +52,22 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
 
   useEffect(() => {
     const getCameraPermission = async () => {
-        try {
-            setHasCameraPermission(true);
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            setHasCameraPermission(false);
-            toast({
-                variant: 'destructive',
-                title: 'Camera Access Denied',
-                description: 'Please enable camera permissions in your browser settings.',
-            });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
         }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
+      }
     };
     
     if (selectedEventId) {
@@ -151,21 +156,25 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden">
-                        {selectedEventId && hasCameraPermission ? (
-                             <div className="text-center text-muted-foreground p-4">
-                                <QrCode className="mx-auto h-16 w-16" />
-                                <p className="mt-2 font-semibold">Camera is active</p>
-                                <p className="text-sm">Ready to scan QR codes.</p>
-                            </div>
+                        {selectedEventId ? (
+                            hasCameraPermission ? (
+                                <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted />
+                            ) : (
+                                <div className="text-center text-muted-foreground p-4">
+                                    <CameraOff className="mx-auto h-16 w-16" />
+                                    <p className="mt-2 font-semibold">
+                                        {hasCameraPermission === false ? 'Camera permission denied' : 'Waiting for camera...'}
+                                    </p>
+                                    <p className="text-sm">
+                                        {hasCameraPermission === false ? 'Please allow camera access in your browser settings.' : 'Select an event to activate the scanner.'}
+                                    </p>
+                                </div>
+                            )
                         ) : (
                             <div className="text-center text-muted-foreground p-4">
                                 <CameraOff className="mx-auto h-16 w-16" />
-                                <p className="mt-2 font-semibold">
-                                    {selectedEventId ? 'Camera permission needed' : 'No event selected'}
-                                </p>
-                                <p className="text-sm">
-                                    {selectedEventId ? 'Allow camera access to begin scanning.' : 'Please select an event to activate the scanner.'}
-                                </p>
+                                <p className="mt-2 font-semibold">No event selected</p>
+                                <p className="text-sm">Please select an event to activate the scanner.</p>
                             </div>
                         )}
                     </div>
