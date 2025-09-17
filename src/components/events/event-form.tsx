@@ -41,6 +41,7 @@ const formSchema = z.object({
   location: z.string().min(3, { message: 'Location is required.' }),
   speaker: z.string().min(2, { message: 'Speaker name is required.' }),
   status: z.enum(['draft', 'published', 'canceled']),
+  image_url: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
 });
 
 type EventFormProps = {
@@ -63,6 +64,7 @@ export function EventForm({ event, onFinished }: EventFormProps) {
       location: event?.location || '',
       speaker: event?.speaker || '',
       status: event?.status || 'draft',
+      image_url: event?.image_url || '',
     },
   });
 
@@ -129,6 +131,22 @@ export function EventForm({ event, onFinished }: EventFormProps) {
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="image_url"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl>
+                            <Input type="url" placeholder="https://example.com/image.png" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                            Provide a URL for the event's banner image.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
             </div>
             <div className="space-y-8">

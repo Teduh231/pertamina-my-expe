@@ -11,6 +11,7 @@ import { AttendeeRegistrationForm } from '@/components/events/attendee-registrat
 import { Calendar, MapPin, User, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import Image from 'next/image';
 
 export default async function EventRegistrationPage({
   params,
@@ -25,17 +26,30 @@ export default async function EventRegistrationPage({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="bg-card border-b py-6 md:py-8">
-        <div className="container mx-auto max-w-6xl text-center px-4">
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
-            {event.name}
-          </h1>
-        </div>
-      </header>
+        <header className="relative h-64 md:h-96 w-full">
+            {event.image_url ? (
+                <Image 
+                    src={event.image_url} 
+                    alt={event.name} 
+                    layout="fill" 
+                    objectFit="cover" 
+                    className="brightness-50"
+                />
+            ) : (
+                <div className="absolute inset-0 bg-primary/20"></div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="container mx-auto max-w-6xl text-center px-4">
+                    <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-primary-foreground">
+                        {event.name}
+                    </h1>
+                </div>
+            </div>
+        </header>
 
-      <main className="container mx-auto max-w-6xl py-8 px-4">
+      <main className="container mx-auto max-w-6xl py-8 px-4 -mt-24 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-12">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 bg-card p-6 rounded-lg shadow-xl">
             <div className="prose prose-invert max-w-none text-foreground prose-h2:text-foreground prose-h3:text-foreground prose-strong:text-foreground">
               <h2 className="text-2xl font-bold border-b pb-2">About The Event</h2>
               <p className="text-muted-foreground">{event.description}</p>

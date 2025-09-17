@@ -21,6 +21,7 @@ import {
   PlusCircle,
   Loader2,
   Trash2,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ import { EventForm } from './event-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 type EventListProps = {
   events: Event[];
@@ -167,7 +169,16 @@ export function EventList({ events }: EventListProps) {
         {filteredEvents.map((event) => {
           const attendeeCount = event.attendees?.length || 0;
           return (
-            <Card key={event.id} className="flex flex-col bg-card hover:border-primary/50 transition-all border-2 border-transparent">
+            <Card key={event.id} className="flex flex-col bg-card hover:border-primary/50 transition-all border-2 border-transparent overflow-hidden">
+                {event.image_url ? (
+                    <div className="relative h-40 w-full">
+                        <Image src={event.image_url} alt={event.name} layout="fill" objectFit="cover" />
+                    </div>
+                ) : (
+                    <div className="h-40 w-full bg-secondary flex items-center justify-center">
+                        <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                )}
               <CardHeader className="p-4">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg font-bold leading-tight">
@@ -179,7 +190,7 @@ export function EventList({ events }: EventListProps) {
                     {event.status}
                   </Badge>
                 </div>
-                <CardDescription className="line-clamp-2 pt-2 h-12">
+                <CardDescription className="line-clamp-2 pt-2 h-[40px]">
                   {event.description}
                 </CardDescription>
               </CardHeader>

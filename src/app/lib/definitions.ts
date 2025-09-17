@@ -11,6 +11,7 @@ export type Event = {
   status: EventStatus;
   attendees: Attendee[];
   created_at: string;
+  image_url?: string;
 };
 
 export type Attendee = {
