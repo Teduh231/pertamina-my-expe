@@ -38,13 +38,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { redeemProduct } from '@/app/lib/actions';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 export function QrScannerContent({ events, products }: { events: Event[], products: Product[] }) {
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<{ status: 'success' | 'error'; message: string; attendeeName?: string } | null>(null);
   const [checkedInAttendees, setCheckedInAttendees] = useState<{name: string, time: string}[]>([]);
-  const [isRedeeming, setIsRedeeming = useState<string | null>(null);
+  const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -55,7 +56,7 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
       if (!selectedEventId) {
         if (videoRef.current?.srcObject) {
             (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
+            video.current.srcObject = null;
         }
         setHasCameraPermission(null);
         return;
@@ -169,16 +170,19 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
-                        <video ref={videoRef} className={cn("w-full aspect-video rounded-md", hasCameraPermission ? "block" : "hidden")} autoPlay muted playsInline />
-                        {!hasCameraPermission && (
+                         <video ref={videoRef} className={cn("w-full aspect-video rounded-md", hasCameraPermission ? "block" : "hidden")} autoPlay muted playsInline />
+                        {!selectedEventId && (
+                             <div className="text-center text-muted-foreground p-4 absolute">
+                                <CameraOff className="mx-auto h-16 w-16" />
+                                <p className="mt-2 font-semibold">No event selected</p>
+                                <p className="text-sm">Please select an event to activate the scanner.</p>
+                            </div>
+                        )}
+                        {selectedEventId && hasCameraPermission === null && (
                             <div className="text-center text-muted-foreground p-4 absolute">
                                 <CameraOff className="mx-auto h-16 w-16" />
-                                <p className="mt-2 font-semibold">
-                                    {!selectedEventId ? "No event selected" : "Waiting for camera..."}
-                                </p>
-                                <p className="text-sm">
-                                   {!selectedEventId ? "Please select an event to activate the scanner." : "Allow camera access to begin scanning."}
-                                </p>
+                                <p className="mt-2 font-semibold">Waiting for camera...</p>
+                                <p className="text-sm">Allow camera access to begin scanning.</p>
                             </div>
                         )}
                     </div>
@@ -271,5 +275,3 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
     </div>
   );
 }
-
-    
