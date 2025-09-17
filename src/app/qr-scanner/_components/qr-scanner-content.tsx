@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { Event } from '@/app/lib/definitions';
+import { Event, Product } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -28,23 +28,32 @@ import {
   Clock,
   Loader2,
   ScanLine,
+  Shirt,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { redeemMerchandiseForAttendee } from '@/app/lib/actions';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
   message: string; 
   attendeeName?: string;
+  pointsUsed?: number;
+  remainingPoints?: number;
 };
 
-export function QrScannerContent({ events }: { events: Event[] }) {
+export function QrScannerContent({ events, products }: { events: Event[], products: Product[] }) {
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [checkedInAttendees, setCheckedInAttendees] = useState<{name: string, time: string}[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('check-in');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,15 +71,41 @@ export function QrScannerContent({ events }: { events: Event[] }) {
     }
   }, []);
 
-  const processScanResult = useCallback((attendeeId: string) => {
-    stopScanning();
+  const handleMerchRedemption = useCallback(async (attendeeId: string) => {
+      if (!selectedProduct) return;
+      setIsRedeeming(selectedProduct.id);
+      const result = await redeemMerchandiseForAttendee(attendeeId, selectedProduct.id);
+      
+      if (result.success) {
+          setScanResult({
+              status: 'success',
+              message: result.message || 'Redemption successful!',
+              attendeeName: result.attendeeName,
+              pointsUsed: result.pointsUsed,
+              remainingPoints: result.remainingPoints,
+          });
+          toast({
+              title: 'Redemption Successful!',
+              description: `${result.attendeeName} redeemed ${selectedProduct.name}.`,
+          });
+      } else {
+          setScanResult({
+              status: 'error',
+              message: result.error || 'Redemption failed.',
+              attendeeName: result.attendeeName,
+          });
+      }
+      setIsRedeeming(null);
+      setSelectedProduct(null); // Reset selection
+      stopScanning();
+  }, [selectedProduct, stopScanning, toast]);
 
+  const handleCheckIn = useCallback((attendeeId: string) => {
     const selectedEvent = events.find(e => e.id === selectedEventId);
     if (!selectedEvent) {
       setScanResult({ status: 'error', message: 'No event selected. Cannot verify attendee.' });
       return;
     }
-
     const attendee = selectedEvent.attendees.find(a => a.id === attendeeId);
     if (attendee) {
       const alreadyCheckedIn = checkedInAttendees.some(a => a.name === attendee.name);
@@ -84,7 +119,25 @@ export function QrScannerContent({ events }: { events: Event[] }) {
     } else {
       setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found in this event.' });
     }
+    stopScanning();
   }, [selectedEventId, events, checkedInAttendees, stopScanning]);
+
+
+  const processScanResult = useCallback((attendeeId: string) => {
+    if (activeTab === 'merch' && selectedProduct) {
+        handleMerchRedemption(attendeeId);
+    } else if (activeTab === 'check-in') {
+        handleCheckIn(attendeeId);
+    } else {
+      stopScanning();
+      toast({
+        variant: 'destructive',
+        title: 'Action required',
+        description: 'Please select a product to redeem on the Merch tab first.',
+      });
+    }
+  }, [activeTab, selectedProduct, handleMerchRedemption, handleCheckIn, stopScanning, toast]);
+
 
   const scanLoop = useCallback(() => {
     if (videoRef.current?.readyState === videoRef.current?.HAVE_ENOUGH_DATA && canvasRef.current && isScanning) {
@@ -116,6 +169,10 @@ export function QrScannerContent({ events }: { events: Event[] }) {
         toast({ variant: 'destructive', title: 'No Event Selected', description: 'Please select an event before starting the scan.' });
         return;
     }
+     if (activeTab === 'merch' && !selectedProduct) {
+        toast({ variant: 'destructive', title: 'No Product Selected', description: 'Please select a merchandise item before scanning.' });
+        return;
+    }
     setScanResult(null);
     setIsScanning(true);
     
@@ -135,15 +192,11 @@ export function QrScannerContent({ events }: { events: Event[] }) {
             description: 'Please enable camera permissions in your browser settings.',
         });
     }
-  }, [selectedEventId, toast]);
+  }, [selectedEventId, activeTab, selectedProduct, toast]);
 
   useEffect(() => {
     if (hasCameraPermission && isScanning) {
       animationFrameId.current = requestAnimationFrame(scanLoop);
-    } else {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
     }
     return () => {
       if (animationFrameId.current) {
@@ -153,16 +206,23 @@ export function QrScannerContent({ events }: { events: Event[] }) {
   }, [hasCameraPermission, isScanning, scanLoop]);
 
   useEffect(() => {
-    // Cleanup camera on component unmount
     return () => stopScanning();
   }, [stopScanning]);
   
   const handleEventChange = (eventId: string) => {
     setSelectedEventId(eventId);
     setScanResult(null);
+    setSelectedProduct(null);
     setCheckedInAttendees([]);
     if(isScanning) stopScanning();
   };
+  
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setScanResult(null);
+    setSelectedProduct(null);
+    if(isScanning) stopScanning();
+  }
 
   const getScanResultVariant = (status: ScanResult['status']) => {
     if (status === 'success') return 'default';
@@ -176,7 +236,7 @@ export function QrScannerContent({ events }: { events: Event[] }) {
              <div>
                 <h2 className="text-3xl font-bold tracking-tight">QR Scanner</h2>
                 <p className="text-muted-foreground">
-                    Check-in attendees by scanning their QR code.
+                    Check-in attendees and redeem merchandise.
                 </p>
             </div>
              <Select value={selectedEventId} onValueChange={handleEventChange}>
@@ -193,86 +253,111 @@ export function QrScannerContent({ events }: { events: Event[] }) {
             </Select>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-            <CardHeader>
-                <CardTitle>QR Code Scanner</CardTitle>
-                <CardDescription>
-                    Arahkan kamera ke QR code peserta.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
-                    <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
-                    <canvas ref={canvasRef} className="hidden" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>QR Code Scanner</CardTitle>
+                    <CardDescription>
+                        {activeTab === 'check-in' ? 'Point the camera at an attendee\'s QR code to check them in.' : 'Select a product, then scan an attendee\'s QR code to redeem.'}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
+                        <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
+                        <canvas ref={canvasRef} className="hidden" />
 
-                    {!isScanning && (
-                        <div className="text-center text-muted-foreground p-4 absolute">
-                            <QrCode className="mx-auto h-16 w-16" />
-                            <p className="mt-2 font-semibold">Tampilan kamera akan muncul di sini</p>
-                        </div>
-                    )}
-                    {isScanning && (
-                         <div className="absolute inset-0 bg-transparent flex items-center justify-center">
-                            <ScanLine className="h-1/2 w-1/2 text-white/20 animate-pulse" />
-                        </div>
-                    )}
-                </div>
-                 {hasCameraPermission === false && (
-                    <Alert variant="destructive">
-                        <AlertTitle>Camera Access Required</AlertTitle>
-                        <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
-                    </Alert>
-                )}
-                <Button onClick={isScanning ? stopScanning : startScanning} className="w-full" disabled={!selectedEventId}>
-                    {isScanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                    {isScanning ? 'Hentikan Scan' : 'Mulai Scan'}
-                </Button>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Hasil Pindaian</CardTitle>
-                 <CardDescription>Status check-in peserta akan muncul di sini.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {!scanResult && (
-                    <div className="text-center text-muted-foreground py-16">
-                        <User className="mx-auto h-12 w-12" />
-                        <p className="mt-4 font-semibold">Menunggu Pindaian</p>
-                        <p className="text-sm">Scan QR code untuk melihat hasil.</p>
-                    </div>
-                )}
-                {scanResult && (
-                    <Alert variant={getScanResultVariant(scanResult.status)}>
-                        {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
-                        {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
-                        <AlertTitle>{scanResult.attendeeName || "Hasil Pindaian"}</AlertTitle>
-                        <AlertDescription>{scanResult.message}</AlertDescription>
-                    </Alert>
-                )}
-
-                <Separator />
-                
-                <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-muted-foreground flex items-center">
-                        <Clock className="mr-2 h-4 w-4" />
-                        Riwayat Check-in ({checkedInAttendees.length})
-                    </h3>
-                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                        {checkedInAttendees.length > 0 ? checkedInAttendees.map((attendee, index) => (
-                            <div key={index} className="flex items-center justify-between text-sm">
-                                <p className="font-medium">{attendee.name}</p>
-                                <p className="text-muted-foreground">{attendee.time}</p>
+                        {!isScanning && (
+                            <div className="text-center text-muted-foreground p-4 absolute">
+                                <QrCode className="mx-auto h-16 w-16" />
+                                <p className="mt-2 font-semibold">Camera view will appear here</p>
+                                 <p className="text-sm">{activeTab === 'merch' && selectedProduct ? `Ready to scan for ${selectedProduct.name}`: ''}</p>
                             </div>
-                        )) : (
-                            <p className="text-sm text-muted-foreground text-center py-4">Belum ada peserta yang check-in.</p>
+                        )}
+                        {isScanning && (
+                             <div className="absolute inset-0 bg-transparent flex items-center justify-center">
+                                <ScanLine className="h-1/2 w-1/2 text-white/20 animate-pulse" />
+                            </div>
                         )}
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                     {hasCameraPermission === false && (
+                        <Alert variant="destructive">
+                            <AlertTitle>Camera Access Required</AlertTitle>
+                            <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
+                        </Alert>
+                    )}
+                    <Button onClick={isScanning ? stopScanning : startScanning} className="w-full" disabled={!selectedEventId}>
+                        {isScanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                        {isScanning ? 'Stop Scan' : 'Start Scan'}
+                    </Button>
+                     {scanResult && (
+                        <Alert variant={getScanResultVariant(scanResult.status)}>
+                            {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
+                            {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
+                            <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
+                            <AlertDescription>{scanResult.message}</AlertDescription>
+                            {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
+                                <div className='mt-2 text-xs'>
+                                    <p>Points Used: {scanResult.pointsUsed}</p>
+                                    <p>Remaining Points: {scanResult.remainingPoints}</p>
+                                </div>
+                            )}
+                        </Alert>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+
+        <div className="lg:col-span-1">
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="check-in">Check-in</TabsTrigger>
+                    <TabsTrigger value="merch">Merchandise</TabsTrigger>
+                </TabsList>
+                <TabsContent value="check-in" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
+                             <CardDescription>({checkedInAttendees.length}) attendees checked-in.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+                            {checkedInAttendees.length > 0 ? checkedInAttendees.map((attendee, index) => (
+                                <div key={index} className="flex items-center justify-between text-sm">
+                                    <p className="font-medium">{attendee.name}</p>
+                                    <p className="text-muted-foreground">{attendee.time}</p>
+                                </div>
+                            )) : (
+                                <div className="text-center text-muted-foreground py-10">
+                                    <p>No attendees checked in yet.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="merch" className="mt-4">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center"><Shirt className="mr-2 h-5 w-5"/>Redeem Merchandise</CardTitle>
+                             <CardDescription>Select a product to redeem.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+                            {products.map((item) => (
+                                <Button
+                                    key={item.id}
+                                    variant={selectedProduct?.id === item.id ? "default" : "outline"}
+                                    className="w-full justify-between h-12"
+                                    onClick={() => setSelectedProduct(item)}
+                                    disabled={item.stock <= 0}
+                                >
+                                    <span>{item.name} {item.stock <= 0 && '(Out of stock)'}</span>
+                                    <span>{item.points} pts</span>
+                                </Button>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
       </div>
     </div>
   );
