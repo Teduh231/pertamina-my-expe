@@ -31,7 +31,7 @@ export default async function EventRegistrationPage({
                 <Image 
                     src={event.image_url} 
                     alt={event.name} 
-                    layout="fill" 
+                    fill={true}
                     objectFit="cover" 
                     className="brightness-50"
                 />
