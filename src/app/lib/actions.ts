@@ -95,6 +95,34 @@ export async function createOrUpdateEvent(eventData: Omit<Event, 'id' | 'attende
   return { success: true, eventId };
 }
 
+export async function deleteEvent(eventId: string) {
+    // First, delete all attendees for the event
+    const { error: attendeeError } = await supabase
+      .from('attendees')
+      .delete()
+      .eq('event_id', eventId);
+  
+    if (attendeeError) {
+      console.error('Supabase error deleting attendees:', attendeeError);
+      return { success: false, error: 'Database error: Could not delete attendees.' };
+    }
+  
+    // Then, delete the event itself
+    const { error: eventError } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', eventId);
+  
+    if (eventError) {
+      console.error('Supabase error deleting event:', eventError);
+      return { success: false, error: 'Database error: Could not delete event.' };
+    }
+  
+    revalidatePath('/events');
+    revalidatePath('/dashboard');
+    return { success: true };
+}
+
 export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at'>) {
     const { error } = await supabase.from('attendees').insert([{ ...attendeeData, event_id: eventId }]);
 

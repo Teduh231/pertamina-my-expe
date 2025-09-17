@@ -20,6 +20,7 @@ import {
   MoreVertical,
   PlusCircle,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,12 +30,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { exportAttendeesToCsv } from '@/app/lib/actions';
+import { deleteEvent, exportAttendeesToCsv } from '@/app/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { EventForm } from './event-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { useRouter } from 'next/navigation';
 
 type EventListProps = {
   events: Event[];
@@ -44,7 +48,10 @@ export function EventList({ events }: EventListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | undefined>(undefined);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+
 
   const handleExport = async (eventId: string, eventName: string) => {
     toast({ title: 'Exporting...', description: 'Please wait while we prepare your CSV file.' });
@@ -71,6 +78,26 @@ export function EventList({ events }: EventListProps) {
     }
   };
   
+  const handleDelete = async (eventId: string, eventName: string) => {
+    setIsDeleting(true);
+    const result = await deleteEvent(eventId);
+    setIsDeleting(false);
+
+    if (result.success) {
+      toast({
+        title: 'Event Deleted',
+        description: `"${eventName}" has been successfully deleted.`,
+      });
+      router.refresh();
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: result.error || 'Could not delete the event. Please try again.',
+      });
+    }
+  };
+
   const openFormForNew = () => {
     setSelectedEvent(undefined);
     setIsFormOpen(true);
@@ -200,6 +227,38 @@ export function EventList({ events }: EventListProps) {
                         <Download className="mr-2 h-4 w-4" />
                         <span>Export Attendees</span>
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              onSelect={(e) => e.preventDefault()}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete</span>
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the
+                                event "{event.name}" and all of its attendee data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(event.id, event.name)}
+                                disabled={isDeleting}
+                                className="bg-destructive hover:bg-destructive/90"
+                              >
+                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Yes, delete event
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
