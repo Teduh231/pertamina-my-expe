@@ -93,7 +93,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="flex md:hidden"/>
                     <h1 className="text-lg font-semibold capitalize hidden md:block">
-                        {pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'Dashboard'}
+                        {pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard'}
                     </h1>
                 </div>
 
