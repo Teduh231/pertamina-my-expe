@@ -123,16 +123,36 @@ export async function deleteEvent(eventId: string) {
     return { success: true };
 }
 
-export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at'>) {
-    const { error } = await supabase.from('attendees').insert([{ ...attendeeData, event_id: eventId }]);
+export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at' | 'qr_code_url'>) {
+    const { data: newAttendee, error } = await supabase
+        .from('attendees')
+        .insert([{ ...attendeeData, event_id: eventId }])
+        .select()
+        .single();
 
-    if (error) {
+    if (error || !newAttendee) {
         console.error('Supabase error registering attendee:', error);
         // Handle specific errors, e.g., unique constraint violation for email per event
-        if (error.code === '23505') { // unique_violation
+        if (error?.code === '23505') { // unique_violation
             return { success: false, error: 'This email address has already been registered for this event.' };
         }
         return { success: false, error: 'Database error: Could not register attendee.' };
+    }
+
+    // Generate QR code URL
+    const qrCodeData = newAttendee.id; // Using the unique attendee ID for the QR code
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrCodeData}`;
+
+    // Update the attendee with the generated QR code URL
+    const { error: updateError } = await supabase
+        .from('attendees')
+        .update({ qr_code_url: qrCodeUrl })
+        .eq('id', newAttendee.id);
+
+    if (updateError) {
+        console.error('Supabase error updating attendee with QR code:', updateError);
+        // We can decide to ignore this error for the user, as they are already registered.
+        // The main registration was successful.
     }
 
     revalidatePath(`/events/${eventId}/register`);
@@ -141,6 +161,7 @@ export async function registerAttendee(eventId: string, attendeeData: Omit<Atten
     revalidatePath('/dashboard');
     return { success: true };
 }
+
 
 export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'winners' | 'drawn_at'>) {
     const { error } = await supabase.from('raffles').insert([raffleData]);

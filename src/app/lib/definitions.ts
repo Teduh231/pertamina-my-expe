@@ -20,6 +20,7 @@ export type Attendee = {
   email: string;
   registered_at: string;
   custom_response?: string;
+  qr_code_url?: string;
 };
 
 export type RaffleWinner = {
