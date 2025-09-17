@@ -44,7 +44,7 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<{ status: 'success' | 'error'; message: string; attendeeName?: string } | null>(null);
   const [checkedInAttendees, setCheckedInAttendees] = useState<{name: string, time: string}[]>([]);
-  const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
+  const [isRedeeming, setIsRedeeming = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -52,6 +52,15 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
 
   useEffect(() => {
     const getCameraPermission = async () => {
+      if (!selectedEventId) {
+        if (videoRef.current?.srcObject) {
+            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+        setHasCameraPermission(null);
+        return;
+      }
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
@@ -70,8 +79,12 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
       }
     };
     
-    if (selectedEventId) {
-        getCameraPermission();
+    getCameraPermission();
+
+    return () => {
+        if (videoRef.current?.srcObject) {
+            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        }
     }
   }, [selectedEventId, toast]);
 
@@ -155,26 +168,17 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden">
-                        {selectedEventId ? (
-                            hasCameraPermission ? (
-                                <video ref={videoRef} className="w-full aspect-video rounded-md" autoPlay muted />
-                            ) : (
-                                <div className="text-center text-muted-foreground p-4">
-                                    <CameraOff className="mx-auto h-16 w-16" />
-                                    <p className="mt-2 font-semibold">
-                                        {hasCameraPermission === false ? 'Camera permission denied' : 'Waiting for camera...'}
-                                    </p>
-                                    <p className="text-sm">
-                                        {hasCameraPermission === false ? 'Please allow camera access in your browser settings.' : 'Select an event to activate the scanner.'}
-                                    </p>
-                                </div>
-                            )
-                        ) : (
-                            <div className="text-center text-muted-foreground p-4">
+                    <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
+                        <video ref={videoRef} className={cn("w-full aspect-video rounded-md", hasCameraPermission ? "block" : "hidden")} autoPlay muted playsInline />
+                        {!hasCameraPermission && (
+                            <div className="text-center text-muted-foreground p-4 absolute">
                                 <CameraOff className="mx-auto h-16 w-16" />
-                                <p className="mt-2 font-semibold">No event selected</p>
-                                <p className="text-sm">Please select an event to activate the scanner.</p>
+                                <p className="mt-2 font-semibold">
+                                    {!selectedEventId ? "No event selected" : "Waiting for camera..."}
+                                </p>
+                                <p className="text-sm">
+                                   {!selectedEventId ? "Please select an event to activate the scanner." : "Allow camera access to begin scanning."}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -267,3 +271,5 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
     </div>
   );
 }
+
+    
