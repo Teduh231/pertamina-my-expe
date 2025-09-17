@@ -7,6 +7,38 @@ import { revalidatePath } from 'next/cache';
 import { supabase } from './supabase';
 import { unstable_noStore as noStore } from 'next/cache';
 
+// Placeholder function for sending email.
+// You need to integrate a real email service like SendGrid, Resend, or Nodemailer.
+async function sendQrCodeEmail(recipientEmail: string, attendeeName: string, eventName:string, qrCodeUrl: string) {
+  console.log(`Simulating sending email to ${recipientEmail}`);
+  console.log(`Attendee: ${attendeeName}`);
+  console.log(`Event: ${eventName}`);
+  console.log(`QR Code URL: ${qrCodeUrl}`);
+  
+  // TODO: Implement actual email sending logic here.
+  // Example using a hypothetical email service:
+  /*
+  try {
+    const emailHtml = `<h1>Hi ${attendeeName},</h1><p>Thank you for registering for ${eventName}.</p><p>Here is your unique QR code for check-in:</p><img src="${qrCodeUrl}" alt="Your QR Code" /><p>We look forward to seeing you!</p>`;
+    
+    await emailService.send({
+      from: 'you@yourdomain.com',
+      to: recipientEmail,
+      subject: `Your QR Code for ${eventName}`,
+      html: emailHtml,
+    });
+    console.log('Email sent successfully.');
+  } catch (error) {
+    console.error('Failed to send email:', error);
+    // Even if email fails, the registration was successful, so we don't throw an error here.
+  }
+  */
+
+  // For now, we'll just return a success promise.
+  return Promise.resolve();
+}
+
+
 export async function detectPiiInField(fieldName: string, fieldValue: string) {
   // This function still uses AI, but doesn't write to DB. Keeping it as is.
   if (!fieldValue || fieldValue.trim().length < 3) {
@@ -124,6 +156,11 @@ export async function deleteEvent(eventId: string) {
 }
 
 export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at' | 'qr_code_url'>) {
+    const event = await getEventById(eventId);
+    if (!event) {
+        return { success: false, error: 'Event not found.' };
+    }
+
     const { data: newAttendee, error } = await supabase
         .from('attendees')
         .insert([{ ...attendeeData, event_id: eventId }])
@@ -153,6 +190,9 @@ export async function registerAttendee(eventId: string, attendeeData: Omit<Atten
         console.error('Supabase error updating attendee with QR code:', updateError);
         // We can decide to ignore this error for the user, as they are already registered.
         // The main registration was successful.
+    } else {
+        // If QR code is saved successfully, send the email
+        await sendQrCodeEmail(newAttendee.email, newAttendee.name, event.name, qrCodeUrl);
     }
 
     revalidatePath(`/events/${eventId}/register`);
