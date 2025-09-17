@@ -155,7 +155,7 @@ export async function deleteEvent(eventId: string) {
     return { success: true };
 }
 
-export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at' | 'qr_code_url'>) {
+export async function registerAttendee(eventId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at' | 'qr_code_url' | 'points'>) {
     const event = await getEventById(eventId);
     if (!event) {
         return { success: false, error: 'Event not found.' };
@@ -163,7 +163,7 @@ export async function registerAttendee(eventId: string, attendeeData: Omit<Atten
 
     const { data: newAttendee, error } = await supabase
         .from('attendees')
-        .insert([{ ...attendeeData, event_id: eventId }])
+        .insert([{ ...attendeeData, event_id: eventId, points: 100 }]) // Award 100 points on registration
         .select()
         .single();
 
@@ -301,4 +301,66 @@ export async function redeemProduct(productId: string, userId: string, productNa
     revalidatePath('/qr-scanner');
 
     return { success: true, transaction };
+}
+
+export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string) {
+    noStore();
+    // 1. Fetch attendee and product in parallel
+    const [attendeeResult, productResult] = await Promise.all([
+        supabase.from('attendees').select('id, name, points').eq('id', attendeeId).single(),
+        supabase.from('products').select('id, name, points, stock').eq('id', productId).single()
+    ]);
+
+    if (attendeeResult.error || !attendeeResult.data) {
+        return { success: false, error: "Attendee not found." };
+    }
+    if (productResult.error || !productResult.data) {
+        return { success: false, error: "Product not found." };
+    }
+
+    const attendee = attendeeResult.data;
+    const product = productResult.data;
+
+    // 2. Check stock and points
+    if (product.stock <= 0) {
+        return { success: false, error: `Sorry, "${product.name}" is out of stock.` };
+    }
+    if (attendee.points < product.points) {
+        return { success: false, error: `Attendee has insufficient points. Needs ${product.points}, has ${attendee.points}.`, attendeeName: attendee.name, };
+    }
+
+    // 3. Perform the transaction
+    const newAttendeePoints = attendee.points - product.points;
+
+    const [updateAttendeeResult, updateProductResult, createTransactionResult] = await Promise.all([
+        supabase.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id),
+        supabase.from('products').update({ stock: product.stock - 1 }).eq('id', product.id),
+        supabase.from('transactions').insert({
+            user_id: attendee.id,
+            user_name: attendee.name,
+            product_name: product.name,
+            points: product.points,
+        })
+    ]);
+
+    if (updateAttendeeResult.error || updateProductResult.error || createTransactionResult.error) {
+        console.error("Transaction failed:", {
+            attendeeError: updateAttendeeResult.error,
+            productError: updateProductResult.error,
+            transactionError: createTransactionResult.error,
+        });
+        // Here you might want to add logic to revert the parts of the transaction that succeeded
+        return { success: false, error: "Database error during transaction." };
+    }
+
+    revalidatePath('/qr-scanner');
+    revalidatePath('/pos');
+
+    return {
+        success: true,
+        message: `Successfully redeemed ${product.name} for ${attendee.name}.`,
+        attendeeName: attendee.name,
+        pointsUsed: product.points,
+        remainingPoints: newAttendeePoints
+    };
 }
