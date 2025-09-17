@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import jsQR from 'jsqr';
 import { Event, Product } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,24 +47,87 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
   const [scanResult, setScanResult] = useState<{ status: 'success' | 'error'; message: string; attendeeName?: string } | null>(null);
   const [checkedInAttendees, setCheckedInAttendees] = useState<{name: string, time: string}[]>([]);
   const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const animationFrameId = useRef<number>();
 
+  const processScanResult = useCallback((attendeeId: string) => {
+    setIsScanning(false);
+    setScanResult(null);
+
+    const selectedEvent = events.find(e => e.id === selectedEventId);
+    if (!selectedEvent) {
+      setScanResult({ status: 'error', message: 'No event selected. Cannot verify attendee.' });
+      setTimeout(() => setIsScanning(true), 3000);
+      return;
+    }
+
+    const attendee = selectedEvent.attendees.find(a => a.id === attendeeId);
+    if (attendee) {
+      const alreadyCheckedIn = checkedInAttendees.some(a => a.name === attendee.name);
+      if (alreadyCheckedIn) {
+        setScanResult({ status: 'error', message: 'Attendee already checked in.', attendeeName: attendee.name });
+      } else {
+        setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
+        const newCheckedIn = { name: attendee.name, time: new Date().toLocaleTimeString() };
+        setCheckedInAttendees(prev => [newCheckedIn, ...prev]);
+      }
+    } else {
+      setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found in this event.' });
+    }
+    
+    // Resume scanning after a delay
+    setTimeout(() => {
+        setScanResult(null);
+        setIsScanning(true);
+    }, 3000);
+  }, [selectedEventId, events, checkedInAttendees]);
+
+
+  const scanLoop = useCallback(() => {
+    if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current && isScanning) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext('2d');
+
+      if (context) {
+        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
+        });
+
+        if (code && code.data) {
+           processScanResult(code.data);
+        }
+      }
+    }
+    if (isScanning) {
+        animationFrameId.current = requestAnimationFrame(scanLoop);
+    }
+  }, [isScanning, processScanResult]);
 
   useEffect(() => {
-    const getCameraPermission = async () => {
+    const startScan = async () => {
       if (!selectedEventId) {
         if (videoRef.current?.srcObject) {
-            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-            video.current.srcObject = null;
+          (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+          videoRef.current.srcObject = null;
         }
         setHasCameraPermission(null);
+        setIsScanning(false);
         return;
       }
-
+      
+      setIsScanning(true);
+      
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
 
         if (videoRef.current) {
@@ -80,39 +144,29 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
       }
     };
     
-    getCameraPermission();
+    startScan();
 
     return () => {
-        if (videoRef.current?.srcObject) {
-            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-        }
-    }
+      if (videoRef.current?.srcObject) {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+      }
+    };
   }, [selectedEventId, toast]);
 
-  const handleScan = () => {
-    setScanResult(null);
-    const selectedEvent = events.find(e => e.id === selectedEventId);
-    if (!selectedEvent || selectedEvent.attendees.length === 0) {
-        setScanResult({ status: 'error', message: 'No attendees in this event to scan.' });
-        return;
-    }
-    
-    const success = Math.random() > 0.3;
-    if (success) {
-        const randomAttendee = selectedEvent.attendees[Math.floor(Math.random() * selectedEvent.attendees.length)];
-        const alreadyCheckedIn = checkedInAttendees.some(a => a.name === randomAttendee.name);
-
-        if (alreadyCheckedIn) {
-             setScanResult({ status: 'error', message: 'Attendee already checked in.', attendeeName: randomAttendee.name });
-        } else {
-            setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: randomAttendee.name });
-            const newCheckedIn = { name: randomAttendee.name, time: new Date().toLocaleTimeString() };
-            setCheckedInAttendees(prev => [newCheckedIn, ...prev]);
-        }
+  useEffect(() => {
+    if (hasCameraPermission && isScanning) {
+        animationFrameId.current = requestAnimationFrame(scanLoop);
     } else {
-        setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found.' });
+        if (animationFrameId.current) {
+            cancelAnimationFrame(animationFrameId.current);
+        }
     }
-  };
+    return () => {
+        if (animationFrameId.current) {
+            cancelAnimationFrame(animationFrameId.current);
+        }
+    };
+  }, [hasCameraPermission, isScanning, scanLoop]);
   
   const handleEventChange = (eventId: string) => {
     setSelectedEventId(eventId);
@@ -170,7 +224,9 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
-                         <video ref={videoRef} className={cn("w-full aspect-video rounded-md", hasCameraPermission ? "block" : "hidden")} autoPlay muted playsInline />
+                         <video ref={videoRef} className={cn("w-full h-full object-cover", hasCameraPermission ? "block" : "hidden")} autoPlay muted playsInline />
+                         <canvas ref={canvasRef} className="hidden" />
+
                         {!selectedEventId && (
                              <div className="text-center text-muted-foreground p-4 absolute">
                                 <CameraOff className="mx-auto h-16 w-16" />
@@ -179,14 +235,20 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                             </div>
                         )}
                         {selectedEventId && hasCameraPermission === null && (
-                            <div className="text-center text-muted-foreground p-4 absolute">
-                                <CameraOff className="mx-auto h-16 w-16" />
+                            <div className="text-center text-muted-foreground p-4 absolute flex flex-col items-center">
+                                <Loader2 className="h-16 w-16 animate-spin" />
                                 <p className="mt-2 font-semibold">Waiting for camera...</p>
                                 <p className="text-sm">Allow camera access to begin scanning.</p>
                             </div>
                         )}
+                        {selectedEventId && hasCameraPermission && !isScanning && !scanResult && (
+                             <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                                <QrCode className="h-16 w-16" />
+                                <p className="font-bold mt-2">Ready to scan</p>
+                            </div>
+                        )}
                     </div>
-                     {hasCameraPermission === false && (
+                     {hasCameraPermission === false && selectedEventId && (
                         <Alert variant="destructive">
                             <AlertTitle>Camera Access Required</AlertTitle>
                             <AlertDescription>
@@ -194,10 +256,6 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                             </AlertDescription>
                         </Alert>
                     )}
-                    <Button onClick={handleScan} disabled={!selectedEventId || !hasCameraPermission} className="w-full">
-                        <QrCode className="mr-2 h-4 w-4" />
-                        Simulate Scan
-                    </Button>
                     {scanResult && (
                         <Alert variant={scanResult.status === 'success' ? 'default' : 'destructive'}>
                             {scanResult.status === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
