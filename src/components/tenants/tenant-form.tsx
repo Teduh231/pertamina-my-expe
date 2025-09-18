@@ -110,14 +110,17 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Assign to Booth</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+              <Select
+                onValueChange={(value) => field.onChange(value === 'unassigned' ? null : value)}
+                defaultValue={field.value || 'unassigned'}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a booth (optional)" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">-- Not Assigned --</SelectItem>
+                  <SelectItem value="unassigned">-- Not Assigned --</SelectItem>
                   {booths.filter(b => b.status === 'published').map(booth => (
                     <SelectItem key={booth.id} value={booth.id}>{booth.name}</SelectItem>
                   ))}
