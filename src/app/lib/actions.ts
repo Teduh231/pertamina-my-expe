@@ -94,12 +94,16 @@ export async function exportAttendeesToCsv(boothId: string): Promise<string> {
     return csvRows.join('\n');
 }
 
-export async function createOrUpdateBooth(boothData: Omit<Booth, 'id' | 'attendees' | 'created_at'>, boothId?: string) {
+export async function createOrUpdateBooth(boothData: Omit<Booth, 'id' | 'created_at'>, boothId?: string) {
+  // The 'attendees' property is part of the Booth type for client-side use,
+  // but it's not a column in the 'booths' table. We must remove it before insert/update.
+  const { attendees, ...restOfBoothData } = boothData;
+  
   if (boothId) {
     // Update existing booth
     const { error } = await supabase
       .from('booths')
-      .update(boothData)
+      .update(restOfBoothData)
       .eq('id', boothId);
     
     if (error) {
@@ -111,7 +115,7 @@ export async function createOrUpdateBooth(boothData: Omit<Booth, 'id' | 'attende
     // Create new booth
     const { data, error } = await supabase
       .from('booths')
-      .insert([boothData])
+      .insert([restOfBoothData])
       .select('id')
       .single();
 
@@ -248,7 +252,7 @@ export async function drawRaffleWinner(raffleId: string) {
     email: winner.email,
   };
 
-  const updatedWinners = [...drawnWinnerIds.map(id => raffle.winners.find(w => w.attendeeId === id)), newWinner];
+  const updatedWinners = [...(raffle.winners || []), newWinner];
 
   const updatedRaffle: Partial<Raffle> = {
     winners: updatedWinners,

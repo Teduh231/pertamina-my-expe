@@ -63,7 +63,14 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     
-    const result = await createOrUpdateBooth(values, booth?.id);
+    // The 'attendees' field is part of the Booth type but not the form schema.
+    // It needs to be handled when calling the server action.
+    const boothPayload: Omit<Booth, 'id' | 'created_at'> = {
+        ...values,
+        attendees: booth?.attendees || [], // Pass existing attendees if updating
+    };
+
+    const result = await createOrUpdateBooth(boothPayload, booth?.id);
     setIsSubmitting(false);
 
     if (result.success) {
