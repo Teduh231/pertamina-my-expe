@@ -81,8 +81,7 @@ export async function getTenants(): Promise<Tenant[]> {
     noStore();
     const query = supabase
       .from('tenants')
-      .select('*, booths(id, name)')
-      .order('created_at', { ascending: false });
+      .select('*, booths(id, name)');
       
     const tenantsData = await supabaseQuery(query);
     return tenantsData.map((tenant: any) => ({
