@@ -25,9 +25,10 @@ import {
 import { Booth } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import React from 'react';
 import { createOrUpdateBooth } from '@/app/lib/actions';
+import { Separator } from '../ui/separator';
 
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Booth name must be at least 3 characters.' }),
@@ -36,6 +37,18 @@ const formSchema = z.object({
   booth_manager: z.string().min(2, { message: 'Booth manager name is required.' }),
   status: z.enum(['draft', 'published', 'canceled']),
   image_url: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+  // Booth user fields - only for creation
+  booth_user_email: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
+  booth_user_password: z.string().min(6, { message: 'Password must be at least 6 characters.' }).optional().or(z.literal('')),
+}).refine(data => {
+    // If one of the user fields is filled, the other must be too.
+    if (data.booth_user_email || data.booth_user_password) {
+        return !!data.booth_user_email && !!data.booth_user_password;
+    }
+    return true;
+}, {
+    message: "Both email and password are required to create a booth user.",
+    path: ["booth_user_email"], // Point error to the email field
 });
 
 type BoothFormProps = {
@@ -57,20 +70,15 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
       booth_manager: booth?.booth_manager || '',
       status: booth?.status || 'draft',
       image_url: booth?.image_url || '',
+      booth_user_email: '',
+      booth_user_password: ''
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     
-    // The 'attendees' field is part of the Booth type but not the form schema.
-    // It needs to be handled when calling the server action.
-    const boothPayload: Omit<Booth, 'id' | 'created_at'> = {
-        ...values,
-        attendees: booth?.attendees || [], // Pass existing attendees if updating
-    };
-
-    const result = await createOrUpdateBooth(boothPayload, booth?.id);
+    const result = await createOrUpdateBooth(values, booth?.id);
     setIsSubmitting(false);
 
     if (result.success) {
@@ -199,6 +207,49 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
                 />
             </div>
         </div>
+
+        {!booth && (
+            <>
+                <Separator />
+                <div className="space-y-4">
+                     <h3 className="text-lg font-medium flex items-center gap-2">
+                        <UserPlus />
+                        Create Booth User (Optional)
+                     </h3>
+                     <p className="text-sm text-muted-foreground">
+                        Optionally create an initial user account that will be assigned to manage this booth. More users can be added later from the Booth User Management page.
+                     </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <FormField
+                            control={form.control}
+                            name="booth_user_email"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>User Email</FormLabel>
+                                <FormControl>
+                                    <Input type="email" placeholder="booth.user@example.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="booth_user_password"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>User Password</FormLabel>
+                                <FormControl>
+                                    <Input type="password" placeholder="••••••••" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </div>
+            </>
+        )}
         
         <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onFinished}>Cancel</Button>

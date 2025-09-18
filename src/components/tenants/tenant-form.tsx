@@ -57,6 +57,12 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Manually set password as optional if it's an existing tenant
+    if (tenant) {
+        form.setValue('password', form.getValues('password') || '');
+    }
+
     const validation = await form.trigger();
     if (!validation) return;
 
@@ -72,13 +78,13 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
 
         if (result.success) {
             toast({
-                title: `Tenant ${tenant ? 'updated' : 'created'} successfully!`,
+                title: `User ${tenant ? 'updated' : 'created'} successfully!`,
             });
             if (onFinished) onFinished();
         } else {
             toast({
                 variant: 'destructive',
-                title: `Error ${tenant ? 'updating' : 'creating'} tenant`,
+                title: `Error ${tenant ? 'updating' : 'creating'} user`,
                 description: result.error || 'An unexpected error occurred.',
             });
         }
@@ -95,7 +101,7 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tenant Name</FormLabel>
+              <FormLabel>User Name</FormLabel>
               <FormControl>
                 <Input placeholder="John Doe" {...field} />
               </FormControl>
@@ -110,8 +116,11 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="tenant@example.com" {...field} disabled={!!tenant} />
+                <Input type="email" placeholder="booth.user@example.com" {...field} disabled={!!tenant} />
               </FormControl>
+               <FormDescription>
+                This will be their login email. Cannot be changed after creation.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -162,7 +171,7 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
           <Button type="button" variant="ghost" onClick={onFinished}>Cancel</Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {tenant ? 'Save Changes' : 'Create Tenant'}
+            {tenant ? 'Save Changes' : 'Create User'}
           </Button>
         </div>
       </form>

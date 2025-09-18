@@ -4,7 +4,7 @@ import { TenantList } from '@/components/tenants/tenant-list';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import type { Booth, Tenant } from '@/app/lib/definitions';
 
-export default async function TenantManagementPage() {
+export default async function BoothUserManagementPage() {
   const tenants: Tenant[] = await getTenants();
   const booths: Booth[] = await getBooths();
 

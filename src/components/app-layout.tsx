@@ -47,7 +47,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { href: '/booths', icon: Store, label: 'Booths' },
-    { href: '/tenants', icon: UserCog, label: 'Tenant Management' },
+    { href: '/tenants', icon: UserCog, label: 'Booth User Management' },
     { href: '/attendees', icon: Users, label: 'All Attendees' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
@@ -87,7 +87,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="flex md:hidden"/>
                     <h1 className="text-lg font-semibold capitalize hidden md:block">
-                        {pathname.split('/').filter(p => p).pop()?.replace(/-/g, ' ') || 'Dashboard'}
+                        {pathname.split('/').pop()?.replace(/-/g, ' ') === 'tenants' ? 'Booth User Management' : pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard'}
                     </h1>
                 </div>
 

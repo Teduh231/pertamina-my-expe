@@ -95,12 +95,12 @@ export async function exportAttendeesToCsv(boothId: string): Promise<string> {
     return csvRows.join('\n');
 }
 
-export async function createOrUpdateBooth(boothData: Partial<Booth>, boothId?: string) {
-  const { attendees, ...restOfBoothData } = boothData;
+export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_user_email?: string, booth_user_password?: string }, boothId?: string) {
+  const { attendees, booth_user_email, booth_user_password, ...restOfBoothData } = formData;
 
   if (boothId) {
     // Update existing booth
-    const { error } = await supabaseClient
+    const { error } = await supabaseAdmin
       .from('booths')
       .update(restOfBoothData)
       .eq('id', boothId);
@@ -113,27 +113,44 @@ export async function createOrUpdateBooth(boothData: Partial<Booth>, boothId?: s
     revalidatePath(`/booth-dashboard/${boothId}`);
   } else {
     // Create new booth
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAdmin
       .from('booths')
       .insert([restOfBoothData])
       .select('id')
       .single();
 
-    if (error) {
+    if (error || !data) {
         console.error('Supabase error creating booth:', error);
         return { success: false, error: 'Database error: Could not create booth.' };
     }
     boothId = data.id;
+
+    // If user details are provided, create the user and tenant record
+    if (booth_user_email && booth_user_password) {
+        const createTenantResult = await createTenantUser({
+            name: restOfBoothData.booth_manager, // Use booth manager name for the tenant name
+            email: booth_user_email,
+            password: booth_user_password,
+            booth_id: boothId,
+        });
+
+        if (!createTenantResult.success) {
+            // Attempt to clean up the created booth if tenant creation fails
+            await supabaseAdmin.from('booths').delete().eq('id', boothId);
+            return { success: false, error: `Booth created, but failed to create user: ${createTenantResult.error}` };
+        }
+    }
   }
 
   revalidatePath('/booths');
+  revalidatePath('/tenants');
   revalidatePath('/dashboard');
   return { success: true, boothId };
 }
 
 export async function deleteBooth(boothId: string) {
     // First, delete all attendees for the booth
-    const { error: attendeeError } = await supabaseClient
+    const { error: attendeeError } = await supabaseAdmin
       .from('attendees')
       .delete()
       .eq('booth_id', boothId);
@@ -142,9 +159,20 @@ export async function deleteBooth(boothId: string) {
       console.error('Supabase error deleting attendees:', attendeeError);
       return { success: false, error: 'Database error: Could not delete attendees.' };
     }
+    
+    // Also, unassign any tenants associated with this booth
+    const { error: tenantUnassignError } = await supabaseAdmin
+      .from('tenants')
+      .update({ booth_id: null })
+      .eq('booth_id', boothId);
+
+    if (tenantUnassignError) {
+        // Log the error but don't block deletion
+        console.error('Supabase error unassigning tenants:', tenantUnassignError);
+    }
   
     // Then, delete the booth itself
-    const { error: boothError } = await supabaseClient
+    const { error: boothError } = await supabaseAdmin
       .from('booths')
       .delete()
       .eq('id', boothId);
@@ -156,6 +184,7 @@ export async function deleteBooth(boothId: string) {
   
     revalidatePath('/booths');
     revalidatePath('/dashboard');
+    revalidatePath('/tenants');
     return { success: true };
 }
 
@@ -273,36 +302,6 @@ export async function drawRaffleWinner(raffleId: string) {
   return { success: true, winner: newWinner };
 }
 
-export async function redeemProduct(productId: string, userId: string, productName: string, points: number) {
-    const { data: transaction, error } = await supabaseClient
-      .from('transactions')
-      .insert([{
-          user_id: userId, // This would be the actual user's ID
-          user_name: 'John Doe', // Placeholder, you'd fetch the user's name
-          product_name: productName,
-          points: points,
-      }])
-      .select()
-      .single();
-
-    if (error) {
-        console.error('Supabase error creating transaction:', error);
-        return { success: false, error: 'Database error: Could not redeem product.' };
-    }
-
-    const { error: stockError } = await supabaseClient.rpc('decrement_product_stock', { p_id: productId });
-    
-    if (stockError) {
-        console.error('Supabase error decrementing stock:', stockError);
-        // Optionally, you could try to revert the transaction here
-        return { success: false, error: 'Database error: Could not update stock.' };
-    }
-
-    revalidatePath('/pos');
-    revalidatePath('/booth-dashboard/*');
-
-    return { success: true, transaction };
-}
 
 export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string, boothId: string) {
     noStore();
@@ -367,6 +366,45 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
 }
 
 
+async function createTenantUser(tenantData: { name: string; email: string; password?: string; booth_id: string | null; }) {
+    if (!tenantData.password) {
+        return { success: false, error: 'Password is required for new users.' };
+    }
+    // 1. Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: tenantData.email,
+      password: tenantData.password,
+      email_confirm: true, // Auto-confirm email
+    });
+
+    if (authError) {
+      console.error('Supabase Auth error creating tenant user:', authError);
+      return { success: false, error: authError.message };
+    }
+
+    const userId = authData.user.id;
+
+    // 2. Insert into tenants table
+    const { error: dbError } = await supabaseAdmin
+      .from('tenants')
+      .insert({
+        id: userId, // Use the same ID from auth user
+        name: tenantData.name,
+        email: tenantData.email,
+        booth_id: tenantData.booth_id === 'unassigned' ? null : tenantData.booth_id,
+      });
+
+    if (dbError) {
+      console.error('Supabase DB error creating tenant record:', dbError);
+      // Attempt to clean up the created auth user
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return { success: false, error: 'Database error: Could not create tenant record.' };
+    }
+    
+    return { success: true };
+}
+
+
 export async function createOrUpdateTenant(formData: FormData) {
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
@@ -387,35 +425,14 @@ export async function createOrUpdateTenant(formData: FormData) {
     }
   } else {
     // Create new tenant and auth user
-    // 1. Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm email
-    });
-
-    if (authError) {
-      console.error('Supabase Auth error creating tenant user:', authError);
-      return { success: false, error: authError.message };
-    }
-
-    const userId = authData.user.id;
-
-    // 2. Insert into tenants table
-    const { error: dbError } = await supabaseAdmin
-      .from('tenants')
-      .insert({
-        id: userId, // Use the same ID from auth user
+    const result = await createTenantUser({
         name,
         email,
-        booth_id: booth_id === 'unassigned' ? null : booth_id,
-      });
-
-    if (dbError) {
-      console.error('Supabase DB error creating tenant record:', dbError);
-      // Attempt to clean up the created auth user
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      return { success: false, error: 'Database error: Could not create tenant record.' };
+        password,
+        booth_id,
+    });
+    if (!result.success) {
+        return result;
     }
   }
 
@@ -425,13 +442,22 @@ export async function createOrUpdateTenant(formData: FormData) {
 
   
 export async function deleteTenant(tenantId: string) {
-    const { error } = await supabaseClient
+    // First, delete the user from Supabase Auth
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(tenantId);
+    if (authError) {
+        // If user is already deleted from auth, we might get a "User not found" error.
+        // We can choose to ignore this or handle it, for now we log and continue.
+        console.warn('Supabase Auth error deleting tenant. Might be already deleted. Continuing...', authError.message);
+    }
+    
+    // Then, delete the record from the tenants table
+    const { error: dbError } = await supabaseAdmin
       .from('tenants')
       .delete()
       .eq('id', tenantId);
   
-    if (error) {
-      console.error('Supabase DB error deleting tenant:', error);
+    if (dbError) {
+      console.error('Supabase DB error deleting tenant:', dbError);
       return { success: false, error: 'Database error: Could not delete tenant record.' };
     }
   

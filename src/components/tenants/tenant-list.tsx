@@ -85,7 +85,7 @@ export function TenantList({ tenants, booths }: { tenants: Tenant[], booths: Boo
 
     if (result.success) {
       toast({
-        title: 'Tenant Deleted',
+        title: 'User Deleted',
         description: `"${tenantName}" has been successfully deleted.`,
       });
       router.refresh();
@@ -93,7 +93,7 @@ export function TenantList({ tenants, booths }: { tenants: Tenant[], booths: Boo
       toast({
         variant: 'destructive',
         title: 'Deletion Failed',
-        description: result.error || 'Could not delete the tenant.',
+        description: result.error || 'Could not delete the user.',
       });
     }
   };
@@ -103,7 +103,7 @@ export function TenantList({ tenants, booths }: { tenants: Tenant[], booths: Boo
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{selectedTenant ? 'Edit Tenant' : 'Create New Tenant'}</DialogTitle>
+            <DialogTitle>{selectedTenant ? 'Edit Booth User' : 'Create New Booth User'}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <TenantForm booths={booths} tenant={selectedTenant} onFinished={() => setIsFormOpen(false)} />
@@ -113,21 +113,21 @@ export function TenantList({ tenants, booths }: { tenants: Tenant[], booths: Boo
       <Card>
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <CardTitle>Tenant Management</CardTitle>
+            <CardTitle>Booth User Management</CardTitle>
             <CardDescription>
-              A list of all tenants and their assigned booths.
+              A list of all users and their assigned booths.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Input
-              placeholder="Search tenants..."
+              placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:max-w-sm"
             />
             <Button onClick={openFormForNew}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              New Tenant
+              New User
             </Button>
           </div>
         </CardHeader>
@@ -182,7 +182,7 @@ export function TenantList({ tenants, booths }: { tenants: Tenant[], booths: Boo
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the tenant "{tenant.name}".
+                                  This action cannot be undone. This will permanently delete the user "{tenant.name}" and their login credentials.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -206,7 +206,7 @@ export function TenantList({ tenants, booths }: { tenants: Tenant[], booths: Boo
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    No tenants found.
+                    No users found.
                   </TableCell>
                 </TableRow>
               )}
