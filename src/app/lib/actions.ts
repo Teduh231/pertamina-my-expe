@@ -4,7 +4,7 @@ import { detectPii } from '@/ai/flows/pii-detection-for-registration';
 import { Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
 import { getBoothById } from './data';
 import { revalidatePath } from 'next/cache';
-import { supabase, supabaseAdmin } from './supabase';
+import { supabase } from './supabase';
 import { unstable_noStore as noStore } from 'next/cache';
 
 // Placeholder function for sending email.
@@ -366,99 +366,47 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
 }
 
 
-export async function createOrUpdateTenant(formData: FormData) {
-  const name = formData.get('name') as string;
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const booth_id = formData.get('booth_id') as string | null;
-  const tenantId = formData.get('tenantId') as string | null;
-
-  if (tenantId) {
-    // Update existing tenant
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.updateUserById(
-      tenantId,
-      { email: email }
-    );
-    if (userError) {
-      console.error('Supabase Auth error updating tenant user:', userError);
-      return { success: false, error: userError.message };
+export async function createOrUpdateTenant(tenantData: Partial<Tenant>, tenantId?: string) {
+    const { id, boothName, ...restOfTenantData } = tenantData;
+  
+    if (tenantId) {
+      // Update existing tenant
+      const { error } = await supabase
+        .from('tenants')
+        .update(restOfTenantData)
+        .eq('id', tenantId);
+  
+      if (error) {
+        console.error('Supabase DB error updating tenant:', error);
+        return { success: false, error: 'Database error: Could not update tenant.' };
+      }
+    } else {
+      // Create new tenant
+      const { error } = await supabase
+        .from('tenants')
+        .insert([restOfTenantData]);
+  
+      if (error) {
+        console.error('Supabase DB error creating tenant:', error);
+        return { success: false, error: 'Database error: Could not create tenant record.' };
+      }
     }
-    if(password){
-        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(tenantId, { password: password });
-        if (passwordError) {
-          console.error('Supabase Auth error updating tenant password:', passwordError);
-          // Don't block for this, just log it
-        }
-    }
-
-    const { error: dbError } = await supabase
-      .from('tenants')
-      .update({ name, email, booth_id: booth_id === 'unassigned' ? null : booth_id })
-      .eq('id', tenantId);
-
-    if (dbError) {
-      console.error('Supabase DB error updating tenant:', dbError);
-      return { success: false, error: 'Database error: Could not update tenant.' };
-    }
-  } else {
-    // Create new tenant user in Auth
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      password: password,
-      email_confirm: true, // Auto-confirm email
-    });
-
-    if (userError) {
-      console.error('Supabase Auth error creating tenant user:', userError);
-      return { success: false, error: userError.message };
-    }
-    if (!user) {
-        return { success: false, error: 'Could not create tenant user in Auth.' };
-    }
-
-    // Create corresponding tenant in public.tenants table
-    const { error: dbError } = await supabase.from('tenants').insert([
-      {
-        id: user.id, // Use the same ID from Auth
-        name: name,
-        email: email,
-        booth_id: booth_id === 'unassigned' ? null : booth_id,
-      },
-    ]);
-
-    if (dbError) {
-      console.error('Supabase DB error creating tenant:', dbError);
-      // If DB insert fails, we should probably delete the Auth user to avoid orphans
-      await supabaseAdmin.auth.admin.deleteUser(user.id);
-      return { success: false, error: 'Database error: Could not create tenant record.' };
-    }
-  }
-
-  revalidatePath('/tenants');
-  return { success: true };
+  
+    revalidatePath('/tenants');
+    return { success: true };
 }
-
+  
 export async function deleteTenant(tenantId: string) {
-  // First, delete from the public.tenants table
-  const { error: dbError } = await supabase
-    .from('tenants')
-    .delete()
-    .eq('id', tenantId);
-
-  if (dbError) {
-    console.error('Supabase DB error deleting tenant:', dbError);
-    return { success: false, error: 'Database error: Could not delete tenant record.' };
-  }
-
-  // Then, delete the user from Supabase Auth
-  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(tenantId);
-  if (authError) {
-    // This is problematic as the DB record is gone but the Auth user remains.
-    // In a real app, you'd want more robust error handling / transaction logic.
-    console.error('Supabase Auth error deleting tenant user:', authError);
-    return { success: false, error: 'Could not delete tenant authentication record.' };
-  }
-
-  revalidatePath('/tenants');
-  return { success: true };
+    const { error } = await supabase
+      .from('tenants')
+      .delete()
+      .eq('id', tenantId);
+  
+    if (error) {
+      console.error('Supabase DB error deleting tenant:', error);
+      return { success: false, error: 'Database error: Could not delete tenant record.' };
+    }
+  
+    revalidatePath('/tenants');
+    return { success: true };
 }
