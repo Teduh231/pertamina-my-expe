@@ -8,6 +8,7 @@ export type Booth = {
   booth_manager: string;
   status: BoothStatus;
   attendees: Attendee[];
+  raffles: Raffle[];
   created_at: string;
   image_url?: string;
 };
@@ -58,4 +59,12 @@ export type Transaction = {
   product_name: string;
   points: number;
   created_at: string;
+};
+
+export type Tenant = {
+  id: string;
+  name: string;
+  email: string;
+  booth_id: string | null;
+  boothName?: string;
 };

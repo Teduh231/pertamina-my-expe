@@ -13,7 +13,6 @@ import {
 import {
   Users,
   Edit,
-  Download,
   Eye,
   MoreVertical,
   PlusCircle,
@@ -21,6 +20,7 @@ import {
   Trash2,
   Image as ImageIcon,
   MapPin,
+  LayoutDashboard,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { deleteBooth, exportAttendeesToCsv } from '@/app/lib/actions';
+import { deleteBooth } from '@/app/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { BoothForm } from './booth-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -52,32 +52,6 @@ export function BoothList({ booths }: BoothListProps) {
   const { toast } = useToast();
   const router = useRouter();
 
-
-  const handleExport = async (boothId: string, boothName: string) => {
-    toast({ title: 'Exporting...', description: 'Please wait while we prepare your CSV file.' });
-    try {
-      const csvData = await exportAttendeesToCsv(boothId);
-      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${boothName.replace(/\s/g, '_')}_attendees.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({
-        title: 'Export successful!',
-        description: `Attendee data for "${boothName}" has been downloaded.`,
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Export failed',
-        description: 'Could not export attendee data. Please try again.',
-      });
-    }
-  };
-  
   const handleDelete = async (boothId: string, boothName: string) => {
     setIsDeleting(true);
     const result = await deleteBooth(boothId);
@@ -134,11 +108,11 @@ export function BoothList({ booths }: BoothListProps) {
   return (
     <div className="space-y-6">
        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-[800px] bg-card border-border">
+        <DialogContent className="sm:max-w-[800px] bg-card border-border overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{selectedBooth ? 'Edit Booth' : 'Create New Booth'}</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 px-1">
              <BoothForm booth={selectedBooth} onFinished={() => setIsFormOpen(false)} />
           </div>
         </DialogContent>
@@ -206,11 +180,11 @@ export function BoothList({ booths }: BoothListProps) {
               </CardContent>
               <CardFooter className="p-4 pt-0">
                 <div className="flex w-full justify-end gap-2">
-                  <Button asChild variant="ghost" size="sm" disabled={booth.status !== 'published'}>
-                    <Link href={`/booths/${booth.id}/register`} target="_blank">
-                      <Eye className="mr-2 h-4 w-4" />
-                      Public View
-                    </Link>
+                  <Button asChild variant="outline" size="sm">
+                     <Link href={`/booth-dashboard/${booth.id}`}>
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Dashboard
+                     </Link>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -221,14 +195,13 @@ export function BoothList({ booths }: BoothListProps) {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openFormForEdit(booth)}>
                          <Edit className="mr-2 h-4 w-4" />
-                         <span>Edit / Manage</span>
+                         <span>Edit Booth</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleExport(booth.id, booth.name)}
-                        disabled={attendeeCount === 0}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        <span>Export Attendees</span>
+                       <DropdownMenuItem asChild>
+                         <Link href={`/booths/${booth.id}/register`} target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>Public View</span>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                         <AlertDialog>

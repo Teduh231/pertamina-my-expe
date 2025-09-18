@@ -5,15 +5,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart2,
-  Calendar,
   Users,
-  Ticket,
-  ShoppingCart,
   FileText,
-  QrCode,
   LogOut,
-  Gift,
   Store,
+  UserCog,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -51,11 +47,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { href: '/booths', icon: Store, label: 'Booths' },
-    { href: '/attendees', icon: Users, label: 'Attendees' },
-    { href: '/raffle', icon: Ticket, label: 'Raffle' },
-    { href: '/prize-history', icon: Gift, label: 'Prize History' },
-    { href: '/pos', icon: ShoppingCart, label: 'POS' },
-    { href: '/qr-scanner', icon: QrCode, label: 'QR Scanner' },
+    { href: '/tenants', icon: UserCog, label: 'Tenant Management' },
+    { href: '/attendees', icon: Users, label: 'All Attendees' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
 
@@ -94,7 +87,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="flex md:hidden"/>
                     <h1 className="text-lg font-semibold capitalize hidden md:block">
-                        {pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard'}
+                        {pathname.split('/').filter(p => p).pop()?.replace(/-/g, ' ') || 'Dashboard'}
                     </h1>
                 </div>
 

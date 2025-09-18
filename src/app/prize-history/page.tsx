@@ -1,20 +1,6 @@
-import { getRaffles } from '@/app/lib/data';
-import { AppLayout } from '@/components/app-layout';
-import type { Raffle } from '@/app/lib/definitions';
-import { PrizeHistoryContent } from './_components/prize-history-content';
-import { ProtectedRoute } from '@/hooks/use-auth';
+// This page is no longer needed as the functionality has been moved to the booth-specific dashboard.
+import { redirect } from 'next/navigation';
 
-
-export default async function PrizeHistoryPage() {
-  const raffles: Raffle[] = await getRaffles();
-
-  const finishedRaffles = raffles.filter(r => r.status === 'finished' && r.winners.length > 0);
-
-  return (
-    <ProtectedRoute>
-      <AppLayout>
-        <PrizeHistoryContent raffles={finishedRaffles} />
-      </AppLayout>
-    </ProtectedRoute>
-  );
+export default function PrizeHistoryPage() {
+    redirect('/dashboard');
 }

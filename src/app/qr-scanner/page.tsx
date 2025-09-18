@@ -1,17 +1,6 @@
-import { getBooths, getProducts } from '@/app/lib/data';
-import { AppLayout } from '@/components/app-layout';
-import { QrScannerContent } from './_components/qr-scanner-content';
-import { ProtectedRoute } from '@/hooks/use-auth';
-import { Booth, Product } from '@/app/lib/definitions';
+// This page is no longer needed as the functionality has been moved to the booth-specific dashboard.
+import { redirect } from 'next/navigation';
 
-export default async function QrScannerPage() {
-  const booths: Booth[] = await getBooths();
-  const products: Product[] = await getProducts();
-  return (
-    <ProtectedRoute>
-      <AppLayout>
-        <QrScannerContent booths={booths} products={products}/>
-      </AppLayout>
-    </ProtectedRoute>
-  );
+export default function QrScannerPage() {
+    redirect('/dashboard');
 }

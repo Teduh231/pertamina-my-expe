@@ -1,7 +1,7 @@
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Attendee, Booth, Product, Raffle, RaffleWinner, Transaction } from './definitions';
+import { Attendee, Booth, Product, Raffle, RaffleWinner, Tenant, Transaction } from './definitions';
 import { getBoothById } from './data';
 import { revalidatePath } from 'next/cache';
 import { supabase } from './supabase';
@@ -94,11 +94,9 @@ export async function exportAttendeesToCsv(boothId: string): Promise<string> {
     return csvRows.join('\n');
 }
 
-export async function createOrUpdateBooth(boothData: Omit<Booth, 'id' | 'created_at'>, boothId?: string) {
-  // The 'attendees' property is part of the Booth type for client-side use,
-  // but it's not a column in the 'booths' table. We must remove it before insert/update.
+export async function createOrUpdateBooth(boothData: Partial<Booth>, boothId?: string) {
   const { attendees, ...restOfBoothData } = boothData;
-  
+
   if (boothId) {
     // Update existing booth
     const { error } = await supabase
@@ -111,6 +109,7 @@ export async function createOrUpdateBooth(boothData: Omit<Booth, 'id' | 'created
       return { success: false, error: 'Database error: Could not update booth.' };
     }
     revalidatePath(`/booths/${boothId}`);
+    revalidatePath(`/booth-dashboard/${boothId}`);
   } else {
     // Create new booth
     const { data, error } = await supabase
@@ -200,7 +199,7 @@ export async function registerAttendee(boothId: string, attendeeData: Omit<Atten
     }
 
     revalidatePath(`/booths/${boothId}/register`);
-    revalidatePath(`/booths/${boothId}`);
+    revalidatePath(`/booth-dashboard/${boothId}`);
     revalidatePath('/attendees');
     revalidatePath('/dashboard');
     return { success: true };
@@ -213,8 +212,7 @@ export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'w
         console.error('Supabase error creating raffle:', error);
         return { success: false, error: 'Database error: Could not create raffle.' };
     }
-    revalidatePath('/raffle');
-    revalidatePath('/prize-history');
+    revalidatePath(`/booth-dashboard/${raffleData.booth_id}`);
     return { success: true };
 }
 
@@ -238,8 +236,7 @@ export async function drawRaffleWinner(raffleId: string) {
 
   if (eligibleAttendees.length === 0) {
     await supabase.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
-    revalidatePath('/raffle');
-    revalidatePath('/prize-history');
+    revalidatePath(`/booth-dashboard/${raffle.booth_id}`);
     return { success: true, message: 'No more eligible attendees to draw.' };
   }
   
@@ -270,8 +267,7 @@ export async function drawRaffleWinner(raffleId: string) {
     return { success: false, error: 'Could not save the winner.' };
   }
   
-  revalidatePath('/raffle');
-  revalidatePath('/prize-history');
+  revalidatePath(`/booth-dashboard/${raffle.booth_id}`);
   
   return { success: true, winner: newWinner };
 }
@@ -302,12 +298,12 @@ export async function redeemProduct(productId: string, userId: string, productNa
     }
 
     revalidatePath('/pos');
-    revalidatePath('/qr-scanner');
+    revalidatePath('/booth-dashboard/*');
 
     return { success: true, transaction };
 }
 
-export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string) {
+export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string, boothId: string) {
     noStore();
     // 1. Fetch attendee and product in parallel
     const [attendeeResult, productResult] = await Promise.all([
@@ -357,7 +353,7 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
         return { success: false, error: "Database error during transaction." };
     }
 
-    revalidatePath('/qr-scanner');
+    revalidatePath(`/booth-dashboard/${boothId}`);
     revalidatePath('/pos');
 
     return {
@@ -367,4 +363,48 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
         pointsUsed: product.points,
         remainingPoints: newAttendeePoints
     };
+}
+
+
+export async function createOrUpdateTenant(tenantData: Partial<Tenant>, tenantId?: string) {
+  if (tenantId) {
+    // Update
+    const { error } = await supabase
+      .from('tenants')
+      .update(tenantData)
+      .eq('id', tenantId);
+
+    if (error) {
+      console.error('Supabase error updating tenant:', error);
+      return { success: false, error: 'Database error: Could not update tenant.' };
+    }
+  } else {
+    // Create
+    const { error } = await supabase.from('tenants').insert([tenantData]);
+    if (error) {
+      console.error('Supabase error creating tenant:', error);
+      if (error.code === '23505') { // unique constraint violation
+        return { success: false, error: 'A tenant with this email already exists.' };
+      }
+      return { success: false, error: 'Database error: Could not create tenant.' };
+    }
+  }
+
+  revalidatePath('/tenants');
+  return { success: true };
+}
+
+export async function deleteTenant(tenantId: string) {
+  const { error } = await supabase
+    .from('tenants')
+    .delete()
+    .eq('id', tenantId);
+
+  if (error) {
+    console.error('Supabase error deleting tenant:', error);
+    return { success: false, error: 'Database error: Could not delete tenant.' };
+  }
+
+  revalidatePath('/tenants');
+  return { success: true };
 }
