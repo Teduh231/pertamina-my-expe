@@ -46,6 +46,7 @@ export type Raffle = {
 
 export type Product = {
   id: string;
+  booth_id: string;
   name: string;
   points: number;
   stock: number;

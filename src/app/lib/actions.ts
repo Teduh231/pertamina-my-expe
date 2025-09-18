@@ -464,3 +464,20 @@ export async function deleteTenant(tenantId: string) {
     revalidatePath('/tenants');
     return { success: true };
 }
+
+
+export async function createProduct(productData: Omit<Product, 'id' | 'created_at'>) {
+    const { data, error } = await supabaseClient
+        .from('products')
+        .insert([productData])
+        .select()
+        .single();
+
+    if (error || !data) {
+        console.error('Supabase error creating product:', error);
+        return { success: false, error: 'Database error: Could not create product.' };
+    }
+    
+    revalidatePath(`/booth-dashboard/${productData.booth_id}`);
+    return { success: true, product: data };
+}

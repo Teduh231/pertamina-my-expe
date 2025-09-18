@@ -1,12 +1,13 @@
-import { getBoothById, getProducts, getRaffles } from '@/app/lib/data';
+import { getBoothById, getProductsByBooth, getRaffles } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
 import { QrScannerContent } from '@/components/booth-dashboard/qr-scanner-content';
 import { RafflePageContent } from '@/components/booth-dashboard/raffle-page-content';
 import { PrizeHistoryContent } from '@/components/booth-dashboard/prize-history-content';
+import { MerchandisePageContent } from '@/components/booth-dashboard/merchandise-page-content';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { QrCode, Ticket, Gift, LogOut } from 'lucide-react';
+import { QrCode, Ticket, Gift, Shirt } from 'lucide-react';
 import { TenantDashboardHeader } from '@/components/booth-dashboard/tenant-dashboard-header';
 
 
@@ -15,7 +16,7 @@ export default async function BoothDashboardPage({ params }: { params: { id: str
   
   const [booth, products, allRaffles] = await Promise.all([
     getBoothById(boothId),
-    getProducts(),
+    getProductsByBooth(boothId),
     getRaffles(boothId)
   ]);
 
@@ -32,8 +33,9 @@ export default async function BoothDashboardPage({ params }: { params: { id: str
         <main className="p-4 md:p-6">
             <div className="space-y-6">
                 <Tabs defaultValue="scanner" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="scanner"><QrCode className="mr-2 h-4 w-4" />QR Scanner</TabsTrigger>
+                    <TabsTrigger value="merchandise"><Shirt className="mr-2 h-4 w-4"/>Merchandise</TabsTrigger>
                     <TabsTrigger value="raffles"><Ticket className="mr-2 h-4 w-4"/>Raffle</TabsTrigger>
                     <TabsTrigger value="prizes"><Gift className="mr-2 h-4 w-4"/>Prize History</TabsTrigger>
                 </TabsList>
@@ -45,6 +47,17 @@ export default async function BoothDashboardPage({ params }: { params: { id: str
                         </CardHeader>
                         <CardContent>
                             <QrScannerContent booth={booth} products={products} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="merchandise">
+                    <Card className="mt-4">
+                        <CardHeader>
+                            <CardTitle>Merchandise Management</CardTitle>
+                            <CardDescription>Add and manage products available for redemption at this booth.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <MerchandisePageContent boothId={booth.id} products={products} />
                         </CardContent>
                     </Card>
                 </TabsContent>

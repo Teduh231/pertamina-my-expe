@@ -118,6 +118,17 @@ export async function getProducts(): Promise<Product[]> {
     }
 }
 
+export async function getProductsByBooth(boothId: string): Promise<Product[]> {
+    noStore();
+    try {
+      const query = supabase.from('products').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
+      return await supabaseQuery(query);
+    } catch (error) {
+      console.error("Failed to fetch products, returning empty array:", error);
+      return [];
+    }
+}
+
 export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
     noStore();
     try {
