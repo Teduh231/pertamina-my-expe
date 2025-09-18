@@ -7,7 +7,7 @@ import { ProtectedRoute } from '@/hooks/use-auth';
 export default async function AttendeesPage() {
   const booths: Booth[] = await getBooths();
   return (
-    <ProtectedRoute>
+    <ProtectedRoute adminOnly={true}>
       <AppLayout>
         <AttendeeList booths={booths} />
       </AppLayout>

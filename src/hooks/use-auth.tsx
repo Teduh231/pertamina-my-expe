@@ -1,13 +1,18 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/app/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { getUserProfile } from '@/app/lib/data';
+import type { UserProfile } from '@/app/lib/definitions';
 
 interface AuthContextType {
   user: User | null;
+  profile: UserProfile | null;
+  isAdmin: boolean;
+  assignedBoothId: string | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<any>;
   signup: (email: string, pass: string) => Promise<any>;
@@ -18,21 +23,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
-    const getSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
-        setLoading(false);
-    }
+    const fetchSessionAndProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const userProfile = await getUserProfile(session.user.id);
+        setProfile(userProfile);
+      }
+      setLoading(false);
+    };
     
-    getSession();
+    fetchSessionAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user ?? null);
+        if (event === 'SIGNED_IN' && session?.user) {
+          const userProfile = await getUserProfile(session.user.id);
+          setProfile(userProfile);
+        }
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+        }
         setLoading(false);
       }
     );
@@ -57,21 +74,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   };
 
+  const isAdmin = profile?.role === 'admin';
+  const assignedBoothId = profile?.booth_id || null;
+
   const value = {
     user,
+    profile,
+    isAdmin,
+    assignedBoothId,
     loading,
     login,
     signup,
     logout,
   };
-
-  if (loading) {
-    return (
-        <div className="flex h-screen items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-    );
-  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -84,17 +99,27 @@ export const useAuth = () => {
   return context;
 };
 
-export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, loading } = useAuth();
+export const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
+    const { user, loading, isAdmin } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
   
     useEffect(() => {
-      if (!loading && !user) {
-        router.push('/login');
-      }
-    }, [user, loading, router]);
+      if (loading) return;
   
-    if (loading || !user) {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      if (adminOnly && !isAdmin) {
+        // If it's an admin-only route and user is not an admin, redirect to dashboard
+        router.push('/dashboard');
+      }
+
+    }, [user, loading, isAdmin, adminOnly, router, pathname]);
+  
+    if (loading || !user || (adminOnly && !isAdmin)) {
       return (
           <div className="flex h-screen items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin" />

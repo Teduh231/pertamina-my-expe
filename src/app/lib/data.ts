@@ -1,4 +1,4 @@
-import { Booth, Attendee, Raffle, Product, Transaction, Tenant } from '@/app/lib/definitions';
+import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -11,6 +11,41 @@ async function supabaseQuery(query: any) {
   }
   return data;
 }
+
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+    noStore();
+    try {
+        const { data, error } = await supabase
+            .from('user_roles')
+            .select(`
+                role,
+                tenants:tenants (
+                    booth_id
+                )
+            `)
+            .eq('id', userId)
+            .single();
+
+        if (error || !data) {
+            console.error('Error fetching user profile:', error?.message);
+            return null;
+        }
+        
+        // The join returns tenants as an array, but it should only be one or none
+        const boothId = data.tenants && Array.isArray(data.tenants) && data.tenants.length > 0
+            ? data.tenants[0].booth_id
+            : null;
+
+        return {
+            role: data.role,
+            booth_id: boothId
+        };
+    } catch (error) {
+        console.error("Failed to fetch user profile, returning null:", error);
+        return null;
+    }
+}
+
 
 export async function getBooths(): Promise<Booth[]> {
   noStore();

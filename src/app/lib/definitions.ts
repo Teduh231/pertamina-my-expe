@@ -68,3 +68,8 @@ export type Tenant = {
   booth_id: string | null;
   boothName?: string;
 };
+
+export type UserProfile = {
+  role: string;
+  booth_id: string | null;
+};

@@ -10,6 +10,7 @@ import {
   LogOut,
   Store,
   UserCog,
+  LayoutDashboard,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -37,20 +38,32 @@ import Image from 'next/image';
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, assignedBoothId } = useAuth();
 
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
-  const navItems = [
+  const adminNavItems = [
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { href: '/booths', icon: Store, label: 'Booths' },
     { href: '/tenants', icon: UserCog, label: 'Booth User Management' },
     { href: '/attendees', icon: Users, label: 'All Attendees' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
+
+  const tenantNavItems = assignedBoothId ? [
+    { href: `/booth-dashboard/${assignedBoothId}`, icon: LayoutDashboard, label: 'My Dashboard' }
+  ] : [];
+
+  const navItems = isAdmin ? adminNavItems : tenantNavItems;
+
+  const getPageTitle = () => {
+    if (!isAdmin) return 'Booth Dashboard';
+    const currentNavItem = adminNavItems.find(item => pathname.startsWith(item.href));
+    return currentNavItem?.label || 'Dashboard';
+  }
 
   return (
     <SidebarProvider>
@@ -87,7 +100,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="flex md:hidden"/>
                     <h1 className="text-lg font-semibold capitalize hidden md:block">
-                        {pathname.split('/').pop()?.replace(/-/g, ' ') === 'tenants' ? 'Booth User Management' : pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard'}
+                        {getPageTitle()}
                     </h1>
                 </div>
 
