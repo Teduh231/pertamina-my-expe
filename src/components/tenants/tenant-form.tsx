@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -24,12 +24,13 @@ import { Booth, Tenant } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import React from 'react';
+import React, { useRef } from 'react';
 import { createOrUpdateTenant } from '@/app/lib/actions';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }).optional().or(z.literal('')),
   booth_id: z.string().nullable(),
 });
 
@@ -43,19 +44,36 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: tenant?.name || '',
       email: tenant?.email || '',
+      password: '',
       booth_id: tenant?.booth_id || null,
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    const result = await createOrUpdateTenant(values, tenant?.id);
+    
+    // We use FormData to pass data to server action
+    const formData = new FormData();
+    formData.append('name', values.name);
+    formData.append('email', values.email);
+    if (values.password) {
+      formData.append('password', values.password);
+    }
+    if (values.booth_id) {
+        formData.append('booth_id', values.booth_id);
+    }
+    if (tenant?.id) {
+        formData.append('tenantId', tenant.id);
+    }
+
+    const result = await createOrUpdateTenant(formData);
     setIsSubmitting(false);
 
     if (result.success) {
@@ -77,7 +95,7 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -99,6 +117,19 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
               <FormLabel>Email</FormLabel>
               <FormControl>
                 <Input type="email" placeholder="tenant@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder={tenant ? "Leave blank to keep current password" : "••••••••"} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
