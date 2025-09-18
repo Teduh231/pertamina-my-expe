@@ -15,30 +15,37 @@ async function supabaseQuery(query: any) {
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
     noStore();
     try {
-        const { data, error } = await supabase
+        // Query 1: Get the user's role
+        const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
-            .select(`
-                role,
-                tenants:tenants (
-                    booth_id
-                )
-            `)
+            .select('role')
             .eq('id', userId)
             .single();
 
-        if (error || !data) {
-            console.error('Error fetching user profile:', error?.message);
+        if (roleError) {
+            console.error('Error fetching user role:', roleError?.message);
+            // If user has no role entry yet, they are a regular user, not an admin
+            if (roleError.code === 'PGRST116') { // "JSON object requested, but single row not found"
+                return { role: 'tenant', booth_id: null };
+            }
             return null;
         }
+
+        // Query 2: Get the user's assigned booth from the tenants table
+        const { data: tenantData, error: tenantError } = await supabase
+            .from('tenants')
+            .select('booth_id')
+            .eq('id', userId)
+            .single();
         
-        // The join returns tenants as an array, but it should only be one or none
-        const boothId = data.tenants && Array.isArray(data.tenants) && data.tenants.length > 0
-            ? data.tenants[0].booth_id
-            : null;
+        // It's okay if tenantError exists (e.g. user is admin and not in tenants table)
+        if (tenantError && tenantError.code !== 'PGRST116') {
+             console.error('Error fetching tenant info:', tenantError?.message);
+        }
 
         return {
-            role: data.role,
-            booth_id: boothId
+            role: roleData.role,
+            booth_id: tenantData?.booth_id || null,
         };
     } catch (error) {
         console.error("Failed to fetch user profile, returning null:", error);
