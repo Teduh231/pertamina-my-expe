@@ -25,7 +25,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { TenantForm } from './tenant-form';
 import {
@@ -43,6 +42,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '../ui/alert-dialog';
 import { deleteTenant } from '@/app/lib/actions';
 import { useToast } from '@/hooks/use-toast';
