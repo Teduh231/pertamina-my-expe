@@ -1,5 +1,5 @@
 import { Booth, Attendee, Raffle, Product, Transaction, Tenant } from '@/app/lib/definitions';
-import { supabase } from './supabase';
+import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 
 // Helper function to handle Supabase queries and errors
@@ -14,40 +14,54 @@ async function supabaseQuery(query: any) {
 
 export async function getBooths(): Promise<Booth[]> {
   noStore();
-  const query = supabase
-    .from('booths')
-    .select('*, attendees(*)')
-    .order('created_at', { ascending: false });
-  return supabaseQuery(query);
+  try {
+    const query = supabase
+      .from('booths')
+      .select('*, attendees(*)')
+      .order('created_at', { ascending: false });
+    return await supabaseQuery(query);
+  } catch (error) {
+     console.error("Failed to fetch booths, returning empty array:", error);
+     return [];
+  }
 }
 
 export async function getBoothById(id: string): Promise<Booth | undefined> {
   noStore();
-  const query = supabase
-    .from('booths')
-    .select('*, attendees(*), raffles(*)')
-    .eq('id', id)
-    .single();
-  const data = await supabaseQuery(query);
-  return data;
+  try {
+    const query = supabase
+      .from('booths')
+      .select('*, attendees(*), raffles(*)')
+      .eq('id', id)
+      .single();
+    return await supabaseQuery(query);
+  } catch (error) {
+    console.error(`Failed to fetch booth ${id}, returning undefined:`, error);
+    return undefined;
+  }
 }
 
 export async function getRaffles(boothId?: string): Promise<Raffle[]> {
     noStore();
-    let query = supabase
-      .from('raffles')
-      .select('*, booths(id, name)')
-      .order('created_at', { ascending: false });
-  
-    if (boothId) {
-      query = query.eq('booth_id', boothId);
+    try {
+      let query = supabase
+        .from('raffles')
+        .select('*, booths(id, name)')
+        .order('created_at', { ascending: false });
+    
+      if (boothId) {
+        query = query.eq('booth_id', boothId);
+      }
+    
+      const rafflesData = await supabaseQuery(query);
+      return rafflesData.map((raffle: any) => ({
+        ...raffle,
+        boothName: raffle.booths?.name,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch raffles, returning empty array:", error);
+      return [];
     }
-  
-    const rafflesData = await supabaseQuery(query);
-    return rafflesData.map((raffle: any) => ({
-      ...raffle,
-      boothName: raffle.booths?.name,
-    }));
 }
   
 
@@ -79,13 +93,18 @@ export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
 
 export async function getTenants(): Promise<Tenant[]> {
     noStore();
-    const query = supabase
-      .from('tenants')
-      .select('*, booths(id, name)');
-      
-    const tenantsData = await supabaseQuery(query);
-    return tenantsData.map((tenant: any) => ({
-        ...tenant,
-        boothName: tenant.booths?.name,
-    }));
+    try {
+        const query = supabase
+        .from('tenants')
+        .select('*, booths(id, name)');
+        
+        const tenantsData = await supabaseQuery(query);
+        return tenantsData.map((tenant: any) => ({
+            ...tenant,
+            boothName: tenant.booths?.name,
+        }));
+    } catch (error) {
+         console.error("Failed to fetch tenants, returning empty array:", error);
+         return [];
+    }
 }

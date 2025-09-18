@@ -11,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,14 +23,14 @@ import {
 } from '@/components/ui/select';
 import { Booth, Tenant } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import React from 'react';
+import React, { useRef } from 'react';
 import { createOrUpdateTenant } from '@/app/lib/actions';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(6, 'Password must be at least 6 characters.').optional().or(z.literal('')),
   booth_id: z.string().nullable(),
 });
 
@@ -41,48 +42,54 @@ type TenantFormProps = {
 
 export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: tenant?.name || '',
       email: tenant?.email || '',
+      password: '',
       booth_id: tenant?.booth_id || null,
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const validation = await form.trigger();
+    if (!validation) return;
+
     setIsSubmitting(true);
-    
-    const result = await createOrUpdateTenant({
-        ...values,
-        booth_id: values.booth_id === 'unassigned' ? null : values.booth_id
-    }, tenant?.id);
 
-    setIsSubmitting(false);
+    if (formRef.current) {
+        const formData = new FormData(formRef.current);
+        if (tenant) {
+            formData.append('tenantId', tenant.id);
+        }
 
-    if (result.success) {
-      toast({
-        title: `Tenant ${tenant ? 'updated' : 'created'} successfully!`,
-      });
-      router.refresh();
-      if (onFinished) {
-        onFinished();
-      }
-    } else {
-      toast({
-        title: `Error ${tenant ? 'updating' : 'creating'} tenant`,
-        description: result.error || 'An unexpected error occurred.',
-        variant: 'destructive',
-      });
+        const result = await createOrUpdateTenant(formData);
+
+        if (result.success) {
+            toast({
+                title: `Tenant ${tenant ? 'updated' : 'created'} successfully!`,
+            });
+            if (onFinished) onFinished();
+        } else {
+            toast({
+                variant: 'destructive',
+                title: `Error ${tenant ? 'updating' : 'creating'} tenant`,
+                description: result.error || 'An unexpected error occurred.',
+            });
+        }
     }
+    
+    setIsSubmitting(false);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -103,12 +110,27 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="tenant@example.com" {...field} />
+                <Input type="email" placeholder="tenant@example.com" {...field} disabled={!!tenant} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        {!tenant && (
+             <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        )}
         <FormField
           control={form.control}
           name="booth_id"
@@ -118,6 +140,7 @@ export function TenantForm({ tenant, booths, onFinished }: TenantFormProps) {
               <Select
                 onValueChange={(value) => field.onChange(value === 'unassigned' ? null : value)}
                 defaultValue={field.value || 'unassigned'}
+                name={field.name}
               >
                 <FormControl>
                   <SelectTrigger>

@@ -4,8 +4,9 @@ import { detectPii } from '@/ai/flows/pii-detection-for-registration';
 import { Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
 import { getBoothById } from './data';
 import { revalidatePath } from 'next/cache';
-import { supabase } from './supabase';
 import { unstable_noStore as noStore } from 'next/cache';
+import { supabase as supabaseClient } from './supabase/client';
+import { supabaseAdmin } from './supabase/server';
 
 // Placeholder function for sending email.
 // You need to integrate a real email service like SendGrid, Resend, or Nodemailer.
@@ -62,7 +63,7 @@ export async function exportAttendeesToCsv(boothId: string): Promise<string> {
         throw new Error('Booth not found');
     }
     
-    const { data: attendees, error } = await supabase
+    const { data: attendees, error } = await supabaseClient
         .from('attendees')
         .select('*')
         .eq('booth_id', boothId);
@@ -99,7 +100,7 @@ export async function createOrUpdateBooth(boothData: Partial<Booth>, boothId?: s
 
   if (boothId) {
     // Update existing booth
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('booths')
       .update(restOfBoothData)
       .eq('id', boothId);
@@ -112,7 +113,7 @@ export async function createOrUpdateBooth(boothData: Partial<Booth>, boothId?: s
     revalidatePath(`/booth-dashboard/${boothId}`);
   } else {
     // Create new booth
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('booths')
       .insert([restOfBoothData])
       .select('id')
@@ -132,7 +133,7 @@ export async function createOrUpdateBooth(boothData: Partial<Booth>, boothId?: s
 
 export async function deleteBooth(boothId: string) {
     // First, delete all attendees for the booth
-    const { error: attendeeError } = await supabase
+    const { error: attendeeError } = await supabaseClient
       .from('attendees')
       .delete()
       .eq('booth_id', boothId);
@@ -143,7 +144,7 @@ export async function deleteBooth(boothId: string) {
     }
   
     // Then, delete the booth itself
-    const { error: boothError } = await supabase
+    const { error: boothError } = await supabaseClient
       .from('booths')
       .delete()
       .eq('id', boothId);
@@ -164,7 +165,7 @@ export async function registerAttendee(boothId: string, attendeeData: Omit<Atten
         return { success: false, error: 'Booth not found.' };
     }
 
-    const { data: newAttendee, error } = await supabase
+    const { data: newAttendee, error } = await supabaseClient
         .from('attendees')
         .insert([{ ...attendeeData, booth_id: boothId, points: 100 }]) // Award 100 points on registration
         .select()
@@ -184,7 +185,7 @@ export async function registerAttendee(boothId: string, attendeeData: Omit<Atten
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrCodeData}`;
 
     // Update the attendee with the generated QR code URL
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
         .from('attendees')
         .update({ qr_code_url: qrCodeUrl })
         .eq('id', newAttendee.id);
@@ -201,13 +202,13 @@ export async function registerAttendee(boothId: string, attendeeData: Omit<Atten
     revalidatePath(`/booths/${boothId}/register`);
     revalidatePath(`/booth-dashboard/${boothId}`);
     revalidatePath('/attendees');
-    revalidatePath('/dashboard');
+revalidatePath('/dashboard');
     return { success: true };
 }
 
 
 export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'winners' | 'drawn_at'>) {
-    const { error } = await supabase.from('raffles').insert([raffleData]);
+    const { error } = await supabaseClient.from('raffles').insert([raffleData]);
     if (error) {
         console.error('Supabase error creating raffle:', error);
         return { success: false, error: 'Database error: Could not create raffle.' };
@@ -218,7 +219,7 @@ export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'w
 
 export async function drawRaffleWinner(raffleId: string) {
   noStore();
-  const { data: raffle, error: raffleError } = await supabase
+  const { data: raffle, error: raffleError } = await supabaseClient
     .from('raffles')
     .select('*, booths(id, name, attendees(id, name, email))')
     .eq('id', raffleId)
@@ -235,7 +236,7 @@ export async function drawRaffleWinner(raffleId: string) {
   );
 
   if (eligibleAttendees.length === 0) {
-    await supabase.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
+    await supabaseClient.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
     revalidatePath(`/booth-dashboard/${raffle.booth_id}`);
     return { success: true, message: 'No more eligible attendees to draw.' };
   }
@@ -257,7 +258,7 @@ export async function drawRaffleWinner(raffleId: string) {
     drawn_at: updatedWinners.length >= raffle.number_of_winners ? new Date().toISOString() : null,
   };
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseClient
     .from('raffles')
     .update(updatedRaffle)
     .eq('id', raffleId);
@@ -273,7 +274,7 @@ export async function drawRaffleWinner(raffleId: string) {
 }
 
 export async function redeemProduct(productId: string, userId: string, productName: string, points: number) {
-    const { data: transaction, error } = await supabase
+    const { data: transaction, error } = await supabaseClient
       .from('transactions')
       .insert([{
           user_id: userId, // This would be the actual user's ID
@@ -289,7 +290,7 @@ export async function redeemProduct(productId: string, userId: string, productNa
         return { success: false, error: 'Database error: Could not redeem product.' };
     }
 
-    const { error: stockError } = await supabase.rpc('decrement_product_stock', { p_id: productId });
+    const { error: stockError } = await supabaseClient.rpc('decrement_product_stock', { p_id: productId });
     
     if (stockError) {
         console.error('Supabase error decrementing stock:', stockError);
@@ -307,8 +308,8 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
     noStore();
     // 1. Fetch attendee and product in parallel
     const [attendeeResult, productResult] = await Promise.all([
-        supabase.from('attendees').select('id, name, points').eq('id', attendeeId).single(),
-        supabase.from('products').select('id, name, points, stock').eq('id', productId).single()
+        supabaseClient.from('attendees').select('id, name, points').eq('id', attendeeId).single(),
+        supabaseClient.from('products').select('id, name, points, stock').eq('id', productId).single()
     ]);
 
     if (attendeeResult.error || !attendeeResult.data) {
@@ -333,9 +334,9 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
     const newAttendeePoints = attendee.points - product.points;
 
     const [updateAttendeeResult, updateProductResult, createTransactionResult] = await Promise.all([
-        supabase.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id),
-        supabase.from('products').update({ stock: product.stock - 1 }).eq('id', product.id),
-        supabase.from('transactions').insert({
+        supabaseClient.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id),
+        supabaseClient.from('products').update({ stock: product.stock - 1 }).eq('id', product.id),
+        supabaseClient.from('transactions').insert({
             user_id: attendee.id,
             user_name: attendee.name,
             product_name: product.name,
@@ -366,38 +367,65 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
 }
 
 
-export async function createOrUpdateTenant(tenantData: Partial<Tenant>, tenantId?: string) {
-    const { id, boothName, ...restOfTenantData } = tenantData;
-  
-    if (tenantId) {
-      // Update existing tenant
-      const { error } = await supabase
-        .from('tenants')
-        .update(restOfTenantData)
-        .eq('id', tenantId);
-  
-      if (error) {
-        console.error('Supabase DB error updating tenant:', error);
-        return { success: false, error: 'Database error: Could not update tenant.' };
-      }
-    } else {
-      // Create new tenant
-      const { error } = await supabase
-        .from('tenants')
-        .insert([restOfTenantData]);
-  
-      if (error) {
-        console.error('Supabase DB error creating tenant:', error);
-        return { success: false, error: 'Database error: Could not create tenant record.' };
-      }
+export async function createOrUpdateTenant(formData: FormData) {
+  const name = formData.get('name') as string;
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const booth_id = formData.get('booth_id') as string | null;
+  const tenantId = formData.get('tenantId') as string | undefined;
+
+  if (tenantId) {
+    // Update existing tenant logic (only name and booth assignment)
+    const { error } = await supabaseAdmin
+      .from('tenants')
+      .update({ name, booth_id: booth_id === 'unassigned' ? null : booth_id })
+      .eq('id', tenantId);
+
+    if (error) {
+      console.error('Supabase DB error updating tenant:', error);
+      return { success: false, error: 'Database error: Could not update tenant.' };
     }
-  
-    revalidatePath('/tenants');
-    return { success: true };
+  } else {
+    // Create new tenant and auth user
+    // 1. Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Auto-confirm email
+    });
+
+    if (authError) {
+      console.error('Supabase Auth error creating tenant user:', authError);
+      return { success: false, error: authError.message };
+    }
+
+    const userId = authData.user.id;
+
+    // 2. Insert into tenants table
+    const { error: dbError } = await supabaseAdmin
+      .from('tenants')
+      .insert({
+        id: userId, // Use the same ID from auth user
+        name,
+        email,
+        booth_id: booth_id === 'unassigned' ? null : booth_id,
+      });
+
+    if (dbError) {
+      console.error('Supabase DB error creating tenant record:', dbError);
+      // Attempt to clean up the created auth user
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return { success: false, error: 'Database error: Could not create tenant record.' };
+    }
+  }
+
+  revalidatePath('/tenants');
+  return { success: true };
 }
+
   
 export async function deleteTenant(tenantId: string) {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('tenants')
       .delete()
       .eq('id', tenantId);
