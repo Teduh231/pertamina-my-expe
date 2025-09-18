@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { Event, Product } from '@/app/lib/definitions';
+import { Booth, Product } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -44,8 +44,8 @@ type ScanResult = {
   remainingPoints?: number;
 };
 
-export function QrScannerContent({ events, products }: { events: Event[], products: Product[] }) {
-  const [selectedEventId, setSelectedEventId] = useState<string>('');
+export function QrScannerContent({ booths, products }: { booths: Booth[], products: Product[] }) {
+  const [selectedBoothId, setSelectedBoothId] = useState<string>('');
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [checkedInAttendees, setCheckedInAttendees] = useState<{name: string, time: string}[]>([]);
@@ -101,12 +101,12 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
   }, [selectedProduct, stopScanning, toast]);
 
   const handleCheckIn = useCallback((attendeeId: string) => {
-    const selectedEvent = events.find(e => e.id === selectedEventId);
-    if (!selectedEvent) {
-      setScanResult({ status: 'error', message: 'No event selected. Cannot verify attendee.' });
+    const selectedBooth = booths.find(e => e.id === selectedBoothId);
+    if (!selectedBooth) {
+      setScanResult({ status: 'error', message: 'No booth selected. Cannot verify attendee.' });
       return;
     }
-    const attendee = selectedEvent.attendees.find(a => a.id === attendeeId);
+    const attendee = selectedBooth.attendees.find(a => a.id === attendeeId);
     if (attendee) {
       const alreadyCheckedIn = checkedInAttendees.some(a => a.name === attendee.name);
       if (alreadyCheckedIn) {
@@ -117,10 +117,10 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
         setCheckedInAttendees(prev => [newCheckedIn, ...prev]);
       }
     } else {
-      setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found in this event.' });
+      setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found in this booth.' });
     }
     stopScanning();
-  }, [selectedEventId, events, checkedInAttendees, stopScanning]);
+  }, [selectedBoothId, booths, checkedInAttendees, stopScanning]);
 
 
   const processScanResult = useCallback((attendeeId: string) => {
@@ -165,8 +165,8 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
   }, [isScanning, processScanResult]);
 
   const startScanning = useCallback(async () => {
-    if (!selectedEventId) {
-        toast({ variant: 'destructive', title: 'No Event Selected', description: 'Please select an event before starting the scan.' });
+    if (!selectedBoothId) {
+        toast({ variant: 'destructive', title: 'No Booth Selected', description: 'Please select a booth before starting the scan.' });
         return;
     }
      if (activeTab === 'merch' && !selectedProduct) {
@@ -192,7 +192,7 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
             description: 'Please enable camera permissions in your browser settings.',
         });
     }
-  }, [selectedEventId, activeTab, selectedProduct, toast]);
+  }, [selectedBoothId, activeTab, selectedProduct, toast]);
 
   useEffect(() => {
     if (hasCameraPermission && isScanning) {
@@ -209,8 +209,8 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
     return () => stopScanning();
   }, [stopScanning]);
   
-  const handleEventChange = (eventId: string) => {
-    setSelectedEventId(eventId);
+  const handleBoothChange = (boothId: string) => {
+    setSelectedBoothId(boothId);
     setScanResult(null);
     setSelectedProduct(null);
     setCheckedInAttendees([]);
@@ -239,14 +239,14 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                     Check-in attendees and redeem merchandise.
                 </p>
             </div>
-             <Select value={selectedEventId} onValueChange={handleEventChange}>
+             <Select value={selectedBoothId} onValueChange={handleBoothChange}>
                 <SelectTrigger className="w-full md:w-[300px]">
-                    <SelectValue placeholder="Select an event to start..." />
+                    <SelectValue placeholder="Select a booth to start..." />
                 </SelectTrigger>
                 <SelectContent>
-                    {events.filter(e => e.status === 'published').map(event => (
-                    <SelectItem key={event.id} value={event.id}>
-                        {event.name}
+                    {booths.filter(e => e.status === 'published').map(booth => (
+                    <SelectItem key={booth.id} value={booth.id}>
+                        {booth.name}
                     </SelectItem>
                     ))}
                 </SelectContent>
@@ -286,7 +286,7 @@ export function QrScannerContent({ events, products }: { events: Event[], produc
                             <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
                         </Alert>
                     )}
-                    <Button onClick={isScanning ? stopScanning : startScanning} className="w-full" disabled={!selectedEventId}>
+                    <Button onClick={isScanning ? stopScanning : startScanning} className="w-full" disabled={!selectedBoothId}>
                         {isScanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                         {isScanning ? 'Stop Scan' : 'Start Scan'}
                     </Button>

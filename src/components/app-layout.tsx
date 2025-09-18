@@ -13,6 +13,7 @@ import {
   QrCode,
   LogOut,
   Gift,
+  Store,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -49,7 +50,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
-    { href: '/events', icon: Calendar, label: 'Events' },
+    { href: '/booths', icon: Store, label: 'Booths' },
     { href: '/attendees', icon: Users, label: 'Attendees' },
     { href: '/raffle', icon: Ticket, label: 'Raffle' },
     { href: '/prize-history', icon: Gift, label: 'Prize History' },

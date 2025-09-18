@@ -1,4 +1,4 @@
-import { Event, Attendee, Raffle, Product, Transaction } from '@/app/lib/definitions';
+import { Booth, Attendee, Raffle, Product, Transaction } from '@/app/lib/definitions';
 import { supabase } from './supabase';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -12,19 +12,19 @@ async function supabaseQuery(query: any) {
   return data;
 }
 
-export async function getEvents(): Promise<Event[]> {
+export async function getBooths(): Promise<Booth[]> {
   noStore();
   const query = supabase
-    .from('events')
+    .from('booths')
     .select('*, attendees(*)')
-    .order('date', { ascending: false });
+    .order('created_at', { ascending: false });
   return supabaseQuery(query);
 }
 
-export async function getEventById(id: string): Promise<Event | undefined> {
+export async function getBoothById(id: string): Promise<Booth | undefined> {
   noStore();
   const query = supabase
-    .from('events')
+    .from('booths')
     .select('*, attendees(*)')
     .eq('id', id)
     .single();
@@ -36,15 +36,15 @@ export async function getRaffles(): Promise<Raffle[]> {
   noStore();
   const query = supabase
     .from('raffles')
-    .select('*, events(id, name, attendees(id, name, email))') // Fetch related event and attendees
+    .select('*, booths(id, name, attendees(id, name, email))') // Fetch related booth and attendees
     .order('created_at', { ascending: false });
 
-  // Because Supabase returns the event object nested inside 'events',
+  // Because Supabase returns the booth object nested inside 'booths',
   // we need to flatten the structure to match the Raffle type.
   const rafflesData = await supabaseQuery(query);
   return rafflesData.map((raffle: any) => ({
     ...raffle,
-    eventName: raffle.events?.name,
+    boothName: raffle.booths?.name,
   }));
 }
 

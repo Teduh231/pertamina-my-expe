@@ -1,15 +1,14 @@
 import { getBooths } from '@/app/lib/data';
 import { AppLayout } from '@/components/app-layout';
-import { ReportGenerator } from './_components/report-generator';
+import { BoothList } from '@/components/booths/booth-list';
 import { ProtectedRoute } from '@/hooks/use-auth';
 
-export default async function ReportsPage() {
+export default async function BoothsPage() {
   const booths = await getBooths();
-  
   return (
     <ProtectedRoute>
       <AppLayout>
-        <ReportGenerator booths={booths} />
+        <BoothList booths={booths} />
       </AppLayout>
     </ProtectedRoute>
   );

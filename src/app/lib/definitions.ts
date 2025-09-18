@@ -1,14 +1,12 @@
-export type EventStatus = 'draft' | 'published' | 'canceled';
+export type BoothStatus = 'draft' | 'published' | 'canceled';
 
-export type Event = {
+export type Booth = {
   id: string;
   name: string;
-  date: string;
-  time: string;
   location: string;
   description: string;
-  speaker: string;
-  status: EventStatus;
+  booth_manager: string;
+  status: BoothStatus;
   attendees: Attendee[];
   created_at: string;
   image_url?: string;
@@ -16,7 +14,7 @@ export type Event = {
 
 export type Attendee = {
   id: string;
-  event_id: string;
+  booth_id: string;
   name: string;
   email: string;
   registered_at: string;
@@ -35,8 +33,8 @@ export type RaffleStatus = 'upcoming' | 'active' | 'finished';
 
 export type Raffle = {
   id:string;
-  event_id: string;
-  eventName: string;
+  booth_id: string;
+  boothName: string;
   prize: string;
   number_of_winners: number;
   status: RaffleStatus;

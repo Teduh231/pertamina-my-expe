@@ -33,21 +33,21 @@ import {
 import { Label } from '@/components/ui/label';
 
 type PrizeWinner = RaffleWinner & {
-  eventName: string;
+  boothName: string;
   prize: string;
   drawnAt: string;
 };
 
 function exportPrizesToCsv(winners: PrizeWinner[]): void {
     if (winners.length === 0) return;
-    const headers = ['name', 'email', 'eventName', 'prize', 'drawnAt'];
+    const headers = ['name', 'email', 'boothName', 'prize', 'drawnAt'];
     const csvRows = [headers.join(',')];
   
     for (const winner of winners) {
       const values = [
         winner.name,
         winner.email,
-        winner.eventName,
+        winner.boothName,
         winner.prize,
         winner.drawnAt,
       ].map(value => {
@@ -78,7 +78,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
     return raffles.flatMap(raffle =>
       raffle.winners.map(winner => ({
         ...winner,
-        eventName: raffle.eventName,
+        boothName: raffle.boothName,
         prize: raffle.prize,
         drawnAt: raffle.drawnAt ? format(parseISO(raffle.drawnAt), 'PPP p') : 'N/A',
       }))
@@ -92,7 +92,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
       winner =>
         winner.name.toLowerCase().includes(lowercasedFilter) ||
         winner.email.toLowerCase().includes(lowercasedFilter) ||
-        winner.eventName.toLowerCase().includes(lowercasedFilter) ||
+        winner.boothName.toLowerCase().includes(lowercasedFilter) ||
         winner.prize.toLowerCase().includes(lowercasedFilter)
     );
   }, [allWinners, searchTerm]);
@@ -103,7 +103,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
         <div>
           <CardTitle>Prize History</CardTitle>
           <CardDescription>
-            A log of all raffle winners from your events.
+            A log of all raffle winners from your booths.
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
                     <DialogHeader>
                         <DialogTitle>Upload Prize Data</DialogTitle>
                         <DialogDescription>
-                            Select a CSV file to upload prize history. The file should contain columns for name, email, eventName, prize, and drawnAt.
+                            Select a CSV file to upload prize history. The file should contain columns for name, email, boothName, prize, and drawnAt.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -147,7 +147,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
             <TableRow>
               <TableHead>Winner Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Event</TableHead>
+              <TableHead>Booth</TableHead>
               <TableHead>Prize</TableHead>
               <TableHead>Date Won</TableHead>
             </TableRow>
@@ -155,10 +155,10 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
           <TableBody>
             {filteredWinners.length > 0 ? (
               filteredWinners.map(winner => (
-                <TableRow key={`${winner.attendeeId}-${winner.eventName}`}>
+                <TableRow key={`${winner.attendeeId}-${winner.boothName}`}>
                   <TableCell className="font-medium">{winner.name}</TableCell>
                   <TableCell>{winner.email}</TableCell>
-                  <TableCell>{winner.eventName}</TableCell>
+                  <TableCell>{winner.boothName}</TableCell>
                   <TableCell>{winner.prize}</TableCell>
                   <TableCell>{winner.drawnAt}</TableCell>
                 </TableRow>

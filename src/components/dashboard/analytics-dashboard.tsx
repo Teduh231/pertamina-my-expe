@@ -26,11 +26,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Event } from '@/app/lib/definitions';
+import { Booth } from '@/app/lib/definitions';
 import { subDays, format, parseISO } from 'date-fns';
 
 type AnalyticsDashboardProps = {
-  events: Event[];
+  booths: Booth[];
 };
 
 const chartConfig = {
@@ -57,18 +57,15 @@ function StatCard({ title, value, subtext, icon: Icon }: { title: string, value:
     )
 }
 
-export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
-  const totalAttendees = events.reduce(
-    (acc, event) => acc + (event.attendees?.length || 0),
+export function AnalyticsDashboard({ booths }: AnalyticsDashboardProps) {
+  const totalAttendees = booths.reduce(
+    (acc, booth) => acc + (booth.attendees?.length || 0),
     0
   );
-  const publishedEvents = events.filter(
-    (event) => event.status === 'published'
+  const publishedBooths = booths.filter(
+    (booth) => booth.status === 'published'
   ).length;
-  const upcomingEvents = events.filter(
-    (event) => new Date(event.date) >= new Date()
-  ).length;
-
+  
   const registrationData = React.useMemo(() => {
     const data: { [key: string]: number } = {};
     const today = new Date();
@@ -77,8 +74,8 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
       data[date] = 0;
     }
 
-    events.forEach((event) => {
-      (event.attendees || []).forEach((attendee) => {
+    booths.forEach((booth) => {
+      (booth.attendees || []).forEach((attendee) => {
         if (attendee.registered_at) {
             const registrationDate = parseISO(attendee.registered_at);
             const diff = today.getTime() - registrationDate.getTime();
@@ -93,15 +90,15 @@ export function AnalyticsDashboard({ events }: AnalyticsDashboardProps) {
     });
 
     return Object.keys(data).map((date) => ({ date, registrations: data[date] }));
-  }, [events]);
+  }, [booths]);
 
   return (
     <>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total Events" value={events.length} subtext={`${publishedEvents} published events`} icon={Calendar} />
-            <StatCard title="Total Attendees" value={totalAttendees} subtext="Across all events" icon={Users} />
-            <StatCard title="Upcoming Events" value={upcomingEvents} subtext="Ready to host" icon={CheckCircle} />
-            <StatCard title="Canceled Events" value={events.filter((e) => e.status === 'canceled').length} subtext="This year" icon={XCircle} />
+            <StatCard title="Total Booths" value={booths.length} subtext={`${publishedBooths} published`} icon={Calendar} />
+            <StatCard title="Total Attendees" value={totalAttendees} subtext="Across all booths" icon={Users} />
+            <StatCard title="Active Booths" value={publishedBooths} subtext="Ready for visitors" icon={CheckCircle} />
+            <StatCard title="Canceled Booths" value={booths.filter((e) => e.status === 'canceled').length} subtext="This year" icon={XCircle} />
         </div>
 
         <Card className="lg:col-span-3 bg-secondary/30">

@@ -29,9 +29,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Gift, Users, Trophy, Loader2 } from 'lucide-react';
-import { Raffle, Event } from '@/app/lib/definitions';
+import { Raffle, Booth } from '@/app/lib/definitions';
 import { Badge } from '@/components/ui/badge';
-import { format, parseISO } from 'date-fns';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -48,34 +47,36 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useRouter } from 'next/navigation';
 
 type RafflePageContentProps = {
-    allEvents: Event[];
+    allBooths: Booth[];
     raffles: Raffle[];
 };
 
 const newRaffleSchema = z.object({
-    eventId: z.string().min(1, 'Please select an event.'),
+    booth_id: z.string().min(1, 'Please select a booth.'),
     prize: z.string().min(2, 'Prize must be at least 2 characters.'),
-    numberOfWinners: z.coerce.number().min(1, 'There must be at least 1 winner.'),
+    number_of_winners: z.coerce.number().min(1, 'There must be at least 1 winner.'),
 });
 
-export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps) {
+export function RafflePageContent({ allBooths, raffles }: RafflePageContentProps) {
     const [openNewRaffleDialog, setOpenNewRaffleDialog] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [isDrawing, setIsDrawing] = useState<string | null>(null);
     const { toast } = useToast();
+    const router = useRouter();
 
     const { control, handleSubmit, register, reset, formState: { errors } } = useForm<z.infer<typeof newRaffleSchema>>({
         resolver: zodResolver(newRaffleSchema),
         defaultValues: {
-            eventId: '',
+            booth_id: '',
             prize: '',
-            numberOfWinners: 1,
+            number_of_winners: 1,
         },
     });
     
-    const activeRaffles = useMemo(() => raffles.filter(r => r.status === 'active'), [raffles]);
+    const activeRaffles = useMemo(() => raffles.filter(r => r.status === 'active' || r.status === 'upcoming'), [raffles]);
 
     const getStatusVariant = (status: Raffle['status']) => {
         switch (status) {
@@ -92,18 +93,19 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
 
     const handleCreateRaffle = async (data: z.infer<typeof newRaffleSchema>) => {
         setIsCreating(true);
-        const selectedEvent = allEvents.find(e => e.id === data.eventId);
-        if (!selectedEvent) return;
+        const selectedBooth = allBooths.find(e => e.id === data.booth_id);
+        if (!selectedBooth) return;
 
         const result = await createRaffle({
             ...data,
-            eventName: selectedEvent.name,
+            boothName: selectedBooth.name,
         });
 
         if (result.success) {
             toast({ title: "Raffle created successfully!" });
             reset();
             setOpenNewRaffleDialog(false);
+            router.refresh();
         } else {
             toast({ title: "Error creating raffle", description: result.error, variant: 'destructive' });
         }
@@ -129,15 +131,16 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
             toast({ title: "Error Drawing Winner", description: result.error, variant: 'destructive' });
         }
         setIsDrawing(null);
+        router.refresh();
     };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Raffle Management</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Raffle Management</h2>
           <p className="text-muted-foreground">
-            Create, manage, and draw winners for your event raffles.
+            Create, manage, and draw winners for your booth raffles.
           </p>
         </div>
         <Dialog open={openNewRaffleDialog} onOpenChange={setOpenNewRaffleDialog}>
@@ -152,29 +155,29 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
                 <DialogHeader>
                 <DialogTitle>Create New Raffle</DialogTitle>
                 <DialogDescription>
-                    Configure a new raffle for one of your events.
+                    Configure a new raffle for one of your booths.
                 </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="event" className="text-right">Event</Label>
+                        <Label htmlFor="booth" className="text-right">Booth</Label>
                         <Controller
-                            name="eventId"
+                            name="booth_id"
                             control={control}
                             render={({ field }) => (
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Select an event" />
+                                        <SelectValue placeholder="Select a booth" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {allEvents.filter(e => e.status === 'published' && e.attendees.length > 0).map(event => (
-                                            <SelectItem key={event.id} value={event.id}>{event.name} ({event.attendees.length} attendees)</SelectItem>
+                                        {allBooths.filter(e => e.status === 'published' && e.attendees.length > 0).map(booth => (
+                                            <SelectItem key={booth.id} value={booth.id}>{booth.name} ({booth.attendees.length} attendees)</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             )}
                         />
-                        {errors.eventId && <p className="col-span-4 text-red-500 text-xs text-right">{errors.eventId.message}</p>}
+                        {errors.booth_id && <p className="col-span-4 text-red-500 text-xs text-right">{errors.booth_id.message}</p>}
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="prize" className="text-right">Prize</Label>
@@ -182,9 +185,9 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
                         {errors.prize && <p className="col-span-4 text-red-500 text-xs text-right">{errors.prize.message}</p>}
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="numberOfWinners" className="text-right">Winners</Label>
-                        <Input id="numberOfWinners" type="number" defaultValue={1} className="col-span-3" {...register('numberOfWinners')} />
-                         {errors.numberOfWinners && <p className="col-span-4 text-red-500 text-xs text-right">{errors.numberOfWinners.message}</p>}
+                        <Label htmlFor="number_of_winners" className="text-right">Winners</Label>
+                        <Input id="number_of_winners" type="number" defaultValue={1} className="col-span-3" {...register('number_of_winners')} />
+                         {errors.number_of_winners && <p className="col-span-4 text-red-500 text-xs text-right">{errors.number_of_winners.message}</p>}
                     </div>
                 </div>
                 <DialogFooter>
@@ -200,10 +203,10 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {activeRaffles.map(raffle => (
-                 <Card key={raffle.id} className="flex flex-col">
+                 <Card key={raffle.id} className="flex flex-col bg-secondary/30">
                  <CardHeader>
                    <div className="flex items-center justify-between">
-                     <CardTitle className="text-xl">{raffle.eventName}</CardTitle>
+                     <CardTitle className="text-xl">{raffle.boothName}</CardTitle>
                      <Badge variant={getStatusVariant(raffle.status)} className="capitalize">{raffle.status}</Badge>
                    </div>
                    <CardDescription>Prize: {raffle.prize}</CardDescription>
@@ -211,9 +214,9 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
                  <CardContent className="space-y-4 flex-1">
                     <div className="flex items-center text-sm text-muted-foreground">
                         <Users className="mr-2 h-4 w-4" />
-                        <span>{raffle.winners.length} / {raffle.numberOfWinners} winner(s) drawn</span>
+                        <span>{raffle.winners?.length || 0} / {raffle.number_of_winners} winner(s) drawn</span>
                     </div>
-                    {raffle.winners.length > 0 && (
+                    {raffle.winners?.length > 0 && (
                         <div>
                             <h4 className="font-semibold mb-2 flex items-center"><Trophy className="mr-2 h-4 w-4 text-yellow-500" /> Winners</h4>
                             <div className="space-y-1 text-sm max-h-24 overflow-y-auto">
@@ -224,7 +227,7 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
                         </div>
                     )}
                  </CardContent>
-                 {raffle.status === 'active' && (
+                 {(raffle.status === 'active' || raffle.status === 'upcoming') && (
                      <CardFooter>
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -252,7 +255,7 @@ export function RafflePageContent({ allEvents, raffles }: RafflePageContentProps
             ))}
         </div>
         {activeRaffles.length === 0 && (
-            <Card className="text-center py-12">
+            <Card className="text-center py-12 bg-secondary/30">
                 <CardContent>
                     <h3 className="text-lg font-medium">No Active Raffles</h3>
                     <p className="text-sm text-muted-foreground">Create a new raffle to get started.</p>

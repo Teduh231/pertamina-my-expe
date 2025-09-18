@@ -1,4 +1,4 @@
-import { Event } from '@/app/lib/definitions';
+import { Booth } from '@/app/lib/definitions';
 import {
   Card,
   CardContent,
@@ -17,51 +17,51 @@ import {
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { ArrowRight, Calendar, MapPin, Users as UsersIcon } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Users as UsersIcon, Store } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
 
-export function UpcomingEvents({ events }: { events: Event[] }) {
-  const upcomingEvents = events
-    .filter((event) => isFuture(parseISO(event.date)) && event.status === 'published')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+export function UpcomingEvents({ booths }: { booths: Booth[] }) {
+  const activeBooths = booths
+    .filter((booth) => booth.status === 'published')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
 
   return (
     <Card className="lg:col-span-2 bg-secondary/30">
       <CardHeader className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-2">
         <div>
-            <CardTitle>Upcoming Events</CardTitle>
+            <CardTitle>Recently Added Booths</CardTitle>
             <CardDescription>
-                A preview of your next 5 scheduled events.
+                A preview of your 5 most recently created booths.
             </CardDescription>
         </div>
          <Button asChild variant="outline" size="sm">
-            <Link href="/events">
-                View All Events
+            <Link href="/booths">
+                View All Booths
                 <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
          </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-        {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event) => (
-                <div key={event.id} className="border-b last:border-b-0 pb-4 last:pb-0">
+        {activeBooths.length > 0 ? (
+            activeBooths.map((booth) => (
+                <div key={booth.id} className="border-b last:border-b-0 pb-4 last:pb-0">
                     <div className="flex justify-between items-start">
                         <div className="space-y-1">
-                            <Link href={`/events`} className="font-medium hover:underline">{event.name}</Link>
+                            <Link href={`/booths`} className="font-medium hover:underline">{booth.name}</Link>
                             <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                <Calendar className="h-4 w-4" />
-                                {format(parseISO(event.date), 'PPP')}
+                                <Store className="h-4 w-4" />
+                                {booth.location}
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
                             <Badge variant="outline" className="flex items-center gap-1.5">
                                 <UsersIcon className="h-3 w-3"/>
-                                {event.attendees?.length || 0}
+                                {booth.attendees?.length || 0}
                             </Badge>
                              <Button asChild size="sm" variant="ghost">
-                                <Link href={`/events`}>Manage</Link>
+                                <Link href={`/booths`}>Manage</Link>
                             </Button>
                         </div>
                     </div>
@@ -69,7 +69,7 @@ export function UpcomingEvents({ events }: { events: Event[] }) {
             ))
         ) : (
              <div className="text-center text-muted-foreground py-12">
-                <p>No upcoming events scheduled.</p>
+                <p>No active booths found.</p>
             </div>
         )}
         </div>
