@@ -94,7 +94,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
     if (attendee) {
       const alreadyCheckedIn = checkedInAttendees.some(a => a.name === attendee.name);
       if (alreadyCheckedIn) {
-        setScanResult({ status: 'error', message: 'Attendee already checked in.', attendeeName: attendee.name });
+        setScanResult({ status: 'info', message: 'Attendee already checked in.', attendeeName: attendee.name });
       } else {
         setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
         const newCheckedIn = { name: attendee.name, time: new Date().toLocaleTimeString() };
@@ -117,7 +117,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
       toast({
         variant: 'destructive',
         title: 'Action required',
-        description: 'Please select a product to redeem on the Merch tab first.',
+        description: 'Please select a product to redeem on the Merchandise tab first.',
       });
     }
   }, [activeTab, selectedProduct, handleMerchRedemption, handleCheckIn, stopScanning, toast]);
