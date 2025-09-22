@@ -41,7 +41,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 type BoothListProps = {
-  booths: Booth[];
+  booths: (Booth & { attendees_count?: number })[];
 };
 
 export function BoothList({ booths }: BoothListProps) {
@@ -139,7 +139,7 @@ export function BoothList({ booths }: BoothListProps) {
       </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredBooths.map((booth) => {
-          const attendeeCount = booth.attendees?.length || 0;
+          const attendeeCount = (booth as any).attendees_count || booth.attendees?.length || 0;
           return (
             <Card key={booth.id} className="flex flex-col bg-card hover:border-primary/50 transition-all border-2 border-transparent overflow-hidden">
                 {booth.image_url ? (

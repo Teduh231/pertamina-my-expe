@@ -59,9 +59,18 @@ export async function getBooths(): Promise<Booth[]> {
   try {
     const query = supabase
       .from('booths')
-      .select('*, attendees(*)')
+      .select('*, attendees(count)') // Correctly count attendees using Supabase feature
       .order('created_at', { ascending: false });
-    return await supabaseQuery(query);
+      
+    const boothsData = await supabaseQuery(query);
+
+    // The result will have an `attendees` property which is an array with a single object like [{ count: 5 }]
+    // We need to transform this to make it easier to use in the component.
+    return boothsData.map((booth: any) => ({
+        ...booth,
+        attendees_count: booth.attendees[0]?.count || 0,
+    }));
+
   } catch (error) {
      console.error("Failed to fetch booths, returning empty array:", error);
      return [];

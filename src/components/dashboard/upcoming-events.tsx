@@ -20,7 +20,7 @@ import Link from 'next/link';
 import { ArrowRight, Calendar, MapPin, Users as UsersIcon, Store } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
 
-export function UpcomingEvents({ booths }: { booths: Booth[] }) {
+export function UpcomingEvents({ booths }: { booths: (Booth & { attendees_count?: number })[] }) {
   const activeBooths = booths
     .filter((booth) => booth.status === 'published')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -58,7 +58,7 @@ export function UpcomingEvents({ booths }: { booths: Booth[] }) {
                         <div className="flex items-center gap-2">
                             <Badge variant="outline" className="flex items-center gap-1.5">
                                 <UsersIcon className="h-3 w-3"/>
-                                {booth.attendees?.length || 0}
+                                {(booth as any).attendees_count || booth.attendees?.length || 0}
                             </Badge>
                              <Button asChild size="sm" variant="ghost">
                                 <Link href={`/booths`}>Manage</Link>

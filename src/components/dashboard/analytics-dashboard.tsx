@@ -30,7 +30,7 @@ import { Booth } from '@/app/lib/definitions';
 import { subDays, format, parseISO } from 'date-fns';
 
 type AnalyticsDashboardProps = {
-  booths: Booth[];
+  booths: (Booth & { attendees_count?: number, attendees: any[] })[];
 };
 
 const chartConfig = {
@@ -59,7 +59,7 @@ function StatCard({ title, value, subtext, icon: Icon }: { title: string, value:
 
 export function AnalyticsDashboard({ booths }: AnalyticsDashboardProps) {
   const totalAttendees = booths.reduce(
-    (acc, booth) => acc + (booth.attendees?.length || 0),
+    (acc, booth) => acc + (booth.attendees_count || booth.attendees?.length || 0),
     0
   );
   const publishedBooths = booths.filter(
