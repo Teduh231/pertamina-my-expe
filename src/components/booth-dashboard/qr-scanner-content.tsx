@@ -20,6 +20,7 @@ import {
   Loader2,
   ScanLine,
   Shirt,
+  Info,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -199,7 +200,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
   const getScanResultVariant = (status: ScanResult['status']) => {
     if (status === 'success') return 'default';
     if (status === 'error') return 'destructive';
-    return 'default';
+    return 'default'; // for 'info'
   }
 
   return (
@@ -244,6 +245,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
                     <Alert variant={getScanResultVariant(scanResult.status)}>
                         {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
                         {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
+                        {scanResult.status === 'info' && <Info className="h-4 w-4" />}
                         <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
                         <AlertDescription>{scanResult.message}</AlertDescription>
                         {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
