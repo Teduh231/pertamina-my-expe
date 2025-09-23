@@ -301,15 +301,18 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                         <CardTitle className="flex items-center"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
                          <CardDescription>({checkInHistory.length}) attendees checked-in to this booth.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+                    <CardContent className="space-y-4 max-h-96 overflow-y-auto">
                         {checkInHistory.length > 0 ? checkInHistory.map((attendee, index) => (
-                            <div key={index} className="flex items-center justify-between text-sm">
-                                <p className="font-medium">{attendee.name}</p>
-                                <p className="text-muted-foreground">{attendee.time}</p>
+                            <div key={index} className="flex items-start justify-between text-sm">
+                                <div>
+                                    <p className="font-medium">{attendee.name}</p>
+                                    <p className="text-xs text-muted-foreground">{attendee.email}</p>
+                                </div>
+                                <p className="text-xs text-muted-foreground whitespace-nowrap pl-4">{attendee.time}</p>
                             </div>
                         )) : (
                             <div className="text-center text-muted-foreground py-10">
-                                <p>No attendees checked in yet.</p>
+                                <p>No attendees have checked in yet. Scan a QR code to begin.</p>
                             </div>
                         )}
                     </CardContent>
