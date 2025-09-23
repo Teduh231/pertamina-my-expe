@@ -332,7 +332,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                             ) : (
                               <TableRow>
                                 <TableCell colSpan={2} className="h-24 text-center">
-                                  No check-ins yet for this booth.
+                                  setelah attendee berhasil melakukan check in, maka disini akan menampilkan informasi nama, email yang terdaftar beserta timestamp dari check in tersebut
                                 </TableCell>
                               </TableRow>
                             )}
