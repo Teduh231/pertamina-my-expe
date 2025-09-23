@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { redeemMerchandiseForAttendee, createCheckIn } from '@/app/lib/actions';
 import { getAttendeeById } from '@/app/lib/data';
+import { useRouter } from 'next/navigation';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
@@ -51,6 +52,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const stopCamera = useCallback(() => {
     if (videoRef.current?.srcObject) {
@@ -97,13 +99,14 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
         setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
         const newCheckedIn = { name: attendee.name, time: new Date().toLocaleTimeString() };
         setCheckedInAttendees(prev => [newCheckedIn, ...prev]);
+        router.refresh(); // This is the key fix!
       } else {
         setScanResult({ status: 'info', message: result.error || 'Attendee already checked in.', attendeeName: attendee.name });
       }
     } else {
       setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found.' });
     }
-  }, [booth.id]);
+  }, [booth.id, router]);
 
 
   const processQrData = useCallback((qrData: string) => {
@@ -152,7 +155,8 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
 
   useEffect(() => {
     const getCameraPermission = async () => {
-      if (activeTab === 'merch' && !selectedProduct) {
+      // Don't activate camera if on merch tab without a product selected
+      if (activeTab === 'merch' && !selectedProduct && hasCameraPermission !== false) {
         stopCamera();
         return;
       }
@@ -169,13 +173,14 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
         toast({
           variant: 'destructive',
           title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
         });
       }
     };
 
     getCameraPermission();
-
+    
+    // Cleanup function to stop camera when component unmounts or dependencies change
     return () => stopCamera();
   }, [activeTab, selectedProduct, stopCamera, toast]);
   
