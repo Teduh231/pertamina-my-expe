@@ -1,6 +1,7 @@
 import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
+import { supabaseAdmin } from './supabase/server';
 
 // Helper function to handle Supabase queries and errors
 async function supabaseQuery(query: any) {
@@ -51,7 +52,7 @@ export async function getBooths(): Promise<Booth[]> {
   noStore();
   try {
     // We now count check-ins instead of attendees directly linked to a booth.
-    const query = supabase
+    const query = supabaseAdmin
       .from('booths')
       .select('*, check_ins(count)')
       .order('created_at', { ascending: false });
@@ -73,7 +74,7 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
   noStore();
   try {
     // Fetch booth and its associated check-ins with attendee details
-    const query = supabase
+    const query = supabaseAdmin
       .from('booths')
       .select(`
         *,
@@ -82,6 +83,7 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
           attendee_id,
           checked_in_at,
           attendees (
+            id,
             name,
             email
           )
@@ -99,7 +101,7 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
 export async function getAttendees(): Promise<Attendee[]> {
   noStore();
   try {
-    const query = supabase
+    const query = supabaseAdmin
       .from('attendees')
       .select('*')
       .order('registered_at', { ascending: false });
@@ -113,7 +115,7 @@ export async function getAttendees(): Promise<Attendee[]> {
 export async function getAttendeeById(id: string): Promise<Attendee | null> {
     noStore();
     try {
-        const query = supabase.from('attendees').select('*').eq('id', id).maybeSingle();
+        const query = supabaseAdmin.from('attendees').select('*').eq('id', id).maybeSingle();
         return await supabaseQuery(query);
     } catch (error) {
         console.error(`Failed to fetch attendee ${id}, returning null:`, error);
@@ -125,7 +127,7 @@ export async function getAttendeeById(id: string): Promise<Attendee | null> {
 export async function getRaffles(boothId?: string): Promise<Raffle[]> {
     noStore();
     try {
-      let query = supabase
+      let query = supabaseAdmin
         .from('raffles')
         .select('*, booths(id, name)')
         .order('created_at', { ascending: false });
@@ -149,7 +151,7 @@ export async function getRaffles(boothId?: string): Promise<Raffle[]> {
 export async function getProducts(): Promise<Product[]> {
     noStore();
     try {
-      const query = supabase.from('products').select('*').order('points', { ascending: true });
+      const query = supabaseAdmin.from('products').select('*').order('points', { ascending: true });
       return await supabaseQuery(query);
     } catch (error) {
       console.error("Failed to fetch products, returning empty array:", error);
@@ -160,7 +162,7 @@ export async function getProducts(): Promise<Product[]> {
 export async function getProductsByBooth(boothId: string): Promise<Product[]> {
     noStore();
     try {
-      const query = supabase.from('products').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
+      const query = supabaseAdmin.from('products').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
       return await supabaseQuery(query);
     } catch (error) {
       console.error("Failed to fetch products, returning empty array:", error);
@@ -171,7 +173,7 @@ export async function getProductsByBooth(boothId: string): Promise<Product[]> {
 export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
     noStore();
     try {
-        const query = supabase
+        const query = supabaseAdmin
             .from('transactions')
             .select('*')
             .order('created_at', { ascending: false })
@@ -186,7 +188,7 @@ export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
 export async function getTenants(): Promise<Tenant[]> {
     noStore();
     try {
-        const query = supabase
+        const query = supabaseAdmin
         .from('tenants')
         .select('*, booths(id, name)');
         
