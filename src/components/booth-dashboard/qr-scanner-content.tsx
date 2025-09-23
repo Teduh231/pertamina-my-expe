@@ -312,7 +312,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                             </div>
                         )) : (
                             <div className="text-center text-muted-foreground py-10">
-                                <p>No attendees have checked in yet. Scan a QR code to begin.</p>
+                                <p>disini, ketika attendee sudah melakukan scan qrcode, maka akan menampilkan informasi nama dan email attendee dan juga menambahkan timestamp qrcode scanning</p>
                             </div>
                         )}
                     </CardContent>
