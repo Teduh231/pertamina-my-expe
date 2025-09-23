@@ -1,4 +1,4 @@
-import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile } from '@/app/lib/definitions';
+import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -15,36 +15,29 @@ async function supabaseQuery(query: any) {
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
     noStore();
     try {
-        // Query 1: Get the user's role
         const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
             .eq('id', userId)
             .single();
 
-        if (roleError) {
-            console.error('Error fetching user role:', roleError?.message);
-            // If user has no role entry yet, they are a regular user, not an admin
-            if (roleError.code === 'PGRST116') { // "JSON object requested, but single row not found"
-                return { role: 'tenant', booth_id: null };
-            }
-            return null;
+        if (roleError && roleError.code !== 'PGRST116') {
+             console.error('Error fetching user role:', roleError?.message);
+             return null;
         }
 
-        // Query 2: Get the user's assigned booth from the tenants table
         const { data: tenantData, error: tenantError } = await supabase
             .from('tenants')
             .select('booth_id')
             .eq('id', userId)
             .single();
         
-        // It's okay if tenantError exists (e.g. user is admin and not in tenants table)
         if (tenantError && tenantError.code !== 'PGRST116') {
              console.error('Error fetching tenant info:', tenantError?.message);
         }
 
         return {
-            role: roleData.role,
+            role: roleData?.role || 'tenant',
             booth_id: tenantData?.booth_id || null,
         };
     } catch (error) {
@@ -57,18 +50,17 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 export async function getBooths(): Promise<Booth[]> {
   noStore();
   try {
+    // We now count check-ins instead of attendees directly linked to a booth.
     const query = supabase
       .from('booths')
-      .select('*, attendees(count)') // Correctly count attendees using Supabase feature
+      .select('*, check_ins(count)')
       .order('created_at', { ascending: false });
       
     const boothsData = await supabaseQuery(query);
 
-    // The result will have an `attendees` property which is an array with a single object like [{ count: 5 }]
-    // We need to transform this to make it easier to use in the component.
     return boothsData.map((booth: any) => ({
         ...booth,
-        attendees_count: booth.attendees[0]?.count || 0,
+        attendees_count: booth.check_ins[0]?.count || 0,
     }));
 
   } catch (error) {
@@ -80,9 +72,10 @@ export async function getBooths(): Promise<Booth[]> {
 export async function getBoothById(id: string): Promise<Booth | undefined> {
   noStore();
   try {
+    // Fetch booth and its associated check-ins with attendee details
     const query = supabase
       .from('booths')
-      .select('*, attendees(*), raffles(*)')
+      .select('*, raffles(*), check_ins(*, attendees(*))')
       .eq('id', id)
       .single();
     return await supabaseQuery(query);
@@ -91,6 +84,32 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
     return undefined;
   }
 }
+
+export async function getAttendees(): Promise<Attendee[]> {
+  noStore();
+  try {
+    const query = supabase
+      .from('attendees')
+      .select('*')
+      .order('registered_at', { ascending: false });
+    return await supabaseQuery(query);
+  } catch (error) {
+    console.error("Failed to fetch attendees, returning empty array:", error);
+    return [];
+  }
+}
+
+export async function getAttendeeById(id: string): Promise<Attendee | null> {
+    noStore();
+    try {
+        const query = supabase.from('attendees').select('*').eq('id', id).single();
+        return await supabaseQuery(query);
+    } catch (error) {
+        console.error(`Failed to fetch attendee ${id}, returning null:`, error);
+        return null;
+    }
+}
+
 
 export async function getRaffles(boothId?: string): Promise<Raffle[]> {
     noStore();

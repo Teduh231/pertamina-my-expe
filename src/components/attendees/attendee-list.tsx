@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { Attendee, Booth } from '@/app/lib/definitions';
+import { Attendee } from '@/app/lib/definitions';
 import {
   Card,
   CardContent,
@@ -22,20 +22,17 @@ import { Button } from '../ui/button';
 import { Download } from 'lucide-react';
 import Link from 'next/link';
 
-type AttendeeWithBooth = Attendee & { boothName: string; boothId: string; };
-
-function exportAllAttendeesToCsv(attendees: AttendeeWithBooth[]): void {
+function exportAllAttendeesToCsv(attendees: Attendee[]): void {
   if (attendees.length === 0) {
     return;
   }
-  const headers = ['name', 'email', 'boothName', 'registered_at'];
+  const headers = ['name', 'email', 'registered_at'];
   const csvRows = [headers.join(',')];
 
   for (const attendee of attendees) {
     const values = [
       attendee.name,
       attendee.email,
-      attendee.boothName,
       attendee.registered_at
     ].map(value => {
       if (typeof value === 'string' && value.includes(',')) {
@@ -57,37 +54,26 @@ function exportAllAttendeesToCsv(attendees: AttendeeWithBooth[]): void {
   document.body.removeChild(link);
 }
 
-export function AttendeeList({ booths }: { booths: Booth[] }) {
+export function AttendeeList({ attendees }: { attendees: Attendee[] }) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const allAttendees: AttendeeWithBooth[] = useMemo(() => {
-    return booths.flatMap(booth =>
-      (booth.attendees || []).map(attendee => ({
-        ...attendee,
-        boothName: booth.name,
-        boothId: booth.id,
-      }))
-    );
-  }, [booths]);
-
   const filteredAttendees = useMemo(() => {
-    if (!searchTerm) return allAttendees;
+    if (!searchTerm) return attendees;
     const lowercasedFilter = searchTerm.toLowerCase();
-    return allAttendees.filter(
+    return attendees.filter(
       (attendee) =>
         attendee.name.toLowerCase().includes(lowercasedFilter) ||
-        attendee.email.toLowerCase().includes(lowercasedFilter) ||
-        attendee.boothName.toLowerCase().includes(lowercasedFilter)
+        attendee.email.toLowerCase().includes(lowercasedFilter)
     );
-  }, [allAttendees, searchTerm]);
+  }, [attendees, searchTerm]);
 
   return (
     <Card>
       <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <CardTitle>All Attendees ({allAttendees.length})</CardTitle>
+          <CardTitle>All Attendees ({attendees.length})</CardTitle>
           <CardDescription>
-            A list of all attendees registered for your booths.
+            A list of all attendees registered for your event.
           </CardDescription>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -109,24 +95,20 @@ export function AttendeeList({ booths }: { booths: Booth[] }) {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead className="hidden sm:table-cell">Email</TableHead>
-              <TableHead>Booth</TableHead>
+              <TableHead>Points</TableHead>
               <TableHead className="hidden md:table-cell">Registered On</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAttendees.length > 0 ? (
               filteredAttendees.map((attendee) => (
-                <TableRow key={attendee.id + attendee.boothId}>
+                <TableRow key={attendee.id}>
                   <TableCell className="font-medium">
                     <div>{attendee.name}</div>
                     <div className="text-muted-foreground text-sm sm:hidden">{attendee.email}</div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">{attendee.email}</TableCell>
-                  <TableCell>
-                    <Link href={`/booths/${attendee.boothId}`} className="hover:underline text-primary">
-                        {attendee.boothName}
-                    </Link>
-                  </TableCell>
+                   <TableCell>{attendee.points}</TableCell>
                   <TableCell className="hidden md:table-cell">{format(parseISO(attendee.registered_at), 'PPP')}</TableCell>
                 </TableRow>
               ))

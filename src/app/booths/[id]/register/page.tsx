@@ -72,13 +72,13 @@ export default async function BoothRegistrationPage({
           <div className="lg:col-span-1 mt-8 lg:mt-0">
             <Card className="shadow-lg lg:shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-2xl text-center">Register for this Booth</CardTitle>
+                <CardTitle className="text-2xl text-center">Register to Get Points</CardTitle>
                 <CardDescription className="text-center">
-                  Get exclusive points by registering.
+                  Get exclusive points by registering for our event.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AttendeeRegistrationForm booth={booth} />
+                <AttendeeRegistrationForm />
               </CardContent>
             </Card>
           </div>

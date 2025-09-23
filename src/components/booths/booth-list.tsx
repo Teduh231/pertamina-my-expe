@@ -139,7 +139,7 @@ export function BoothList({ booths }: BoothListProps) {
       </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredBooths.map((booth) => {
-          const attendeeCount = (booth as any).attendees_count || booth.attendees?.length || 0;
+          const attendeeCount = (booth as any).attendees_count || 0;
           return (
             <Card key={booth.id} className="flex flex-col bg-card hover:border-primary/50 transition-all border-2 border-transparent overflow-hidden">
                 {booth.image_url ? (
@@ -174,7 +174,7 @@ export function BoothList({ booths }: BoothListProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    <span>{attendeeCount} Attendees</span>
+                    <span>{attendeeCount} Check-ins</span>
                   </div>
                 </div>
               </CardContent>
@@ -219,7 +219,7 @@ export function BoothList({ booths }: BoothListProps) {
                               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete the
-                                booth "{booth.name}" and all of its attendee data.
+                                booth "{booth.name}" and all of its associated data like check-ins and raffles.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

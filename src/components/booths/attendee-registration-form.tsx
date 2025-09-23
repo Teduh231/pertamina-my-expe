@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Booth } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { detectPiiInField, registerAttendee } from '@/app/lib/actions';
 import { AlertCircle, Loader2 } from 'lucide-react';
@@ -39,11 +38,8 @@ const formSchema = z
     }
   );
 
-type RegistrationFormProps = {
-  booth: Booth;
-};
-
-export function AttendeeRegistrationForm({ booth }: RegistrationFormProps) {
+// The form is now generic and doesn't need booth-specific info.
+export function AttendeeRegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPiiWarning, setShowPiiWarning] = useState(false);
   const [isCheckingPii, setIsCheckingPii] = useState(false);
@@ -89,13 +85,14 @@ export function AttendeeRegistrationForm({ booth }: RegistrationFormProps) {
 
     setIsSubmitting(true);
     const { piiConsent, ...attendeeData } = values;
-    const result = await registerAttendee(booth.id, attendeeData);
+    // The boothId is no longer needed for registration.
+    const result = await registerAttendee(attendeeData);
     setIsSubmitting(false);
 
     if (result.success) {
         toast({
             title: 'Registration Successful!',
-            description: `Thank you for registering for ${booth.name}. A confirmation has been sent to your email.`,
+            description: `Thank you for registering. A confirmation has been sent to your email.`,
             variant: 'default',
         });
         form.reset();

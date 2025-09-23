@@ -15,7 +15,7 @@ export type Booth = {
 
 export type Attendee = {
   id: string;
-  booth_id: string;
+  // booth_id is no longer needed here. An attendee is not tied to a single booth.
   name: string;
   email: string;
   registered_at: string;
@@ -23,6 +23,13 @@ export type Attendee = {
   qr_code_url?: string;
   points: number;
 };
+
+export type CheckIn = {
+  id: string;
+  attendee_id: string;
+  booth_id: string;
+  checked_in_at: string;
+}
 
 export type RaffleWinner = {
   attendeeId: string;

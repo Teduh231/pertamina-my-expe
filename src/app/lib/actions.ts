@@ -2,7 +2,7 @@
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
 import { Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
-import { getBoothById } from './data';
+import { getBoothById, getAttendees } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase as supabaseClient } from './supabase/client';
@@ -16,25 +16,6 @@ async function sendQrCodeEmail(recipientEmail: string, attendeeName: string, boo
   console.log(`Booth: ${boothName}`);
   console.log(`QR Code URL: ${qrCodeUrl}`);
   
-  // TODO: Implement actual email sending logic here.
-  // Example using a hypothetical email service:
-  /*
-  try {
-    const emailHtml = `<h1>Hi ${attendeeName},</h1><p>Thank you for registering for ${boothName}.</p><p>Here is your unique QR code for check-in:</p><img src="${qrCodeUrl}" alt="Your QR Code" /><p>We look forward to seeing you!</p>`;
-    
-    await emailService.send({
-      from: 'you@yourdomain.com',
-      to: recipientEmail,
-      subject: `Your QR Code for ${boothName}`,
-      html: emailHtml,
-    });
-    console.log('Email sent successfully.');
-  } catch (error) {
-    console.error('Failed to send email:', error);
-    // Even if email fails, the registration was successful, so we don't throw an error here.
-  }
-  */
-
   // For now, we'll just return a success promise.
   return Promise.resolve();
 }
@@ -58,26 +39,20 @@ export async function detectPiiInField(fieldName: string, fieldValue: string) {
 export async function exportAttendeesToCsv(boothId: string): Promise<string> {
     noStore();
     const booth = await getBoothById(boothId);
+    const allAttendees = await getAttendees();
 
     if (!booth) {
         throw new Error('Booth not found');
     }
     
-    const { data: attendees, error } = await supabaseClient
-        .from('attendees')
-        .select('*')
-        .eq('booth_id', boothId);
-
-    if (error) {
-        console.error('Supabase error fetching attendees:', error);
-        throw new Error('Could not fetch attendees for CSV export.');
-    }
+    // In the new model, we just export all attendees since they are not tied to a booth
+    const attendees = allAttendees;
 
     if (attendees.length === 0) {
         return "id,name,email,registered_at,custom_response\n";
     }
 
-    const headers = Object.keys(attendees[0]);
+    const headers = ['id', 'name', 'email', 'registered_at', 'points', 'custom_response'];
     const csvRows = [headers.join(',')];
 
     for (const attendee of attendees) {
@@ -149,15 +124,16 @@ export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_use
 }
 
 export async function deleteBooth(boothId: string) {
-    // First, delete all attendees for the booth
-    const { error: attendeeError } = await supabaseAdmin
-      .from('attendees')
+    // We don't need to delete attendees anymore as they are not tied to a booth.
+    // We will delete check_ins related to this booth.
+    const { error: checkinError } = await supabaseAdmin
+      .from('check_ins')
       .delete()
       .eq('booth_id', boothId);
-  
-    if (attendeeError) {
-      console.error('Supabase error deleting attendees:', attendeeError);
-      return { success: false, error: 'Database error: Could not delete attendees.' };
+
+    if (checkinError) {
+      console.error('Supabase error deleting check-ins:', checkinError);
+      return { success: false, error: 'Database error: Could not delete associated check-ins.' };
     }
     
     // Also, unassign any tenants associated with this booth
@@ -188,30 +164,24 @@ export async function deleteBooth(boothId: string) {
     return { success: true };
 }
 
-export async function registerAttendee(boothId: string, attendeeData: Omit<Attendee, 'id' | 'registered_at' | 'qr_code_url' | 'points'>) {
-    const booth = await getBoothById(boothId);
-    if (!booth) {
-        return { success: false, error: 'Booth not found.' };
-    }
-
+export async function registerAttendee(registrationData: Omit<Attendee, 'id' | 'registered_at' | 'qr_code_url' | 'points'>) {
+    // Attendee is no longer registered to a specific booth, so boothId is removed.
     const { data: newAttendee, error } = await supabaseClient
         .from('attendees')
-        .insert([{ ...attendeeData, booth_id: boothId, points: 100 }]) // Award 100 points on registration
+        .insert([{ ...registrationData, points: 100 }]) // Award 100 points on registration
         .select()
         .single();
 
     if (error || !newAttendee) {
         console.error('Supabase error registering attendee:', error);
-        // Handle specific errors, e.g., unique constraint violation for email per booth
-        if (error?.code === '23505') { // unique_violation
-            return { success: false, error: 'This email address has already been registered for this booth.' };
+        if (error?.code === '23505') { // unique_violation for email
+            return { success: false, error: 'This email address has already been registered.' };
         }
         return { success: false, error: 'Database error: Could not register attendee.' };
     }
 
-    // Generate QR code URL
-    const qrCodeData = newAttendee.id; // Using the unique attendee ID for the QR code
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrCodeData}`;
+    // Generate QR code URL using the unique attendee ID
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${newAttendee.id}`;
 
     // Update the attendee with the generated QR code URL
     const { error: updateError } = await supabaseClient
@@ -221,17 +191,13 @@ export async function registerAttendee(boothId: string, attendeeData: Omit<Atten
 
     if (updateError) {
         console.error('Supabase error updating attendee with QR code:', updateError);
-        // We can decide to ignore this error for the user, as they are already registered.
-        // The main registration was successful.
     } else {
-        // If QR code is saved successfully, send the email
-        await sendQrCodeEmail(newAttendee.email, newAttendee.name, booth.name, qrCodeUrl);
+        await sendQrCodeEmail(newAttendee.email, newAttendee.name, 'EventFlow', qrCodeUrl);
     }
 
-    revalidatePath(`/booths/${boothId}/register`);
-    revalidatePath(`/booth-dashboard/${boothId}`);
+    revalidatePath(`/booths`); // Revalidate booths pages
     revalidatePath('/attendees');
-revalidatePath('/dashboard');
+    revalidatePath('/dashboard');
     return { success: true };
 }
 
@@ -246,11 +212,11 @@ export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'w
     return { success: true };
 }
 
-export async function drawRaffleWinner(raffleId: string) {
+export async function drawRaffleWinner(raffleId: string, boothId: string) {
   noStore();
   const { data: raffle, error: raffleError } = await supabaseClient
     .from('raffles')
-    .select('*, booths(id, name, attendees(id, name, email))')
+    .select('*')
     .eq('id', raffleId)
     .single();
 
@@ -259,9 +225,21 @@ export async function drawRaffleWinner(raffleId: string) {
     return { success: false, error: 'Could not find the specified raffle.' };
   }
 
+  // Get attendees who have checked in to this specific booth
+  const { data: checkIns, error: checkInError } = await supabaseClient
+    .from('check_ins')
+    .select('attendees(*)')
+    .eq('booth_id', boothId);
+  
+  if (checkInError || !checkIns) {
+    console.error('Error fetching check-ins:', checkInError);
+    return { success: false, error: 'Could not fetch attendees for this booth.' };
+  }
+  const attendeesForBooth = checkIns.map(ci => ci.attendees);
+
   const drawnWinnerIds = raffle.winners?.map((w: RaffleWinner) => w.attendeeId) || [];
-  const eligibleAttendees = raffle.booths.attendees.filter(
-    (attendee: Attendee) => !drawnWinnerIds.includes(attendee.id)
+  const eligibleAttendees = attendeesForBooth.filter(
+    (attendee: Attendee) => attendee && !drawnWinnerIds.includes(attendee.id)
   );
 
   if (eligibleAttendees.length === 0) {
@@ -480,4 +458,22 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
     
     revalidatePath(`/booth-dashboard/${productData.booth_id}`);
     return { success: true, product: data };
+}
+
+export async function createCheckIn(attendeeId: string, boothId: string) {
+  const { data, error } = await supabaseClient
+    .from('check_ins')
+    .insert({ attendee_id: attendeeId, booth_id: boothId })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Supabase error creating check-in:', error);
+    // Handle unique constraint violation gracefully
+    if (error.code === '23505') {
+      return { success: false, error: 'Attendee has already checked into this booth.' };
+    }
+    return { success: false, error: 'Database error: Could not record check-in.' };
+  }
+  return { success: true, checkIn: data };
 }

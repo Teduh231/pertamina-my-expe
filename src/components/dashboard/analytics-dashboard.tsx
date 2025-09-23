@@ -26,11 +26,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Booth } from '@/app/lib/definitions';
+import { Booth, Attendee } from '@/app/lib/definitions';
 import { subDays, format, parseISO } from 'date-fns';
 
 type AnalyticsDashboardProps = {
-  booths: (Booth & { attendees_count?: number, attendees: any[] })[];
+  booths: (Booth & { attendees_count?: number })[];
+  attendees: Attendee[];
 };
 
 const chartConfig = {
@@ -57,11 +58,8 @@ function StatCard({ title, value, subtext, icon: Icon }: { title: string, value:
     )
 }
 
-export function AnalyticsDashboard({ booths }: AnalyticsDashboardProps) {
-  const totalAttendees = booths.reduce(
-    (acc, booth) => acc + (booth.attendees_count || booth.attendees?.length || 0),
-    0
-  );
+export function AnalyticsDashboard({ booths, attendees }: AnalyticsDashboardProps) {
+  const totalAttendees = attendees.length;
   const publishedBooths = booths.filter(
     (booth) => booth.status === 'published'
   ).length;
@@ -74,23 +72,21 @@ export function AnalyticsDashboard({ booths }: AnalyticsDashboardProps) {
       data[date] = 0;
     }
 
-    booths.forEach((booth) => {
-      (booth.attendees || []).forEach((attendee) => {
-        if (attendee.registered_at) {
-            const registrationDate = parseISO(attendee.registered_at);
-            const diff = today.getTime() - registrationDate.getTime();
-            if (diff / (1000 * 3600 * 24) < 15) {
-              const dateStr = format(registrationDate, 'MMM d');
-              if (data[dateStr] !== undefined) {
-                data[dateStr]++;
-              }
+    attendees.forEach((attendee) => {
+      if (attendee.registered_at) {
+          const registrationDate = parseISO(attendee.registered_at);
+          const diff = today.getTime() - registrationDate.getTime();
+          if (diff / (1000 * 3600 * 24) < 15) {
+            const dateStr = format(registrationDate, 'MMM d');
+            if (data[dateStr] !== undefined) {
+              data[dateStr]++;
             }
-        }
-      });
+          }
+      }
     });
 
     return Object.keys(data).map((date) => ({ date, registrations: data[date] }));
-  }, [booths]);
+  }, [attendees]);
 
   return (
     <>

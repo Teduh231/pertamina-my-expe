@@ -1,6 +1,6 @@
 'use client';
 
-import { getBooths } from '@/app/lib/data';
+import { getBooths, getAttendees } from '@/app/lib/data';
 import { AppLayout } from '@/components/app-layout';
 import { AnalyticsDashboard } from '@/components/dashboard/analytics-dashboard';
 import { UpcomingEvents } from '@/components/dashboard/upcoming-events';
@@ -8,12 +8,13 @@ import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import type { Booth } from '@/app/lib/definitions';
+import type { Booth, Attendee } from '@/app/lib/definitions';
 
 // This component handles the logic for fetching data and rendering based on role.
 export default function DashboardPage() {
   const { isAdmin, assignedBoothId, loading: authLoading } = useAuth();
   const [booths, setBooths] = useState<Booth[]>([]);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,8 +23,9 @@ export default function DashboardPage() {
         redirect(`/booth-dashboard/${assignedBoothId}`);
       } else if (isAdmin) {
         // Fetch data only if the user is an admin
-        getBooths().then((data) => {
-          setBooths(data);
+        Promise.all([getBooths(), getAttendees()]).then(([boothData, attendeeData]) => {
+          setBooths(boothData);
+          setAttendees(attendeeData);
           setLoading(false);
         });
       } else {
@@ -58,7 +60,7 @@ export default function DashboardPage() {
     <AppLayout>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 flex flex-col gap-6">
-          <AnalyticsDashboard booths={booths} />
+          <AnalyticsDashboard booths={booths} attendees={attendees} />
         </div>
         <div className="lg:col-span-2">
           <UpcomingEvents booths={booths} />

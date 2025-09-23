@@ -104,7 +104,7 @@ export function RafflePageContent({ booth, raffles }: RafflePageContentProps) {
     
     const handleDrawWinner = async (raffleId: string) => {
         setIsDrawing(raffleId);
-        const result = await drawRaffleWinner(raffleId);
+        const result = await drawRaffleWinner(raffleId, booth.id);
         if (result.success) {
             if (result.winner) {
                 toast({
@@ -139,7 +139,7 @@ export function RafflePageContent({ booth, raffles }: RafflePageContentProps) {
                 <DialogHeader>
                 <DialogTitle>Create New Raffle</DialogTitle>
                 <DialogDescription>
-                    Configure a new raffle for the "{booth.name}" booth.
+                    Configure a new raffle for the "{booth.name}" booth. Attendees who have checked-in to this booth will be eligible.
                 </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -203,7 +203,7 @@ export function RafflePageContent({ booth, raffles }: RafflePageContentProps) {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will randomly draw one winner from the eligible attendees. This action cannot be undone.
+                                    This will randomly draw one winner from the eligible attendees who have checked into this booth. This action cannot be undone.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

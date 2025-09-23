@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { Booth, Product } from '@/app/lib/definitions';
+import { Booth, Product, Attendee } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,7 +25,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { redeemMerchandiseForAttendee } from '@/app/lib/actions';
+import { redeemMerchandiseForAttendee, createCheckIn } from '@/app/lib/actions';
+import { getAttendeeById } from '@/app/lib/data';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
@@ -90,22 +91,24 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
       stopScanning();
   }, [selectedProduct, stopScanning, toast, booth.id]);
 
-  const handleCheckIn = useCallback((attendeeId: string) => {
-    const attendee = booth.attendees.find(a => a.id === attendeeId);
+  const handleCheckIn = useCallback(async (attendeeId: string) => {
+    const attendee = await getAttendeeById(attendeeId);
+    
     if (attendee) {
-      const alreadyCheckedIn = checkedInAttendees.some(a => a.name === attendee.name);
-      if (alreadyCheckedIn) {
-        setScanResult({ status: 'info', message: 'Attendee already checked in.', attendeeName: attendee.name });
-      } else {
+      const result = await createCheckIn(attendeeId, booth.id);
+      if (result.success) {
         setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
         const newCheckedIn = { name: attendee.name, time: new Date().toLocaleTimeString() };
         setCheckedInAttendees(prev => [newCheckedIn, ...prev]);
+      } else {
+        // This handles cases where the attendee has already checked in
+        setScanResult({ status: 'info', message: result.error || 'Attendee already checked in.', attendeeName: attendee.name });
       }
     } else {
-      setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found in this booth.' });
+      setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found.' });
     }
     stopScanning();
-  }, [booth, checkedInAttendees, stopScanning]);
+  }, [booth.id]);
 
 
   const processScanResult = useCallback((attendeeId: string) => {
@@ -270,7 +273,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
-                         <CardDescription>({checkedInAttendees.length}) attendees checked-in.</CardDescription>
+                         <CardDescription>({checkedInAttendees.length}) attendees checked-in to this booth.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                         {checkedInAttendees.length > 0 ? checkedInAttendees.map((attendee, index) => (
