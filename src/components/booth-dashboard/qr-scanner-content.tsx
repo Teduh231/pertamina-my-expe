@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import jsQR from 'jsqr';
-import { Booth, Product, Attendee } from '@/app/lib/definitions';
+import { Booth, Product, Attendee, CheckIn } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { redeemMerchandiseForAttendee, createCheckIn } from '@/app/lib/actions';
 import { getAttendeeById } from '@/app/lib/data';
 import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
@@ -39,10 +40,15 @@ type ScanResult = {
   remainingPoints?: number;
 };
 
-export function QrScannerContent({ booth, products }: { booth: Booth, products: Product[] }) {
+type CheckInHistoryItem = {
+    name: string;
+    email: string;
+    time: string;
+};
+
+export function QrScannerContent({ booth, products }: { booth: Booth & { check_ins: (CheckIn & { attendees: Attendee | null })[] }, products: Product[] }) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [checkedInAttendees, setCheckedInAttendees] = useState<{name: string, time: string}[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('check-in');
@@ -53,6 +59,17 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const router = useRouter();
+
+  const checkInHistory: CheckInHistoryItem[] = useMemo(() => {
+    return (booth.check_ins || [])
+      .filter((ci: any) => ci.attendees) // Filter out check-ins with no attendee data
+      .map((ci: any) => ({
+        name: ci.attendees.name,
+        email: ci.attendees.email,
+        time: format(new Date(ci.checked_in_at), 'p'),
+      }))
+      .sort((a, b) => new Date(`1970/01/01 ${b.time}`).getTime() - new Date(`1970/01/01 ${a.time}`).getTime());
+  }, [booth.check_ins]);
 
   const stopCamera = useCallback(() => {
     if (videoRef.current?.srcObject) {
@@ -97,9 +114,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
       const result = await createCheckIn(attendeeId, booth.id);
       if (result.success) {
         setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
-        const newCheckedIn = { name: attendee.name, time: new Date().toLocaleTimeString() };
-        setCheckedInAttendees(prev => [newCheckedIn, ...prev]);
-        router.refresh(); // This is the key fix!
+        router.refresh();
       } else {
         setScanResult({ status: 'info', message: result.error || 'Attendee already checked in.', attendeeName: attendee.name });
       }
@@ -271,10 +286,10 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
-                         <CardDescription>({checkedInAttendees.length}) attendees checked-in to this booth.</CardDescription>
+                         <CardDescription>({checkInHistory.length}) attendees checked-in to this booth.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3 max-h-96 overflow-y-auto">
-                        {checkedInAttendees.length > 0 ? checkedInAttendees.map((attendee, index) => (
+                        {checkInHistory.length > 0 ? checkInHistory.map((attendee, index) => (
                             <div key={index} className="flex items-center justify-between text-sm">
                                 <p className="font-medium">{attendee.name}</p>
                                 <p className="text-muted-foreground">{attendee.time}</p>

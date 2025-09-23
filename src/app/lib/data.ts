@@ -75,7 +75,7 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
     // Fetch booth and its associated check-ins with attendee details
     const query = supabase
       .from('booths')
-      .select('*, raffles(*), check_ins(*, attendees(*))')
+      .select('*, raffles(*), check_ins(*, attendees(id, name, email))')
       .eq('id', id)
       .single();
     return await supabaseQuery(query);
