@@ -61,20 +61,17 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
   const router = useRouter();
 
   const checkInHistory: CheckInHistoryItem[] = useMemo(() => {
-    if (!booth.check_ins) return [];
-    return (booth.check_ins || [])
-      .filter((ci: any): ci is (CheckIn & { attendees: Attendee }) => ci.attendees) // Filter out check-ins with no attendee data
+    if (!booth || !booth.check_ins) {
+      return [];
+    }
+    return booth.check_ins
+      .filter((ci): ci is CheckIn & { attendees: Attendee } => !!ci.attendees) // Safely filter for check-ins with valid attendees
       .map((ci) => ({
         name: ci.attendees.name,
         email: ci.attendees.email,
         time: format(new Date(ci.checked_in_at), 'p'),
       }))
-      .sort((a, b) => {
-        // A more robust time comparison
-        const timeA = new Date(`1970/01/01 ${a.time}`).getTime();
-        const timeB = new Date(`1970/01/01 ${b.time}`).getTime();
-        return timeB - timeA;
-      });
+      .sort((a, b) => new Date(`1970/01/01 ${b.time}`).getTime() - new Date(`1970/01/01 ${a.time}`).getTime());
   }, [booth.check_ins]);
 
 
@@ -103,6 +100,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
               title: 'Redemption Successful!',
               description: `${result.attendeeName} redeemed ${selectedProduct.name}.`,
           });
+          router.refresh();
       } else {
           setScanResult({
               status: 'error',
@@ -112,7 +110,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
       }
       setIsProcessing(false);
       setSelectedProduct(null); // Reset selection
-  }, [selectedProduct, toast, booth.id]);
+  }, [selectedProduct, toast, booth.id, router]);
 
   const handleCheckIn = useCallback(async (attendeeId: string) => {
       setIsProcessing(true);
