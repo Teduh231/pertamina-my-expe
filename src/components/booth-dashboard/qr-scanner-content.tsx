@@ -22,6 +22,7 @@ import {
   Shirt,
   Info,
   Camera,
+  CameraOff,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,6 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [checkedInAttendees, setCheckedInAttendees] = useState<{name: string, time: string}[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isCameraOn, setIsCameraOn] = useState(false);
   const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('check-in');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -57,7 +57,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
       (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
-    setIsCameraOn(false);
+    setHasCameraPermission(null);
   }, []);
 
   const handleMerchRedemption = useCallback(async (attendeeId: string) => {
@@ -146,50 +146,43 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
       }
     }
     
-    setTimeout(() => setIsProcessing(false), 1000); // Prevent rapid clicks
+    setTimeout(() => setIsProcessing(false), 2000); // Prevent rapid clicks
 
   }, [isProcessing, processQrData]);
 
-  const startCamera = useCallback(async () => {
-    if (activeTab === 'merch' && !selectedProduct && !isCameraOn) {
-        toast({ variant: 'destructive', title: 'No Product Selected', description: 'Please select a merchandise item before starting the camera.' });
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (activeTab === 'merch' && !selectedProduct) {
+        stopCamera();
         return;
-    }
-    setScanResult(null);
-    
-    try {
+      }
+      
+      try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
-        setIsCameraOn(true);
         if (videoRef.current) {
-            videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = stream;
         }
-    } catch (error) {
+      } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        setIsCameraOn(false);
         toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings.',
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
         });
-    }
-  }, [activeTab, isCameraOn, selectedProduct, toast]);
+      }
+    };
 
-  useEffect(() => {
-    if (isCameraOn) {
-      startCamera();
-    } else {
-      stopCamera();
-    }
+    getCameraPermission();
+
     return () => stopCamera();
-  }, [isCameraOn, startCamera, stopCamera]);
+  }, [activeTab, selectedProduct, stopCamera, toast]);
   
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setScanResult(null);
     setSelectedProduct(null);
-    stopCamera();
   }
 
   const getScanResultVariant = (status: ScanResult['status']) => {
@@ -197,6 +190,8 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
     if (status === 'error') return 'destructive';
     return 'default'; // for 'info'
   }
+  
+  const isCaptureDisabled = !hasCameraPermission || isProcessing || (activeTab === 'merch' && !selectedProduct);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -205,22 +200,28 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
             <CardHeader>
                 <CardTitle>QR Code Scanner</CardTitle>
                 <CardDescription>
-                    {activeTab === 'check-in' ? 'Start camera, aim at a QR code, then capture.' : 'Select a product, start camera, aim, then capture.'}
+                    {activeTab === 'check-in' ? 'Aim at a QR code, then capture.' : 'Select a product, aim at a QR code, then capture.'}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
-                    <video ref={videoRef} className={cn("w-full h-full object-cover", isCameraOn ? "block" : "hidden")} autoPlay muted playsInline />
+                    <video ref={videoRef} className={cn("w-full h-full object-cover", hasCameraPermission ? "block" : "hidden")} autoPlay muted playsInline />
                     <canvas ref={canvasRef} className="hidden" />
 
-                    {!isCameraOn && (
-                        <div className="text-center text-muted-foreground p-4 absolute">
+                    {!hasCameraPermission && hasCameraPermission !== false && (
+                         <div className="text-center text-muted-foreground p-4 absolute">
                             <Camera className="mx-auto h-16 w-16" />
-                            <p className="mt-2 font-semibold">Camera is off</p>
-                             <p className="text-sm">{activeTab === 'merch' && selectedProduct ? `Ready to scan for ${selectedProduct.name}`: 'Press "Start Camera" to begin'}</p>
-                        </div>
+                            <p className="mt-2 font-semibold">Initializing Camera...</p>
+                         </div>
                     )}
-                    {isCameraOn && (
+                    {hasCameraPermission === false && (
+                         <div className="text-center text-muted-foreground p-4 absolute">
+                            <CameraOff className="mx-auto h-16 w-16" />
+                            <p className="mt-2 font-semibold">Camera Access Denied</p>
+                         </div>
+                    )}
+
+                    {hasCameraPermission && (
                          <div className="absolute inset-0 bg-transparent flex items-center justify-center">
                             <ScanLine className="h-1/2 w-1/2 text-white/20 animate-pulse" />
                         </div>
@@ -232,15 +233,10 @@ export function QrScannerContent({ booth, products }: { booth: Booth, products: 
                         <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
                     </Alert>
                 )}
-                <div className="flex gap-2">
-                    <Button onClick={() => setIsCameraOn(prev => !prev)} variant={isCameraOn ? 'destructive' : 'default'} className="w-1/3">
-                        {isCameraOn ? 'Stop Camera' : 'Start Camera'}
-                    </Button>
-                    <Button onClick={captureAndProcess} className="w-2/3" disabled={!isCameraOn || isProcessing}>
-                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
-                        {isProcessing ? 'Processing...' : 'Capture & Process QR'}
-                    </Button>
-                </div>
+                <Button onClick={captureAndProcess} className="w-full" disabled={isCaptureDisabled}>
+                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
+                    {isProcessing ? 'Processing...' : 'Capture & Process QR'}
+                </Button>
                  {scanResult && (
                     <Alert variant={getScanResultVariant(scanResult.status)}>
                         {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
