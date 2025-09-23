@@ -1,7 +1,23 @@
 import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
-import { supabaseAdmin } from './supabase/server';
+import { createClient } from '@supabase/supabase-js';
+
+// This is a special instance of the Supabase client for use in server components
+// where we might not have access to the service role key, but can use the user's session.
+const createSupabaseServerClient = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        // This case should ideally not be hit if env vars are set correctly.
+        console.error("Missing Supabase URL or Anon Key for server client");
+        // Fallback to the regular client-side client
+        return supabase;
+    }
+    
+    return createClient(supabaseUrl, supabaseAnonKey);
+}
 
 // Helper function to handle Supabase queries and errors
 async function supabaseQuery(query: any) {
@@ -15,19 +31,25 @@ async function supabaseQuery(query: any) {
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
     noStore();
+    // Use the admin client on the server, but a regular client on the client
+    // This function can be called from both environments.
+    const supabaseClient = typeof window === 'undefined' 
+      ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      : supabase;
+
     try {
-        const { data: roleData, error: roleError } = await supabase
+        const { data: roleData, error: roleError } = await supabaseClient
             .from('user_roles')
             .select('role')
             .eq('id', userId)
             .single();
 
-        if (roleError && roleError.code !== 'PGRST116') {
+        if (roleError && roleError.code !== 'PGRST116') { // PGRST116: row not found
              console.error('Error fetching user role:', roleError?.message);
              return null;
         }
 
-        const { data: tenantData, error: tenantError } = await supabase
+        const { data: tenantData, error: tenantError } = await supabaseClient
             .from('tenants')
             .select('booth_id')
             .eq('id', userId)
@@ -50,6 +72,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
 export async function getBooths(): Promise<Booth[]> {
   noStore();
+  const supabaseAdmin = createSupabaseServerClient();
   try {
     // We now count check-ins instead of attendees directly linked to a booth.
     const query = supabaseAdmin
@@ -72,8 +95,8 @@ export async function getBooths(): Promise<Booth[]> {
 
 export async function getBoothById(id: string): Promise<Booth | undefined> {
   noStore();
+  const supabaseAdmin = createSupabaseServerClient();
   try {
-    // Fetch booth and its associated check-ins with attendee details
     const query = supabaseAdmin
       .from('booths')
       .select(`
@@ -100,6 +123,7 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
 
 export async function getAttendees(): Promise<Attendee[]> {
   noStore();
+  const supabaseAdmin = createSupabaseServerClient();
   try {
     const query = supabaseAdmin
       .from('attendees')
@@ -114,6 +138,7 @@ export async function getAttendees(): Promise<Attendee[]> {
 
 export async function getAttendeeById(id: string): Promise<Attendee | null> {
     noStore();
+    const supabaseAdmin = createSupabaseServerClient();
     try {
         const query = supabaseAdmin.from('attendees').select('*').eq('id', id).maybeSingle();
         return await supabaseQuery(query);
@@ -126,6 +151,7 @@ export async function getAttendeeById(id: string): Promise<Attendee | null> {
 
 export async function getRaffles(boothId?: string): Promise<Raffle[]> {
     noStore();
+    const supabaseAdmin = createSupabaseServerClient();
     try {
       let query = supabaseAdmin
         .from('raffles')
@@ -150,6 +176,7 @@ export async function getRaffles(boothId?: string): Promise<Raffle[]> {
 
 export async function getProducts(): Promise<Product[]> {
     noStore();
+    const supabaseAdmin = createSupabaseServerClient();
     try {
       const query = supabaseAdmin.from('products').select('*').order('points', { ascending: true });
       return await supabaseQuery(query);
@@ -161,17 +188,19 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function getProductsByBooth(boothId: string): Promise<Product[]> {
     noStore();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
       const query = supabaseAdmin.from('products').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
       return await supabaseQuery(query);
     } catch (error) {
-      console.error("Failed to fetch products, returning empty array:", error);
+      console.error("Failed to fetch products for booth, returning empty array:", error);
       return [];
     }
 }
 
 export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
     noStore();
+    const supabaseAdmin = createSupabaseServerClient();
     try {
         const query = supabaseAdmin
             .from('transactions')
@@ -187,6 +216,7 @@ export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
 
 export async function getTenants(): Promise<Tenant[]> {
     noStore();
+    const supabaseAdmin = createSupabaseServerClient();
     try {
         const query = supabaseAdmin
         .from('tenants')

@@ -30,10 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   React.useEffect(() => {
     const fetchSessionAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      const user = session?.user ?? null;
+      setUser(user);
 
-      if (session?.user) {
-        const userProfile = await getUserProfile(session.user.id);
+      if (user) {
+        // Fetch profile on the client. This is safe as RLS should be in place.
+        const userProfile = await getUserProfile(user.id);
         setProfile(userProfile);
       }
       setLoading(false);
@@ -43,9 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
-        if (event === 'SIGNED_IN' && session?.user) {
-          const userProfile = await getUserProfile(session.user.id);
+        const user = session?.user ?? null;
+        setUser(user);
+        if (event === 'SIGNED_IN' && user) {
+          const userProfile = await getUserProfile(user.id);
           setProfile(userProfile);
         }
         if (event === 'SIGNED_OUT') {
