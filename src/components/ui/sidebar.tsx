@@ -162,8 +162,9 @@ const Sidebar = React.forwardRef<
       )}
       {...props}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col relative">
         {children}
+        <SidebarTrigger className="absolute top-1/2 -right-[1.15rem] -translate-y-1/2 bg-background border-2 border-sidebar-border h-9 w-9 hidden md:flex" />
       </div>
     </div>
   )
@@ -181,14 +182,14 @@ const SidebarTrigger = React.forwardRef<
       ref={ref}
       variant="ghost"
       size="icon"
-      className={cn("h-9 w-9", className)}
+      className={cn("rounded-full", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
     >
-      <PanelLeft />
+      <PanelLeft className="transition-transform duration-300 group-data-[state=expanded]/sidebar:rotate-180" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

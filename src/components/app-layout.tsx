@@ -121,7 +121,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <SidebarTrigger className="hidden md:flex"/>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
