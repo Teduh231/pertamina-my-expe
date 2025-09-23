@@ -61,6 +61,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
   const router = useRouter();
 
   const checkInHistory: CheckInHistoryItem[] = useMemo(() => {
+    if (!booth.check_ins) return [];
     return (booth.check_ins || [])
       .filter((ci: any): ci is (CheckIn & { attendees: Attendee }) => ci.attendees) // Filter out check-ins with no attendee data
       .map((ci) => ({
@@ -68,8 +69,14 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
         email: ci.attendees.email,
         time: format(new Date(ci.checked_in_at), 'p'),
       }))
-      .sort((a, b) => new Date(`1970/01/01 ${b.time}`).getTime() - new Date(`1970/01/01 ${a.time}`).getTime());
+      .sort((a, b) => {
+        // A more robust time comparison
+        const timeA = new Date(`1970/01/01 ${a.time}`).getTime();
+        const timeB = new Date(`1970/01/01 ${b.time}`).getTime();
+        return timeB - timeA;
+      });
   }, [booth.check_ins]);
+
 
   const stopCamera = useCallback(() => {
     if (videoRef.current?.srcObject) {
@@ -115,7 +122,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
         const result = await createCheckIn(attendeeId, booth.id);
         if (result.success) {
           setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
-          // No need to call router.refresh() here, as revalidatePath in the action handles it.
+          router.refresh();
         } else {
           // Differentiate between already checked in and other errors
           if (result.error?.includes('already checked in')) {
@@ -128,7 +135,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
         setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found.' });
       }
       setIsProcessing(false);
-  }, [booth.id]);
+  }, [booth.id, router]);
 
 
   const processQrData = useCallback((qrData: string) => {
