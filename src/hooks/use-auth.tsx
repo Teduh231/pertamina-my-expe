@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext as useReactContext, useEffect, useState } from 'react';
+import React from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/app/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
@@ -19,15 +19,15 @@ interface AuthContextType {
   logout: () => Promise<any>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+  const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchSessionAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => {
-  const context = useReactContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -108,7 +108,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: b
     const router = useRouter();
     const pathname = usePathname();
   
-    useEffect(() => {
+    React.useEffect(() => {
       if (loading) return;
   
       if (!user) {
