@@ -62,8 +62,8 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
 
   const checkInHistory: CheckInHistoryItem[] = useMemo(() => {
     return (booth.check_ins || [])
-      .filter((ci: any) => ci.attendees) // Filter out check-ins with no attendee data
-      .map((ci: any) => ({
+      .filter((ci: any): ci is (CheckIn & { attendees: Attendee }) => ci.attendees) // Filter out check-ins with no attendee data
+      .map((ci) => ({
         name: ci.attendees.name,
         email: ci.attendees.email,
         time: format(new Date(ci.checked_in_at), 'p'),
@@ -81,7 +81,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
 
   const handleMerchRedemption = useCallback(async (attendeeId: string) => {
       if (!selectedProduct) return;
-      setIsRedeeming(selectedProduct.id);
+      setIsProcessing(true);
       const result = await redeemMerchandiseForAttendee(attendeeId, selectedProduct.id, booth.id);
       
       if (result.success) {
@@ -103,28 +103,37 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
               attendeeName: result.attendeeName,
           });
       }
-      setIsRedeeming(null);
+      setIsProcessing(false);
       setSelectedProduct(null); // Reset selection
   }, [selectedProduct, toast, booth.id]);
 
   const handleCheckIn = useCallback(async (attendeeId: string) => {
-    const attendee = await getAttendeeById(attendeeId);
-    
-    if (attendee) {
-      const result = await createCheckIn(attendeeId, booth.id);
-      if (result.success) {
-        setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
-        router.refresh();
+      setIsProcessing(true);
+      const attendee = await getAttendeeById(attendeeId);
+      
+      if (attendee) {
+        const result = await createCheckIn(attendeeId, booth.id);
+        if (result.success) {
+          setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
+          // No need to call router.refresh() here, as revalidatePath in the action handles it.
+        } else {
+          // Differentiate between already checked in and other errors
+          if (result.error?.includes('already checked in')) {
+            setScanResult({ status: 'info', message: result.error, attendeeName: attendee.name });
+          } else {
+            setScanResult({ status: 'error', message: result.error || 'Check-in failed.', attendeeName: attendee.name });
+          }
+        }
       } else {
-        setScanResult({ status: 'info', message: result.error || 'Attendee already checked in.', attendeeName: attendee.name });
+        setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found.' });
       }
-    } else {
-      setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found.' });
-    }
-  }, [booth.id, router]);
+      setIsProcessing(false);
+  }, [booth.id]);
 
 
   const processQrData = useCallback((qrData: string) => {
+    if (isProcessing) return;
+
     if (activeTab === 'merch' && selectedProduct) {
         handleMerchRedemption(qrData);
     } else if (activeTab === 'check-in') {
@@ -136,7 +145,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
         description: 'Please select a product to redeem on the Merchandise tab first.',
       });
     }
-  }, [activeTab, selectedProduct, handleMerchRedemption, handleCheckIn, toast]);
+  }, [activeTab, selectedProduct, handleMerchRedemption, handleCheckIn, toast, isProcessing]);
 
   const captureAndProcess = useCallback(() => {
     if (isProcessing || !videoRef.current?.HAVE_ENOUGH_DATA || !canvasRef.current) return;
@@ -161,16 +170,16 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
         processQrData(code.data);
       } else {
         setScanResult({ status: 'error', message: 'No QR code detected. Please try again.' });
+        setTimeout(() => setIsProcessing(false), 1500);
       }
+    } else {
+        setIsProcessing(false);
     }
-    
-    setTimeout(() => setIsProcessing(false), 2000); // Prevent rapid clicks
 
   }, [isProcessing, processQrData]);
 
   useEffect(() => {
     const getCameraPermission = async () => {
-      // Don't activate camera if on merch tab without a product selected
       if (activeTab === 'merch' && !selectedProduct && hasCameraPermission !== false) {
         stopCamera();
         return;
@@ -195,7 +204,6 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
 
     getCameraPermission();
     
-    // Cleanup function to stop camera when component unmounts or dependencies change
     return () => stopCamera();
   }, [activeTab, selectedProduct, stopCamera, toast]);
   
@@ -315,7 +323,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                                 variant={selectedProduct?.id === item.id ? "default" : "outline"}
                                 className="w-full justify-between h-12"
                                 onClick={() => setSelectedProduct(item)}
-                                disabled={item.stock <= 0}
+                                disabled={item.stock <= 0 || isProcessing}
                             >
                                 <span>{item.name} {item.stock <= 0 && '(Out of stock)'}</span>
                                 <span>{item.points} pts</span>

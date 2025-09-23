@@ -203,7 +203,7 @@ export async function registerAttendee(registrationData: Omit<Attendee, 'id' | '
 
 
 export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'winners' | 'drawn_at'>) {
-    const { error } = await supabaseClient.from('raffles').insert([raffleData]);
+    const { error } = await supabaseAdmin.from('raffles').insert([raffleData]);
     if (error) {
         console.error('Supabase error creating raffle:', error);
         return { success: false, error: 'Database error: Could not create raffle.' };
@@ -214,7 +214,7 @@ export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'w
 
 export async function drawRaffleWinner(raffleId: string, boothId: string) {
   noStore();
-  const { data: raffle, error: raffleError } = await supabaseClient
+  const { data: raffle, error: raffleError } = await supabaseAdmin
     .from('raffles')
     .select('*')
     .eq('id', raffleId)
@@ -226,7 +226,7 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
   }
 
   // Get attendees who have checked in to this specific booth
-  const { data: checkIns, error: checkInError } = await supabaseClient
+  const { data: checkIns, error: checkInError } = await supabaseAdmin
     .from('check_ins')
     .select('attendees(*)')
     .eq('booth_id', boothId);
@@ -235,7 +235,7 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
     console.error('Error fetching check-ins:', checkInError);
     return { success: false, error: 'Could not fetch attendees for this booth.' };
   }
-  const attendeesForBooth = checkIns.map(ci => ci.attendees);
+  const attendeesForBooth = checkIns.map(ci => ci.attendees).filter(Boolean) as Attendee[];
 
   const drawnWinnerIds = raffle.winners?.map((w: RaffleWinner) => w.attendeeId) || [];
   const eligibleAttendees = attendeesForBooth.filter(
@@ -243,7 +243,7 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
   );
 
   if (eligibleAttendees.length === 0) {
-    await supabaseClient.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
+    await supabaseAdmin.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
     revalidatePath(`/booth-dashboard/${raffle.booth_id}`);
     return { success: true, message: 'No more eligible attendees to draw.' };
   }
@@ -265,7 +265,7 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
     drawn_at: updatedWinners.length >= raffle.number_of_winners ? new Date().toISOString() : null,
   };
 
-  const { error: updateError } = await supabaseClient
+  const { error: updateError } = await supabaseAdmin
     .from('raffles')
     .update(updatedRaffle)
     .eq('id', raffleId);
@@ -285,8 +285,8 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
     noStore();
     // 1. Fetch attendee and product in parallel
     const [attendeeResult, productResult] = await Promise.all([
-        supabaseClient.from('attendees').select('id, name, points').eq('id', attendeeId).single(),
-        supabaseClient.from('products').select('id, name, points, stock').eq('id', productId).single()
+        supabaseAdmin.from('attendees').select('id, name, points').eq('id', attendeeId).single(),
+        supabaseAdmin.from('products').select('id, name, points, stock').eq('id', productId).single()
     ]);
 
     if (attendeeResult.error || !attendeeResult.data) {
@@ -311,9 +311,9 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
     const newAttendeePoints = attendee.points - product.points;
 
     const [updateAttendeeResult, updateProductResult, createTransactionResult] = await Promise.all([
-        supabaseClient.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id),
-        supabaseClient.from('products').update({ stock: product.stock - 1 }).eq('id', product.id),
-        supabaseClient.from('transactions').insert({
+        supabaseAdmin.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id),
+        supabaseAdmin.from('products').update({ stock: product.stock - 1 }).eq('id', product.id),
+        supabaseAdmin.from('transactions').insert({
             user_id: attendee.id,
             user_name: attendee.name,
             product_name: product.name,
@@ -445,7 +445,7 @@ export async function deleteTenant(tenantId: string) {
 
 
 export async function createProduct(productData: Omit<Product, 'id' | 'created_at'>) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAdmin
         .from('products')
         .insert([productData])
         .select()
@@ -461,7 +461,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
 }
 
 export async function createCheckIn(attendeeId: string, boothId: string) {
-  const { data, error } = await supabaseClient
+  const { data, error } = await supabaseAdmin
     .from('check_ins')
     .insert({ attendee_id: attendeeId, booth_id: boothId })
     .select()
@@ -473,7 +473,8 @@ export async function createCheckIn(attendeeId: string, boothId: string) {
     if (error.code === '23505') {
       return { success: false, error: 'Attendee has already checked into this specific booth.' };
     }
-    return { success: false, error: 'Database error: Could not record check-in.' };
+    return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
   }
+  revalidatePath(`/booth-dashboard/${boothId}`);
   return { success: true, checkIn: data };
 }
