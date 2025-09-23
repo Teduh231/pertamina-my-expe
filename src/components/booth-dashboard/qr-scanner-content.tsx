@@ -48,13 +48,18 @@ type ScanResult = {
   remainingPoints?: number;
 };
 
+// Define a more specific type for a check-in that includes attendee data
+type HydratedCheckIn = CheckIn & {
+  attendees: { name: string; email: string } | null;
+};
+
 type CheckInHistoryItem = {
     name: string;
     email: string;
     time: string;
 };
 
-export function QrScannerContent({ booth, products }: { booth: Booth & { check_ins: (CheckIn & { attendees: Attendee | null })[] }, products: Product[] }) {
+export function QrScannerContent({ booth, products }: { booth: Booth & { check_ins: HydratedCheckIn[] }, products: Product[] }) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -73,7 +78,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
       return [];
     }
     return booth.check_ins
-      .filter((ci): ci is CheckIn & { attendees: Attendee } => !!ci.attendees) // Safely filter for check-ins with valid attendees
+      .filter((ci): ci is HydratedCheckIn & { attendees: { name: string, email: string } } => !!ci.attendees) // Safely filter for check-ins with valid attendees
       .map((ci) => ({
         name: ci.attendees.name,
         email: ci.attendees.email,
@@ -332,7 +337,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                             ) : (
                               <TableRow>
                                 <TableCell colSpan={2} className="h-24 text-center">
-                                  setelah attendee berhasil melakukan check in, maka disini akan menampilkan informasi nama, email yang terdaftar beserta timestamp dari check in tersebut
+                                  No check-ins yet for this booth.
                                 </TableCell>
                               </TableRow>
                             )}
