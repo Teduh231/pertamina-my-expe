@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import jsQR from 'jsqr';
 import { Booth, Product, Attendee, CheckIn } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
@@ -312,7 +312,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                             </div>
                         )) : (
                             <div className="text-center text-muted-foreground py-10">
-                                <p>disini, ketika attendee sudah melakukan scan qrcode, maka akan menampilkan informasi nama dan email attendee dan juga menambahkan timestamp qrcode scanning</p>
+                                <p>setelah attendee berhasil melakukan check in, maka disini akan menampilkan informasi nama, email yang terdaftar beserta timestamp dari check in tersebut</p>
                             </div>
                         )}
                     </CardContent>
