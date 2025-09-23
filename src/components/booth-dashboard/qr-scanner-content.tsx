@@ -13,18 +13,9 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   QrCode,
   CheckCircle,
   XCircle,
-  Clock,
   Loader2,
   ScanLine,
   Shirt,
@@ -34,11 +25,9 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { redeemMerchandiseForAttendee, createCheckIn } from '@/app/lib/actions';
 import { getAttendeeById } from '@/app/lib/data';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
@@ -53,41 +42,19 @@ type HydratedCheckIn = CheckIn & {
   attendees: { name: string; email: string } | null;
 };
 
-type CheckInHistoryItem = {
-    name: string;
-    email: string;
-    time: string;
-};
-
 export function QrScannerContent({ booth, products }: { booth: Booth & { check_ins: HydratedCheckIn[] }, products: Product[] }) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('check-in');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [activeAction, setActiveAction] = useState<'check-in' | 'merch'>('check-in');
 
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const router = useRouter();
-
-  const checkInHistory: CheckInHistoryItem[] = useMemo(() => {
-    if (!booth || !booth.check_ins) {
-      return [];
-    }
-    return booth.check_ins
-      .filter((ci): ci is HydratedCheckIn & { attendees: { name: string, email: string } } => !!ci.attendees) // Safely filter for check-ins with valid attendees
-      .map((ci) => ({
-        name: ci.attendees.name,
-        email: ci.attendees.email,
-        time: format(new Date(ci.checked_in_at), 'p'),
-      }))
-      .sort((a, b) => new Date(`1970/01/01 ${b.time}`).getTime() - new Date(`1970/01/01 ${a.time}`).getTime());
-  }, [booth.check_ins]);
-
-
+  
   const stopCamera = useCallback(() => {
     if (videoRef.current?.srcObject) {
       (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
@@ -123,6 +90,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
       }
       setIsProcessing(false);
       setSelectedProduct(null); // Reset selection
+      setActiveAction('check-in'); // Revert to default action
   }, [selectedProduct, toast, booth.id, router]);
 
   const handleCheckIn = useCallback(async (attendeeId: string) => {
@@ -152,18 +120,12 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
   const processQrData = useCallback((qrData: string) => {
     if (isProcessing) return;
 
-    if (activeTab === 'merch' && selectedProduct) {
+    if (activeAction === 'merch' && selectedProduct) {
         handleMerchRedemption(qrData);
-    } else if (activeTab === 'check-in') {
+    } else if (activeAction === 'check-in') {
         handleCheckIn(qrData);
-    } else if (activeTab === 'merch' && !selectedProduct) {
-      toast({
-        variant: 'destructive',
-        title: 'Action required',
-        description: 'Please select a product to redeem on the Merchandise tab first.',
-      });
     }
-  }, [activeTab, selectedProduct, handleMerchRedemption, handleCheckIn, toast, isProcessing]);
+  }, [activeAction, selectedProduct, handleMerchRedemption, handleCheckIn, isProcessing]);
 
   const captureAndProcess = useCallback(() => {
     if (isProcessing || !videoRef.current?.HAVE_ENOUGH_DATA || !canvasRef.current) return;
@@ -195,14 +157,9 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     }
 
   }, [isProcessing, processQrData]);
-
+  
   useEffect(() => {
     const getCameraPermission = async () => {
-      if (activeTab === 'merch' && !selectedProduct && hasCameraPermission !== false) {
-        stopCamera();
-        return;
-      }
-      
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
@@ -223,13 +180,17 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     getCameraPermission();
     
     return () => stopCamera();
-  }, [activeTab, selectedProduct, stopCamera, toast]);
+  }, [stopCamera, toast]);
   
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+  const handleSelectProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setActiveAction('merch');
     setScanResult(null);
-    setSelectedProduct(null);
-  }
+    toast({
+      title: `Redeem: ${product.name}`,
+      description: 'The next QR scan will be for merchandise redemption.',
+    });
+  };
 
   const getScanResultVariant = (status: ScanResult['status']) => {
     if (status === 'success') return 'default';
@@ -237,16 +198,18 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     return 'default'; // for 'info'
   }
   
-  const isCaptureDisabled = !hasCameraPermission || isProcessing || (activeTab === 'merch' && !selectedProduct);
+  const isCaptureDisabled = !hasCameraPermission || isProcessing;
+  const scannerTitle = activeAction === 'merch' && selectedProduct ? `Redeeming: ${selectedProduct.name}` : 'QR Code Scanner';
+  const scannerDescription = activeAction === 'merch' && selectedProduct ? `Scan attendee's QR to redeem for ${selectedProduct.points} points.` : "Aim at a QR code, then capture to check-in an attendee.";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div className="lg:col-span-2">
+      <div className="lg:col-span-2">
         <Card className="h-full">
             <CardHeader>
-                <CardTitle>QR Code Scanner</CardTitle>
+                <CardTitle>{scannerTitle}</CardTitle>
                 <CardDescription>
-                    {activeTab === 'check-in' ? 'Aim at a QR code, then capture.' : 'Select a product, aim at a QR code, then capture.'}
+                    {scannerDescription}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -303,78 +266,32 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     </div>
 
     <div className="lg:col-span-1">
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="check-in">Check-in</TabsTrigger>
-                <TabsTrigger value="merch">Merchandise</TabsTrigger>
-            </TabsList>
-            <TabsContent value="check-in" className="mt-4">
-                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center text-lg"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
-                         <CardDescription>({checkInHistory.length}) attendees checked-in to this booth.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="px-0">
-                      <div className="max-h-96 overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Attendee</TableHead>
-                              <TableHead className="text-right">Time</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {checkInHistory.length > 0 ? (
-                              checkInHistory.map((attendee, index) => (
-                                <TableRow key={index}>
-                                  <TableCell>
-                                    <div className="font-medium">{attendee.name}</div>
-                                    <div className="text-xs text-muted-foreground">{attendee.email}</div>
-                                  </TableCell>
-                                  <TableCell className="text-right text-xs text-muted-foreground">{attendee.time}</TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell colSpan={2} className="h-24 text-center">
-                                  No check-ins yet for this booth.
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
-            <TabsContent value="merch" className="mt-4">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center"><Shirt className="mr-2 h-5 w-5"/>Redeem Merchandise</CardTitle>
-                         <CardDescription>Select a product to redeem.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-                        {products.map((item) => (
-                            <Button
-                                key={item.id}
-                                variant={selectedProduct?.id === item.id ? "default" : "outline"}
-                                className="w-full justify-between h-12"
-                                onClick={() => setSelectedProduct(item)}
-                                disabled={item.stock <= 0 || isProcessing}
-                            >
-                                <span>{item.name} {item.stock <= 0 && '(Out of stock)'}</span>
-                                <span>{item.points} pts</span>
-                            </Button>
-                        ))}
-                         {products.length === 0 && (
-                            <div className="text-center text-muted-foreground py-10">
-                                <p>No products available for redemption.</p>
-                            </div>
-                         )}
-                    </CardContent>
-                </Card>
-            </TabsContent>
-        </Tabs>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center"><Shirt className="mr-2 h-5 w-5"/>Redeem Merchandise</CardTitle>
+                 <CardDescription>Click a product to activate redemption mode.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
+                {products.map((item) => (
+                    <Button
+                        key={item.id}
+                        variant={selectedProduct?.id === item.id && activeAction === 'merch' ? "default" : "outline"}
+                        className="w-full justify-between h-12"
+                        onClick={() => handleSelectProduct(item)}
+                        disabled={item.stock <= 0 || isProcessing}
+                    >
+                        <span>{item.name} {item.stock <= 0 && '(Out of stock)'}</span>
+                        <span>{item.points} pts</span>
+                    </Button>
+                ))}
+                 {products.length === 0 && (
+                    <div className="text-center text-muted-foreground py-10">
+                        <p>No products available for redemption.</p>
+                        <p className="text-sm">You can add merchandise from the "Merchandise" page.</p>
+                    </div>
+                 )}
+            </CardContent>
+        </Card>
     </div>
   </div>
   );
