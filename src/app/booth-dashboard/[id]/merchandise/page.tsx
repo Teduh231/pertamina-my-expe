@@ -1,11 +1,11 @@
 import { getBoothById, getProductsByBooth } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
-import { QrScannerContent } from '@/components/booth-dashboard/qr-scanner-content';
+import { MerchandisePageContent } from '@/components/booth-dashboard/merchandise-page-content';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AppLayout } from '@/components/app-layout';
 
-export default async function BoothDashboardScannerPage({ params }: { params: { id: string } }) {
+export default async function BoothDashboardMerchandisePage({ params }: { params: { id: string } }) {
   const boothId = params.id;
   
   const [booth, products] = await Promise.all([
@@ -22,11 +22,11 @@ export default async function BoothDashboardScannerPage({ params }: { params: { 
         <AppLayout>
             <Card>
                 <CardHeader>
-                    <CardTitle>QR Scanner</CardTitle>
-                    <CardDescription>Check-in attendees and redeem merchandise points.</CardDescription>
+                    <CardTitle>Merchandise Management</CardTitle>
+                    <CardDescription>Add and manage products available for redemption at this booth.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <QrScannerContent booth={booth} products={products} />
+                   <MerchandisePageContent boothId={booth.id} products={products} />
                 </CardContent>
             </Card>
         </AppLayout>

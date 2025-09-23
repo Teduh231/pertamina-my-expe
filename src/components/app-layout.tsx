@@ -11,6 +11,10 @@ import {
   Store,
   UserCog,
   LayoutDashboard,
+  QrCode,
+  Ticket,
+  Gift,
+  Shirt,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -54,16 +58,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   const tenantNavItems = assignedBoothId ? [
-    { href: `/booth-dashboard/${assignedBoothId}`, icon: LayoutDashboard, label: 'My Dashboard' }
+    { href: `/booth-dashboard/${assignedBoothId}`, icon: QrCode, label: 'QR Scanner' },
+    { href: `/booth-dashboard/${assignedBoothId}/merchandise`, icon: Shirt, label: 'Merchandise' },
+    { href: `/booth-dashboard/${assignedBoothId}/raffle`, icon: Ticket, label: 'Raffle' },
+    { href: `/booth-dashboard/${assignedBoothId}/prizes`, icon: Gift, label: 'Prize History' },
   ] : [];
 
   const navItems = isAdmin ? adminNavItems : tenantNavItems;
 
   const getPageTitle = () => {
-    if (!isAdmin) return 'Booth Dashboard';
-    const currentNavItem = adminNavItems.find(item => pathname.startsWith(item.href));
-    return currentNavItem?.label || 'Dashboard';
+    const allNavItems = [...adminNavItems, ...tenantNavItems];
+    // Find the most specific match for the current path
+    const currentNavItem = allNavItems
+        .filter(item => pathname.startsWith(item.href))
+        .sort((a, b) => b.href.length - a.href.length)[0];
+
+    if (currentNavItem) {
+        return currentNavItem.label;
+    }
+    if (pathname.startsWith('/booth-dashboard')) return 'Booth Dashboard';
+    return 'Dashboard';
   }
+
 
   return (
     <SidebarProvider>
@@ -81,7 +97,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith(item.href)}
+                    isActive={pathname === item.href}
                     tooltip={item.label}
                   >
                     <Link href={item.href}>
