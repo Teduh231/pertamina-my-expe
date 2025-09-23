@@ -13,6 +13,14 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   QrCode,
   CheckCircle,
   XCircle,
@@ -297,24 +305,40 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
             </TabsList>
             <TabsContent value="check-in" className="mt-4">
                  <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center text-lg"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
                          <CardDescription>({checkInHistory.length}) attendees checked-in to this booth.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4 max-h-96 overflow-y-auto">
-                        {checkInHistory.length > 0 ? checkInHistory.map((attendee, index) => (
-                            <div key={index} className="flex items-start justify-between text-sm">
-                                <div>
-                                    <p className="font-medium">{attendee.name}</p>
-                                    <p className="text-xs text-muted-foreground">{attendee.email}</p>
-                                </div>
-                                <p className="text-xs text-muted-foreground whitespace-nowrap pl-4">{attendee.time}</p>
-                            </div>
-                        )) : (
-                            <div className="text-center text-muted-foreground py-10">
-                                <p>setelah attendee berhasil melakukan check in, maka disini akan menampilkan informasi nama, email yang terdaftar beserta timestamp dari check in tersebut</p>
-                            </div>
-                        )}
+                    <CardContent className="px-0">
+                      <div className="max-h-96 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Attendee</TableHead>
+                              <TableHead className="text-right">Time</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {checkInHistory.length > 0 ? (
+                              checkInHistory.map((attendee, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>
+                                    <div className="font-medium">{attendee.name}</div>
+                                    <div className="text-xs text-muted-foreground">{attendee.email}</div>
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs text-muted-foreground">{attendee.time}</TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={2} className="h-24 text-center">
+                                  No check-ins yet for this booth.
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </CardContent>
                 </Card>
             </TabsContent>
