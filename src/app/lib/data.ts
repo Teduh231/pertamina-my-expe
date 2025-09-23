@@ -102,7 +102,7 @@ export async function getAttendees(): Promise<Attendee[]> {
 export async function getAttendeeById(id: string): Promise<Attendee | null> {
     noStore();
     try {
-        const query = supabase.from('attendees').select('*').eq('id', id).single();
+        const query = supabase.from('attendees').select('*').eq('id', id).maybeSingle();
         return await supabaseQuery(query);
     } catch (error) {
         console.error(`Failed to fetch attendee ${id}, returning null:`, error);
