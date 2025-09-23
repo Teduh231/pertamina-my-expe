@@ -471,7 +471,7 @@ export async function createCheckIn(attendeeId: string, boothId: string) {
     console.error('Supabase error creating check-in:', error);
     // Handle unique constraint violation gracefully
     if (error.code === '23505') {
-      return { success: false, error: 'Attendee has already checked into this booth.' };
+      return { success: false, error: 'Attendee has already checked into this specific booth.' };
     }
     return { success: false, error: 'Database error: Could not record check-in.' };
   }
