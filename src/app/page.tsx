@@ -43,6 +43,11 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={32} height={32} />
             </div>
+            <div>
+              <Button asChild variant="outline">
+                <Link href="/login">Login</Link>
+              </Button>
+            </div>
         </div>
       </header>
       <main className="flex-1">
