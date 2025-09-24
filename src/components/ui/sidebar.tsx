@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Sheet, SheetContent } from "./sheet"
+import { Sheet, SheetContent, SheetTitle } from "./sheet"
 
 type SidebarContext = {
   state: "expanded" | "collapsed"
@@ -144,6 +144,7 @@ const Sidebar = React.forwardRef<
           className="w-[var(--sidebar-width-mobile)] bg-sidebar p-0 text-sidebar-foreground"
           side="left"
         >
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
@@ -219,7 +220,7 @@ const SidebarContent = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3",
+        "flex min-h-0 flex-1 flex-col overflow-auto p-3",
         className
       )}
       {...props}
