@@ -17,7 +17,6 @@ ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow admin full access on transactions"
 ON transactions
 FOR ALL
-TO service_role
 USING (true);
 
 -- Allow tenants to read transactions for their own booth
@@ -25,7 +24,8 @@ CREATE POLICY "Allow tenant to read transactions for own booth"
 ON transactions
 FOR SELECT
 USING (
-    booth_id = (SELECT booth_id FROM tenants WHERE id = auth.uid() AND booth_id IS NOT NULL)
+    (get_my_claim('role')::text = 'admin') OR
+    (booth_id = (SELECT booth_id FROM tenants WHERE id = auth.uid()))
 );
 
 -- Allow authenticated users (tenants) to create transactions for their own booth
@@ -33,5 +33,6 @@ CREATE POLICY "Allow tenant to create transactions for own booth"
 ON transactions
 FOR INSERT
 WITH CHECK (
-    booth_id = (SELECT booth_id FROM tenants WHERE id = auth.uid() AND booth_id IS NOT NULL)
+    (get_my_claim('role')::text = 'admin') OR
+    (booth_id = (SELECT booth_id FROM tenants WHERE id = auth.uid()))
 );
