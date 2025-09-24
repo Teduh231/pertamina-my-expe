@@ -303,30 +303,6 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                     </RadioGroup>
                 </CardContent>
             </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
-                    <CardDescription>Most recent attendees who checked-in.</CardDescription>
-                </CardHeader>
-                <ScrollArea className="h-72">
-                    <CardContent className="space-y-3">
-                        {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
-                            checkIn.attendees ? (
-                                <div key={checkIn.id} className="flex items-center justify-between text-sm">
-                                    <p className="font-medium flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" />{checkIn.attendees.name}</p>
-                                    <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
-                                </div>
-                            ) : null
-                        )) : (
-                            <div className="text-center text-muted-foreground py-10">
-                                <p>No attendees checked in yet.</p>
-                            </div>
-                        )}
-                    </CardContent>
-                </ScrollArea>
-            </Card>
-
         </div>
 
 
@@ -417,6 +393,28 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                         <p className='text-2xl font-bold'>{activities.length}</p>
                     </div>
                 </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
+                    <CardDescription>Most recent attendees who checked-in.</CardDescription>
+                </CardHeader>
+                <ScrollArea className="h-72">
+                    <CardContent className="space-y-3">
+                        {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
+                            checkIn.attendees ? (
+                                <div key={checkIn.id} className="flex items-center justify-between text-sm">
+                                    <p className="font-medium flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" />{checkIn.attendees.name}</p>
+                                    <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
+                                </div>
+                            ) : null
+                        )) : (
+                            <div className="text-center text-muted-foreground py-10">
+                                <p>No attendees checked in yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </ScrollArea>
             </Card>
         </div>
 
