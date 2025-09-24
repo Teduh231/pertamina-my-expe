@@ -48,19 +48,24 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [activeAction, setActiveAction] = useState<'check-in' | 'merch'>('check-in');
+  const [isScanning, setIsScanning] = useState(false);
 
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const animationFrameId = useRef<number>();
   
   const stopCamera = useCallback(() => {
+    setIsScanning(false);
+    if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+    }
     if (videoRef.current?.srcObject) {
       (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
-    setHasCameraPermission(null);
   }, []);
 
   const handleMerchRedemption = useCallback(async (attendeeId: string) => {
@@ -91,7 +96,8 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
       setIsProcessing(false);
       setSelectedProduct(null); // Reset selection
       setActiveAction('check-in'); // Revert to default action
-  }, [selectedProduct, toast, booth.id, router]);
+      stopCamera();
+  }, [selectedProduct, toast, booth.id, router, stopCamera]);
 
   const handleCheckIn = useCallback(async (attendeeId: string) => {
       setIsProcessing(true);
@@ -114,7 +120,8 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
         setScanResult({ status: 'error', message: 'Invalid QR Code. Attendee not found.' });
       }
       setIsProcessing(false);
-  }, [booth.id, router]);
+      stopCamera();
+  }, [booth.id, router, stopCamera]);
 
 
   const processQrData = useCallback((qrData: string) => {
@@ -127,60 +134,69 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     }
   }, [activeAction, selectedProduct, handleMerchRedemption, handleCheckIn, isProcessing]);
 
-  const captureAndProcess = useCallback(() => {
-    if (isProcessing || !videoRef.current?.HAVE_ENOUGH_DATA || !canvasRef.current) return;
+  const scanLoop = useCallback(() => {
+    if (videoRef.current?.readyState === videoRef.current?.HAVE_ENOUGH_DATA && canvasRef.current && isScanning) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext('2d');
 
-    setIsProcessing(true);
-    setScanResult(null);
-
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const context = canvas.getContext('2d');
-
-    if (context) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: 'dontInvert',
-      });
-
-      if (code && code.data) {
-        processQrData(code.data);
-      } else {
-        setScanResult({ status: 'error', message: 'No QR code detected. Please try again.' });
-        setTimeout(() => setIsProcessing(false), 1500);
-      }
-    } else {
-        setIsProcessing(false);
-    }
-
-  }, [isProcessing, processQrData]);
-  
-  useEffect(() => {
-    const getCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
+      if (context) {
+        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
         });
+
+        if (code && code.data) {
+           processQrData(code.data);
+        }
+      }
+    }
+    if (isScanning) {
+      animationFrameId.current = requestAnimationFrame(scanLoop);
+    }
+  }, [isScanning, processQrData]);
+
+  const startScanning = useCallback(async () => {
+    if (isScanning) return;
+    setScanResult(null);
+    setIsProcessing(false);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      setHasCameraPermission(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setIsScanning(true);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
+      toast({
+        variant: 'destructive',
+        title: 'Camera Access Denied',
+        description: 'Please enable camera permissions in your browser settings to use this app.',
+      });
+    }
+  }, [isScanning, toast]);
+
+  useEffect(() => {
+    if (isScanning) {
+      animationFrameId.current = requestAnimationFrame(scanLoop);
+    }
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
       }
     };
-
-    getCameraPermission();
-    
+  }, [isScanning, scanLoop]);
+  
+  useEffect(() => {
+    // Cleanup camera on component unmount
     return () => stopCamera();
-  }, [stopCamera, toast]);
+  }, [stopCamera]);
   
   const handleSelectProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -188,7 +204,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     setScanResult(null);
     toast({
       title: `Redeem: ${product.name}`,
-      description: 'The next QR scan will be for merchandise redemption.',
+      description: 'The scanner is ready for merchandise redemption.',
     });
   };
 
@@ -198,9 +214,9 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     return 'default'; // for 'info'
   }
   
-  const isCaptureDisabled = !hasCameraPermission || isProcessing;
+  const isCaptureDisabled = isProcessing;
   const scannerTitle = activeAction === 'merch' && selectedProduct ? `Redeeming: ${selectedProduct.name}` : 'Scanner';
-  const scannerDescription = activeAction === 'merch' && selectedProduct ? `Scan attendee's QR to redeem for ${selectedProduct.points} points.` : "Aim at a QR code, then capture to check-in an attendee.";
+  const scannerDescription = activeAction === 'merch' && selectedProduct ? `Scan attendee's QR to redeem for ${selectedProduct.points} points.` : "Start the scanner to check-in an attendee.";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -214,13 +230,13 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
-                    <video ref={videoRef} className={cn("w-full h-full object-cover", hasCameraPermission ? "block" : "hidden")} autoPlay muted playsInline />
+                    <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
                     <canvas ref={canvasRef} className="hidden" />
 
-                    {!hasCameraPermission && hasCameraPermission !== false && (
+                    {!isScanning && (
                          <div className="text-center text-muted-foreground p-4 absolute">
-                            <Camera className="mx-auto h-16 w-16" />
-                            <p className="mt-2 font-semibold">Initializing Camera...</p>
+                            <CameraOff className="mx-auto h-16 w-16" />
+                            <p className="mt-2 font-semibold">Scanner is Off</p>
                          </div>
                     )}
                     {hasCameraPermission === false && (
@@ -229,8 +245,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                             <p className="mt-2 font-semibold">Camera Access Denied</p>
                          </div>
                     )}
-
-                    {hasCameraPermission && (
+                    {isScanning && (
                          <div className="absolute inset-0 bg-transparent flex items-center justify-center">
                             <ScanLine className="h-1/2 w-1/2 text-white/20 animate-pulse" />
                         </div>
@@ -242,9 +257,9 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                         <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
                     </Alert>
                 )}
-                <Button onClick={captureAndProcess} className="w-full" disabled={isCaptureDisabled}>
+                <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
                     {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
-                    {isProcessing ? 'Processing...' : 'Capture & Process QR'}
+                    {isProcessing ? 'Processing...' : isScanning ? 'Stop Scanner' : 'Start Scanner'}
                 </Button>
                  {scanResult && (
                     <Alert variant={getScanResultVariant(scanResult.status)}>
