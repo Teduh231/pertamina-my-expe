@@ -1,3 +1,4 @@
+
 import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn, Activity, ActivityParticipant } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -148,6 +149,19 @@ export async function getProducts(): Promise<Product[]> {
     }
 }
 
+export async function getProductById(id: string): Promise<Product | null> {
+    noStore();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    try {
+        const query = supabaseAdmin.from('products').select('*').eq('id', id).maybeSingle();
+        return await supabaseQuery(query);
+    } catch (error) {
+        console.error(`Failed to fetch product ${id}, returning null:`, error);
+        return null;
+    }
+}
+
+
 export async function getProductsByBooth(boothId: string): Promise<Product[]> {
     noStore();
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -213,13 +227,14 @@ export async function getActivityParticipants(activityId: string): Promise<Activ
     }
 }
 
-export async function getRecentTransactions(limit = 5): Promise<Transaction[]> {
+export async function getRecentTransactions(boothId: string, limit = 5): Promise<Transaction[]> {
     noStore();
-    const supabaseAdmin = createSupabaseServerClient();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
         const query = supabaseAdmin
             .from('transactions')
             .select('*')
+            .eq('booth_id', boothId)
             .order('created_at', { ascending: false })
             .limit(limit);
         return await supabaseQuery(query);

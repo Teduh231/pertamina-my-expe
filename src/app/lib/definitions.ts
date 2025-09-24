@@ -1,3 +1,4 @@
+
 export type BoothStatus = 'draft' | 'published' | 'canceled' | 'pending';
 
 export type Booth = {
@@ -67,10 +68,12 @@ export type Product = {
 
 export type Transaction = {
   id: string;
-  user_id: string;
-  user_name: string;
+  booth_id: string;
+  attendee_id: string;
+  attendee_name: string;
+  product_id: string;
   product_name: string;
-  points: number;
+  points_spent: number;
   created_at: string;
 };
 

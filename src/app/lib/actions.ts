@@ -1,8 +1,9 @@
+
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Activity, ActivityParticipant, Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
-import { getBoothById, getAttendees, getAttendeeById, getActivityById } from './data';
+import { Activity, ActivityParticipant, Attendee, Booth, Product, Raffle, RaffleWinner, Tenant, Transaction } from './definitions';
+import { getBoothById, getAttendees, getAttendeeById, getActivityById, getProductById } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase as supabaseClient } from './supabase/client';
@@ -519,7 +520,7 @@ export async function uploadImage(formData: FormData) {
     return { success: true, url: publicUrl, path: filePath };
 }
 
-export async function createActivity(activityData: Omit<Activity, 'id' | 'created_at' | 'updated_at'>) {
+export async function createActivity(activityData: Omit<Activity, 'id' | 'created_at' | 'updated_at' | 'participant_count'>) {
     const { data, error } = await supabaseAdmin
         .from('activities')
         .insert([{...activityData, updated_at: new Date() }])
@@ -599,5 +600,81 @@ export async function addActivityParticipant(activityId: string, attendeeId: str
         attendeeName: attendee.name,
         pointsAwarded: activity.points_reward,
         totalPoints: newTotalPoints,
+    };
+}
+
+
+export async function redeemProduct(attendeeId: string, productId: string, boothId: string) {
+    noStore();
+    
+    // Transaction
+    const attendee = await getAttendeeById(attendeeId);
+    if (!attendee) {
+        return { success: false, error: "Attendee not found." };
+    }
+
+    const product = await getProductById(productId);
+    if (!product) {
+        return { success: false, error: "Product not found." };
+    }
+
+    if (product.stock <= 0) {
+        return { success: false, error: `Sorry, "${product.name}" is out of stock.` };
+    }
+    if (attendee.points < product.points) {
+        return { success: false, error: `Attendee has insufficient points. Needs ${product.points}, has ${attendee.points}.` };
+    }
+
+    // Deduct points and stock in a transaction
+    const newAttendeePoints = attendee.points - product.points;
+    const newProductStock = product.stock - 1;
+
+    const { error: attendeeError } = await supabaseAdmin
+        .from('attendees')
+        .update({ points: newAttendeePoints })
+        .eq('id', attendeeId);
+
+    if (attendeeError) {
+        return { success: false, error: 'Failed to update attendee points.' };
+    }
+
+    const { error: productError } = await supabaseAdmin
+        .from('products')
+        .update({ stock: newProductStock })
+        .eq('id', productId);
+    
+    if (productError) {
+        // Rollback attendee points
+        await supabaseAdmin.from('attendees').update({ points: attendee.points }).eq('id', attendeeId);
+        return { success: false, error: 'Failed to update product stock.' };
+    }
+    
+    // Log the transaction
+    const { data: newTransaction, error: transactionError } = await supabaseAdmin
+        .from('transactions')
+        .insert({
+            booth_id: boothId,
+            attendee_id: attendeeId,
+            attendee_name: attendee.name,
+            product_id: productId,
+            product_name: product.name,
+            points_spent: product.points,
+        })
+        .select()
+        .single();
+    
+    if (transactionError) {
+        // This is not ideal, as the main transaction has completed.
+        // In a real-world scenario, you'd use PostgreSQL transactions or other mechanisms.
+        console.error("Failed to log transaction:", transactionError);
+    }
+    
+    revalidatePath(`/booth-dashboard/${boothId}/pos`);
+    revalidatePath(`/booth-dashboard/${boothId}/merchandise`);
+
+    return {
+        success: true,
+        attendeeName: attendee.name,
+        newTransaction,
     };
 }

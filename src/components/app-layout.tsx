@@ -17,6 +17,7 @@ import {
   Shirt,
   Flame,
   PieChart,
+  ShoppingBasket,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -63,6 +64,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: `/booth-dashboard/${assignedBoothId}/overview`, icon: PieChart, label: 'Overview' },
     { href: `/booth-dashboard/${assignedBoothId}/scanner`, icon: QrCode, label: 'QR Scanner' },
     { href: `/booth-dashboard/${assignedBoothId}/merchandise`, icon: Shirt, label: 'Merchandise' },
+    { href: `/booth-dashboard/${assignedBoothId}/pos`, icon: ShoppingBasket, label: 'POS' },
     { href: `/booth-dashboard/${assignedBoothId}/activity`, icon: Flame, label: 'Activity' },
     { href: `/booth-dashboard/${assignedBoothId}/raffle`, icon: Ticket, label: 'Raffle' },
     { href: `/booth-dashboard/${assignedBoothId}/prizes`, icon: Gift, label: 'Prize History' },
