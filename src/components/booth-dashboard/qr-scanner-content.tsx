@@ -13,6 +13,14 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   QrCode,
   CheckCircle,
   XCircle,
@@ -25,6 +33,7 @@ import {
   Flame,
   Clock,
   User,
+  History,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -57,6 +66,7 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [activeAction, setActiveAction] = useState<'check-in' | 'merch' | 'activity'>('check-in');
   const [isScanning, setIsScanning] = useState(false);
+  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
 
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -103,7 +113,6 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
       }
       setIsProcessing(false);
       setSelectedProduct(null);
-      setActiveAction('check-in');
       stopCamera();
   }, [selectedProduct, toast, booth.id, router, stopCamera]);
 
@@ -137,7 +146,6 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
     setScanResult({ status: 'info', message: `Simulating join for ${selectedActivity.name}. Not yet implemented.`, attendeeName: 'Attendee' });
     setIsProcessing(false);
     setSelectedActivity(null);
-    setActiveAction('check-in');
     stopCamera();
   }, [selectedActivity, stopCamera]);
 
@@ -184,6 +192,13 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
     setScanResult(null);
     setIsProcessing(false);
 
+    const requiresSelection = (activeAction === 'merch' && !selectedProduct) || (activeAction === 'activity' && !selectedActivity);
+
+    if(requiresSelection){
+        setIsSelectionModalOpen(true);
+        return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       setHasCameraPermission(true);
@@ -200,7 +215,7 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
         description: 'Please enable camera permissions in your browser settings to use this app.',
       });
     }
-  }, [isScanning, toast]);
+  }, [isScanning, toast, activeAction, selectedProduct, selectedActivity]);
 
   useEffect(() => {
     if (isScanning) {
@@ -239,135 +254,190 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
   const sortedCheckIns = useMemo(() => {
     return booth.check_ins.sort((a, b) => new Date(b.checked_in_at).getTime() - new Date(a.checked_in_at).getTime());
   }, [booth.check_ins]);
+  
+  const handleActionChange = (value: 'check-in' | 'merch' | 'activity') => {
+    setActiveAction(value);
+    setSelectedProduct(null);
+    setSelectedActivity(null);
+    stopCamera();
+    setScanResult(null);
+  }
+
+  const onSelectionContinue = () => {
+    setIsSelectionModalOpen(false);
+    startScanning();
+  }
 
   return (
+    <Dialog open={isSelectionModalOpen} onOpenChange={setIsSelectionModalOpen}>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
-        <Card className="h-full flex flex-col">
-            <CardHeader>
-                <CardTitle>{scannerTitle}</CardTitle>
-                <CardDescription>
-                    {scannerDescription}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 flex-grow flex flex-col">
-                <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
-                    <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
-                    <canvas ref={canvasRef} className="hidden" />
-
-                    {!isScanning && (
-                         <div className="text-center text-muted-foreground p-4 absolute">
-                            <CameraOff className="mx-auto h-16 w-16" />
-                            <p className="mt-2 font-semibold">Scanner is Off</p>
-                         </div>
-                    )}
-                    {hasCameraPermission === false && (
-                         <div className="text-center text-muted-foreground p-4 absolute">
-                            <CameraOff className="mx-auto h-16 w-16" />
-                            <p className="mt-2 font-semibold">Camera Access Denied</p>
-                         </div>
-                    )}
-                    {isScanning && (
-                         <div className="absolute inset-0 bg-transparent flex items-center justify-center">
-                            <ScanLine className="h-1/2 w-1/2 text-white/20 animate-pulse" />
+        {/* ---- Column 1: Actions & Overview ---- */}
+        <div className="lg:col-span-1 space-y-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Select Action</CardTitle>
+                    <CardDescription>Choose what to do when a QR is scanned.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <RadioGroup value={activeAction} onValueChange={handleActionChange} className="grid grid-cols-3 gap-2">
+                        <div>
+                            <RadioGroupItem value="check-in" id="check-in" className="peer sr-only" />
+                            <Label htmlFor="check-in" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            <CheckCircle className="mb-3 h-6 w-6" />
+                            Check-in
+                            </Label>
                         </div>
-                    )}
-                </div>
-                 {hasCameraPermission === false && (
-                    <Alert variant="destructive">
-                        <AlertTitle>Camera Access Required</AlertTitle>
-                        <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
-                    </Alert>
-                )}
-                <div className="flex-grow">
-                 {scanResult && (
-                    <Alert variant={getScanResultVariant(scanResult.status)} className="h-full">
-                        {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
-                        {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
-                        {scanResult.status === 'info' && <Info className="h-4 w-4" />}
-                        <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
-                        <AlertDescription>{scanResult.message}</AlertDescription>
-                        {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
-                            <div className='mt-2 text-xs'>
-                                <p>Points Used: {scanResult.pointsUsed}</p>
-                                <p>Remaining Points: {scanResult.remainingPoints}</p>
+                        <div>
+                            <RadioGroupItem value="merch" id="merch" className="peer sr-only" />
+                            <Label htmlFor="merch" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            <Shirt className="mb-3 h-6 w-6" />
+                            Merch
+                            </Label>
+                        </div>
+                        <div>
+                            <RadioGroupItem value="activity" id="activity" className="peer sr-only" />
+                            <Label htmlFor="activity" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            <Flame className="mb-3 h-6 w-6" />
+                            Activity
+                            </Label>
+                        </div>
+                    </RadioGroup>
+                </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Booth Overview</CardTitle>
+                    <CardDescription>At a glance statistics for this booth.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+                        <div className='flex items-center gap-3'>
+                            <User className="h-6 w-6 text-primary"/>
+                            <p className='font-medium'>Total Check-ins</p>
+                        </div>
+                        <p className='text-2xl font-bold'>{sortedCheckIns.length}</p>
+                    </div>
+                     <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+                        <div className='flex items-center gap-3'>
+                            <Shirt className="h-6 w-6 text-primary"/>
+                            <p className='font-medium'>Merchandise Items</p>
+                        </div>
+                        <p className='text-2xl font-bold'>{products.length}</p>
+                    </div>
+                     <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+                        <div className='flex items-center gap-3'>
+                            <Flame className="h-6 w-6 text-primary"/>
+                            <p className='font-medium'>Available Activities</p>
+                        </div>
+                        <p className='text-2xl font-bold'>{activities.length}</p>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
+
+        {/* ---- Column 2: Scanner & History ---- */}
+        <div className="lg:col-span-2 space-y-6">
+            <Card className="h-full flex flex-col">
+                <CardHeader>
+                    <CardTitle>{scannerTitle}</CardTitle>
+                    <CardDescription>{scannerDescription}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 flex-grow flex flex-col">
+                    <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
+                        <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
+                        <canvas ref={canvasRef} className="hidden" />
+
+                        {!isScanning && (
+                            <div className="text-center text-muted-foreground p-4 absolute">
+                                <CameraOff className="mx-auto h-16 w-16" />
+                                <p className="mt-2 font-semibold">Scanner is Off</p>
                             </div>
                         )}
-                    </Alert>
-                )}
-                </div>
-                 <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
-                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
-                    {isProcessing ? 'Processing...' : isScanning ? 'Stop Scanner' : 'Start Scanner'}
-                </Button>
-            </CardContent>
-        </Card>
-    </div>
-
-    <div className="lg:col-span-1">
-        <Card>
-            <CardHeader>
-                <CardTitle>Select Action</CardTitle>
-                <CardDescription>Choose what to do when a QR is scanned.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <RadioGroup value={activeAction} onValueChange={(value) => setActiveAction(value as any)} className="grid grid-cols-3 gap-2">
-                    <div>
-                        <RadioGroupItem value="check-in" id="check-in" className="peer sr-only" />
-                        <Label htmlFor="check-in" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                           <CheckCircle className="mb-3 h-6 w-6" />
-                           Check-in
-                        </Label>
+                        {hasCameraPermission === false && (
+                            <div className="text-center text-muted-foreground p-4 absolute">
+                                <CameraOff className="mx-auto h-16 w-16" />
+                                <p className="mt-2 font-semibold">Camera Access Denied</p>
+                            </div>
+                        )}
+                        {isScanning && (
+                            <div className="absolute inset-0 bg-transparent flex items-center justify-center">
+                                <ScanLine className="h-1/2 w-1/2 text-white/20 animate-pulse" />
+                            </div>
+                        )}
                     </div>
-                     <div>
-                        <RadioGroupItem value="merch" id="merch" className="peer sr-only" />
-                        <Label htmlFor="merch" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                           <Shirt className="mb-3 h-6 w-6" />
-                           Merch
-                        </Label>
+                    {hasCameraPermission === false && (
+                        <Alert variant="destructive">
+                            <AlertTitle>Camera Access Required</AlertTitle>
+                            <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
+                        </Alert>
+                    )}
+                    <div className="flex-grow">
+                    {scanResult && (
+                        <Alert variant={getScanResultVariant(scanResult.status)} className="h-full">
+                            {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
+                            {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
+                            {scanResult.status === 'info' && <Info className="h-4 w-4" />}
+                            <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
+                            <AlertDescription>{scanResult.message}</AlertDescription>
+                            {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
+                                <div className='mt-2 text-xs'>
+                                    <p>Points Used: {scanResult.pointsUsed}</p>
+                                    <p>Remaining Points: {scanResult.remainingPoints}</p>
+                                </div>
+                            )}
+                        </Alert>
+                    )}
                     </div>
-                     <div>
-                        <RadioGroupItem value="activity" id="activity" className="peer sr-only" />
-                        <Label htmlFor="activity" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                           <Flame className="mb-3 h-6 w-6" />
-                           Activity
-                        </Label>
-                    </div>
-                </RadioGroup>
+                    <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
+                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
+                        {isProcessing ? 'Processing...' : isScanning ? 'Stop Scanner' : 'Start Scanner'}
+                    </Button>
+                </CardContent>
+            </Card>
 
-                <div className={cn("pt-4", activeAction === 'check-in' ? 'block' : 'hidden')}>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
-                             <CardDescription>({sortedCheckIns.length}) attendees checked-in.</CardDescription>
-                        </CardHeader>
-                        <ScrollArea className="h-72">
-                            <CardContent className="space-y-3">
-                                {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
-                                    checkIn.attendees ? (
-                                        <div key={checkIn.attendee_id} className="flex items-center justify-between text-sm">
-                                            <p className="font-medium flex items-center gap-2"><User className="h-4 w-4" />{checkIn.attendees.name}</p>
-                                            <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
-                                        </div>
-                                    ) : null
-                                )) : (
-                                    <div className="text-center text-muted-foreground py-10">
-                                        <p>No attendees checked in yet.</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </ScrollArea>
-                    </Card>
-                </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
+                    <CardDescription>Most recent attendees who checked-in.</CardDescription>
+                </CardHeader>
+                <ScrollArea className="h-72">
+                    <CardContent className="space-y-3">
+                        {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
+                            checkIn.attendees ? (
+                                <div key={checkIn.id} className="flex items-center justify-between text-sm">
+                                    <p className="font-medium flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" />{checkIn.attendees.name}</p>
+                                    <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
+                                </div>
+                            ) : null
+                        )) : (
+                            <div className="text-center text-muted-foreground py-10">
+                                <p>No attendees checked in yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </ScrollArea>
+            </Card>
+        </div>
 
-                <div className={cn("pt-4 space-y-2", activeAction === 'merch' ? 'block' : 'hidden')}>
-                    <h4 className="font-semibold">Select Merchandise</h4>
-                     <ScrollArea className="h-72">
+        {/* ---- Selection Modal ---- */}
+        <DialogContent>
+            <DialogHeader>
+                 <DialogTitle>Select an item</DialogTitle>
+                 <DialogDescription>
+                    {`You must select a ${activeAction === 'merch' ? 'product' : 'activity'} to continue.`}
+                 </DialogDescription>
+            </DialogHeader>
+             <div className="pt-4">
+                 {activeAction === 'merch' && (
+                     <ScrollArea className="h-72 pr-4">
+                        <div className='space-y-2'>
                         {products.map((item) => (
                             <Card 
                                 key={item.id}
                                 className={cn(
-                                    "cursor-pointer hover:border-primary transition-colors mb-2",
+                                    "cursor-pointer hover:border-primary transition-colors",
                                     selectedProduct?.id === item.id && "border-primary ring-2 ring-primary",
                                     (item.stock <= 0 || isProcessing) && "opacity-50 cursor-not-allowed"
                                 )}
@@ -389,17 +459,17 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                                 </CardContent>
                             </Card>
                         ))}
+                        </div>
                      </ScrollArea>
-                </div>
-
-                 <div className={cn("pt-4 space-y-2", activeAction === 'activity' ? 'block' : 'hidden')}>
-                    <h4 className="font-semibold">Select Activity</h4>
-                     <ScrollArea className="h-72">
+                 )}
+                 {activeAction === 'activity' && (
+                      <ScrollArea className="h-72 pr-4">
+                        <div className='space-y-2'>
                         {activities.map((act) => (
                             <Card 
                                 key={act.id}
                                 className={cn(
-                                    "cursor-pointer hover:border-primary transition-colors mb-2",
+                                    "cursor-pointer hover:border-primary transition-colors",
                                     selectedActivity?.id === act.id && "border-primary ring-2 ring-primary",
                                     isProcessing && "opacity-50 cursor-not-allowed"
                                 )}
@@ -412,12 +482,15 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                                 </CardContent>
                             </Card>
                         ))}
+                        </div>
                     </ScrollArea>
-                </div>
-
-            </CardContent>
-        </Card>
+                 )}
+             </div>
+             <Button onClick={onSelectionContinue} disabled={!selectedProduct && !selectedActivity}>
+                Continue
+             </Button>
+        </DialogContent>
     </div>
-  </div>
+    </Dialog>
   );
 }
