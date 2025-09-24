@@ -18,7 +18,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   QrCode,
@@ -34,6 +33,8 @@ import {
   Clock,
   User,
   History,
+  ShoppingBag,
+  List,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -66,9 +67,7 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [activeAction, setActiveAction] = useState<'check-in' | 'merch' | 'activity'>('check-in');
   const [isScanning, setIsScanning] = useState(false);
-  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
-
-
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
@@ -195,7 +194,11 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
     const requiresSelection = (activeAction === 'merch' && !selectedProduct) || (activeAction === 'activity' && !selectedActivity);
 
     if(requiresSelection){
-        setIsSelectionModalOpen(true);
+        toast({
+            variant: 'destructive',
+            title: `Please select an item`,
+            description: `You must select a ${activeAction} to start scanning.`,
+        })
         return;
     }
 
@@ -263,13 +266,7 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
     setScanResult(null);
   }
 
-  const onSelectionContinue = () => {
-    setIsSelectionModalOpen(false);
-    startScanning();
-  }
-
   return (
-    <Dialog open={isSelectionModalOpen} onOpenChange={setIsSelectionModalOpen}>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
              <Card>
@@ -308,7 +305,7 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                     <CardTitle>{scannerTitle}</CardTitle>
                     <CardDescription>{scannerDescription}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 flex flex-col">
+                <CardContent className="space-y-4 flex flex-col flex-grow">
                     <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
                         <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
                         <canvas ref={canvasRef} className="hidden" />
@@ -337,23 +334,22 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                             <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
                         </Alert>
                     )}
-                    <div>
-                        {scanResult && (
-                            <Alert variant={getScanResultVariant(scanResult.status)} className="h-full">
-                                {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
-                                {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
-                                {scanResult.status === 'info' && <Info className="h-4 w-4" />}
-                                <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
-                                <AlertDescription>{scanResult.message}</AlertDescription>
-                                {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
-                                    <div className='mt-2 text-xs'>
-                                        <p>Points Used: {scanResult.pointsUsed}</p>
-                                        <p>Remaining Points: {scanResult.remainingPoints}</p>
-                                    </div>
-                                )}
-                            </Alert>
-                        )}
-                    </div>
+                    {scanResult && (
+                        <Alert variant={getScanResultVariant(scanResult.status)} className="h-full">
+                            {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
+                            {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
+                            {scanResult.status === 'info' && <Info className="h-4 w-4" />}
+                            <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
+                            <AlertDescription>{scanResult.message}</AlertDescription>
+                            {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
+                                <div className='mt-2 text-xs'>
+                                    <p>Points Used: {scanResult.pointsUsed}</p>
+                                    <p>Remaining Points: {scanResult.remainingPoints}</p>
+                                </div>
+                            )}
+                        </Alert>
+                    )}
+                    <div className="flex-grow"></div>
                     <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
                         {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
                         {isProcessing ? 'Processing...' : isScanning ? 'Stop Scanner' : 'Start Scanner'}
@@ -391,6 +387,8 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                     </div>
                 </CardContent>
             </Card>
+
+            {activeAction === 'check-in' && (
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
@@ -413,78 +411,85 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                     </CardContent>
                 </ScrollArea>
             </Card>
-        </div>
+            )}
 
-        {/* ---- Selection Modal ---- */}
-        <DialogContent>
-            <DialogHeader>
-                 <DialogTitle>Select an item</DialogTitle>
-                 <DialogDescription>
-                    {`You must select a ${activeAction === 'merch' ? 'product' : 'activity'} to continue.`}
-                 </DialogDescription>
-            </DialogHeader>
-             <div className="pt-4">
-                 {activeAction === 'merch' && (
-                     <ScrollArea className="h-72 pr-4">
-                        <div className='space-y-2'>
-                        {products.map((item) => (
-                            <Card 
-                                key={item.id}
-                                className={cn(
-                                    "cursor-pointer hover:border-primary transition-colors",
-                                    selectedProduct?.id === item.id && "border-primary ring-2 ring-primary",
-                                    (item.stock <= 0 || isProcessing) && "opacity-50 cursor-not-allowed"
-                                )}
-                                onClick={() => !(item.stock <= 0 || isProcessing) && setSelectedProduct(item)}
-                            >
-                                <CardContent className="p-3 flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden shrink-0">
-                                    {item.image_url ? (
-                                    <Image src={item.image_url} alt={item.name} width={64} height={64} className="object-cover w-full h-full" />
-                                    ) : (
-                                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+            {activeAction === 'merch' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center"><ShoppingBag className="mr-2 h-5 w-5"/>Select Merchandise</CardTitle>
+                        <CardDescription>Choose an item to redeem.</CardDescription>
+                    </CardHeader>
+                    <ScrollArea className="h-72">
+                        <CardContent className="space-y-2">
+                            {products.length > 0 ? products.map((item) => (
+                                <Card 
+                                    key={item.id}
+                                    className={cn(
+                                        "cursor-pointer hover:border-primary transition-colors",
+                                        selectedProduct?.id === item.id && "border-primary ring-2 ring-primary",
+                                        (item.stock <= 0 || isProcessing) && "opacity-50 cursor-not-allowed"
                                     )}
+                                    onClick={() => !(item.stock <= 0 || isProcessing) && setSelectedProduct(item)}
+                                >
+                                    <CardContent className="p-3 flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden shrink-0">
+                                            {item.image_url ? (
+                                                <Image src={item.image_url} alt={item.name} width={48} height={48} className="object-cover w-full h-full" />
+                                            ) : (
+                                                <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                                            )}
+                                        </div>
+                                        <div className="flex-grow">
+                                            <p className="font-semibold">{item.name}</p>
+                                            <p className="text-sm text-muted-foreground">Stock: {item.stock}</p>
+                                            <p className="text-sm font-bold text-primary">{item.points} pts</p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )) : (
+                                <div className="text-center text-muted-foreground py-10">
+                                    <p>No merchandise available.</p>
                                 </div>
-                                <div className="flex-grow">
-                                    <p className="font-semibold">{item.name}</p>
-                                    <p className="text-sm text-muted-foreground">Stock: {item.stock}</p>
-                                    <p className="text-sm font-bold text-primary">{item.points} pts</p>
-                                </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        </div>
-                     </ScrollArea>
-                 )}
-                 {activeAction === 'activity' && (
-                      <ScrollArea className="h-72 pr-4">
-                        <div className='space-y-2'>
-                        {activities.map((act) => (
-                            <Card 
-                                key={act.id}
-                                className={cn(
-                                    "cursor-pointer hover:border-primary transition-colors",
-                                    selectedActivity?.id === act.id && "border-primary ring-2 ring-primary",
-                                    isProcessing && "opacity-50 cursor-not-allowed"
-                                )}
-                                onClick={() => !isProcessing && setSelectedActivity(act)}
-                            >
-                                <CardContent className="p-3">
-                                    <p className="font-semibold">{act.name}</p>
-                                    <p className="text-sm text-muted-foreground">{act.description}</p>
-                                    <p className="text-sm font-bold text-primary mt-1">{act.points_reward} pts reward</p>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        </div>
+                            )}
+                        </CardContent>
                     </ScrollArea>
-                 )}
-             </div>
-             <Button onClick={onSelectionContinue} disabled={!selectedProduct && !selectedActivity}>
-                Continue
-             </Button>
-        </DialogContent>
+                </Card>
+            )}
+
+            {activeAction === 'activity' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center"><List className="mr-2 h-5 w-5"/>Select Activity</CardTitle>
+                        <CardDescription>Choose an activity to join.</CardDescription>
+                    </CardHeader>
+                     <ScrollArea className="h-72">
+                        <CardContent className="space-y-2">
+                            {activities.length > 0 ? activities.map((act) => (
+                                <Card 
+                                    key={act.id}
+                                    className={cn(
+                                        "cursor-pointer hover:border-primary transition-colors",
+                                        selectedActivity?.id === act.id && "border-primary ring-2 ring-primary",
+                                        isProcessing && "opacity-50 cursor-not-allowed"
+                                    )}
+                                    onClick={() => !isProcessing && setSelectedActivity(act)}
+                                >
+                                    <CardContent className="p-3">
+                                        <p className="font-semibold">{act.name}</p>
+                                        <p className="text-sm text-muted-foreground line-clamp-2">{act.description}</p>
+                                        <p className="text-sm font-bold text-primary mt-1">{act.points_reward} pts reward</p>
+                                    </CardContent>
+                                </Card>
+                            )) : (
+                                 <div className="text-center text-muted-foreground py-10">
+                                    <p>No activities available.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </ScrollArea>
+                </Card>
+            )}
+        </div>
     </div>
-    </Dialog>
   );
 }
