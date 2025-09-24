@@ -271,7 +271,7 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
   return (
     <Dialog open={isSelectionModalOpen} onOpenChange={setIsSelectionModalOpen}>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
              <Card>
                 <CardHeader>
                     <CardTitle>Select Action</CardTitle>
@@ -303,16 +303,12 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                     </RadioGroup>
                 </CardContent>
             </Card>
-        </div>
-
-
-        <div className="lg:col-span-2 space-y-6">
             <Card className="h-full flex flex-col">
                 <CardHeader>
                     <CardTitle>{scannerTitle}</CardTitle>
                     <CardDescription>{scannerDescription}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 flex-grow flex flex-col">
+                <CardContent className="space-y-4 flex flex-col">
                     <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
                         <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
                         <canvas ref={canvasRef} className="hidden" />
@@ -341,22 +337,22 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                             <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
                         </Alert>
                     )}
-                    <div className="flex-grow">
-                    {scanResult && (
-                        <Alert variant={getScanResultVariant(scanResult.status)} className="h-full">
-                            {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
-                            {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
-                            {scanResult.status === 'info' && <Info className="h-4 w-4" />}
-                            <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
-                            <AlertDescription>{scanResult.message}</AlertDescription>
-                            {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
-                                <div className='mt-2 text-xs'>
-                                    <p>Points Used: {scanResult.pointsUsed}</p>
-                                    <p>Remaining Points: {scanResult.remainingPoints}</p>
-                                </div>
-                            )}
-                        </Alert>
-                    )}
+                    <div>
+                        {scanResult && (
+                            <Alert variant={getScanResultVariant(scanResult.status)} className="h-full">
+                                {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
+                                {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
+                                {scanResult.status === 'info' && <Info className="h-4 w-4" />}
+                                <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
+                                <AlertDescription>{scanResult.message}</AlertDescription>
+                                {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
+                                    <div className='mt-2 text-xs'>
+                                        <p>Points Used: {scanResult.pointsUsed}</p>
+                                        <p>Remaining Points: {scanResult.remainingPoints}</p>
+                                    </div>
+                                )}
+                            </Alert>
+                        )}
                     </div>
                     <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
                         {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
@@ -364,7 +360,8 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                     </Button>
                 </CardContent>
             </Card>
-
+        </div>
+        <div className="lg:col-span-1 space-y-6">
              <Card>
                 <CardHeader>
                     <CardTitle>Booth Overview</CardTitle>
