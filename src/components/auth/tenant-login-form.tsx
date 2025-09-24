@@ -93,12 +93,6 @@ export function TenantLoginForm() {
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isSubmitting ? 'Signing In...' : 'Sign In as Tenant'}
         </Button>
-        <div className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link href="/signup" className="font-medium text-primary hover:underline">
-                Sign Up
-            </Link>
-        </div>
       </form>
     </Form>
   );

@@ -1,4 +1,5 @@
 
+'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +7,7 @@ import { CheckCircle, BarChart, Calendar, ShieldCheck, Download, Store } from 'l
 import Link from 'next/link';
 import Image from 'next/image';
 import { TypingAnimation } from '@/components/ui/typing-animation';
+import { useAuth } from '@/hooks/use-auth';
 
 const features = [
   {
@@ -36,6 +38,8 @@ const features = [
 
 export default function LandingPage() {
   const heroTitle = "The Future of Booth Management is Here";
+  const { user, loading } = useAuth();
+  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -44,9 +48,17 @@ export default function LandingPage() {
               <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={32} height={32} />
             </div>
             <div>
-              <Button asChild variant="outline">
-                <Link href="/login">Login</Link>
-              </Button>
+              {loading ? (
+                 <Button variant="outline" disabled>Loading...</Button>
+              ) : user ? (
+                <Button asChild>
+                  <Link href="/dashboard">Go to Dashboard</Link>
+                </Button>
+              ) : (
+                <Button asChild variant="outline">
+                  <Link href="/login">Login</Link>
+                </Button>
+              )}
             </div>
         </div>
       </header>

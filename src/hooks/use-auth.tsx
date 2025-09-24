@@ -15,7 +15,6 @@ interface AuthContextType {
   assignedBoothId: string | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<any>;
-  signup: (email: string, pass: string) => Promise<any>;
   logout: () => Promise<any>;
 }
 
@@ -69,11 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   };
 
-  const signup = async (email: string, pass: string) => {
-    const { error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) throw error;
-  };
-
   const logout = async () => {
     await supabase.auth.signOut();
     // We push to login here as a fallback, but the onAuthStateChange should handle it.
@@ -91,7 +85,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     assignedBoothId,
     loading,
     login,
-    signup,
     logout,
   };
 
