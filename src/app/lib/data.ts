@@ -2,6 +2,7 @@ import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, Che
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as serverAdminClient } from './supabase/server'; // Import the admin client
 
 // This is a special instance of the Supabase client for use in server components
 // where we might not have access to the service role key, but can use the user's session.
@@ -34,7 +35,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     // Use the admin client on the server, but a regular client on the client
     // This function can be called from both environments.
     const supabaseClient = typeof window === 'undefined' 
-      ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      ? serverAdminClient
       : supabase;
 
     try {
