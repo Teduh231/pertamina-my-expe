@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import jsQR from 'jsqr';
-import { Booth, Product, Attendee, CheckIn } from '@/app/lib/definitions';
+import { Booth, Product, Attendee, CheckIn, Activity } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -20,9 +20,9 @@ import {
   ScanLine,
   Shirt,
   Info,
-  Camera,
   CameraOff,
   ImageIcon,
+  Flame,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -30,6 +30,9 @@ import { redeemMerchandiseForAttendee, createCheckIn } from '@/app/lib/actions';
 import { getAttendeeById } from '@/app/lib/data';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
@@ -39,17 +42,17 @@ type ScanResult = {
   remainingPoints?: number;
 };
 
-// Define a more specific type for a check-in that includes attendee data
 type HydratedCheckIn = CheckIn & {
   attendees: { name: string; email: string } | null;
 };
 
-export function QrScannerContent({ booth, products }: { booth: Booth & { check_ins: HydratedCheckIn[] }, products: Product[] }) {
+export function QrScannerContent({ booth, products, activities }: { booth: Booth & { check_ins: HydratedCheckIn[] }, products: Product[], activities: Activity[] }) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [activeAction, setActiveAction] = useState<'check-in' | 'merch'>('check-in');
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [activeAction, setActiveAction] = useState<'check-in' | 'merch' | 'activity'>('check-in');
   const [isScanning, setIsScanning] = useState(false);
 
 
@@ -96,8 +99,8 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
           });
       }
       setIsProcessing(false);
-      setSelectedProduct(null); // Reset selection
-      setActiveAction('check-in'); // Revert to default action
+      setSelectedProduct(null);
+      setActiveAction('check-in');
       stopCamera();
   }, [selectedProduct, toast, booth.id, router, stopCamera]);
 
@@ -111,7 +114,6 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
           setScanResult({ status: 'success', message: 'Check-in successful!', attendeeName: attendee.name });
           router.refresh();
         } else {
-          // Differentiate between already checked in and other errors
           if (result.error?.includes('already checked in')) {
             setScanResult({ status: 'info', message: result.error, attendeeName: attendee.name });
           } else {
@@ -124,6 +126,17 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
       setIsProcessing(false);
       stopCamera();
   }, [booth.id, router, stopCamera]);
+  
+  const handleActivityJoin = useCallback(async (attendeeId: string) => {
+    // TODO: Implement activity join logic
+    if (!selectedActivity) return;
+    setIsProcessing(true);
+    setScanResult({ status: 'info', message: `Simulating join for ${selectedActivity.name}. Not yet implemented.`, attendeeName: 'Attendee' });
+    setIsProcessing(false);
+    setSelectedActivity(null);
+    setActiveAction('check-in');
+    stopCamera();
+  }, [selectedActivity, stopCamera]);
 
 
   const processQrData = useCallback((qrData: string) => {
@@ -131,10 +144,12 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
 
     if (activeAction === 'merch' && selectedProduct) {
         handleMerchRedemption(qrData);
+    } else if (activeAction === 'activity' && selectedActivity) {
+        handleActivityJoin(qrData);
     } else if (activeAction === 'check-in') {
         handleCheckIn(qrData);
     }
-  }, [activeAction, selectedProduct, handleMerchRedemption, handleCheckIn, isProcessing]);
+  }, [activeAction, selectedProduct, selectedActivity, handleMerchRedemption, handleCheckIn, handleActivityJoin, isProcessing]);
 
   const scanLoop = useCallback(() => {
     if (videoRef.current?.readyState === videoRef.current?.HAVE_ENOUGH_DATA && canvasRef.current && isScanning) {
@@ -200,36 +215,23 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     return () => stopCamera();
   }, [stopCamera]);
   
-  const handleSelectProduct = (product: Product) => {
-    if (selectedProduct?.id === product.id) {
-        // If the same product is clicked again, unselect it
-        setSelectedProduct(null);
-        setActiveAction('check-in'); // Revert to default check-in action
-        toast({
-            title: 'Redemption Mode Deactivated',
-            description: 'Scanner is back in check-in mode.',
-        });
-    } else {
-        // Select a new product
-        setSelectedProduct(product);
-        setActiveAction('merch');
-        setScanResult(null);
-        toast({
-            title: `Redeem: ${product.name}`,
-            description: 'The scanner is ready for merchandise redemption.',
-        });
-    }
-  };
-
   const getScanResultVariant = (status: ScanResult['status']) => {
     if (status === 'success') return 'default';
     if (status === 'error') return 'destructive';
     return 'default'; // for 'info'
   }
   
-  const isCaptureDisabled = isProcessing;
-  const scannerTitle = activeAction === 'merch' && selectedProduct ? `Redeeming: ${selectedProduct.name}` : 'QR Scanner';
-  const scannerDescription = activeAction === 'merch' && selectedProduct ? `Scan attendee's QR to redeem for ${selectedProduct.points} points.` : "Start the scanner to check-in an attendee.";
+  const scannerTitle = useMemo(() => {
+    if (activeAction === 'merch' && selectedProduct) return `Redeeming: ${selectedProduct.name}`;
+    if (activeAction === 'activity' && selectedActivity) return `Activity: ${selectedActivity.name}`;
+    return 'QR Scanner';
+  }, [activeAction, selectedProduct, selectedActivity]);
+
+  const scannerDescription = useMemo(() => {
+    if (activeAction === 'merch' && selectedProduct) return `Scan attendee's QR to redeem for ${selectedProduct.points} points.`;
+     if (activeAction === 'activity' && selectedActivity) return `Scan attendee's QR to join activity. Reward: ${selectedActivity.points_reward} points.`;
+    return "Start the scanner to check-in an attendee.";
+  }, [activeAction, selectedProduct, selectedActivity]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -296,42 +298,89 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
     <div className="lg:col-span-1">
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center"><Shirt className="mr-2 h-5 w-5"/>Redeem Merchandise</CardTitle>
-                 <CardDescription>Click a product to activate redemption mode.</CardDescription>
+                <CardTitle>Select Action</CardTitle>
+                <CardDescription>Choose what to do when a QR is scanned.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 max-h-[calc(100vh-20rem)] overflow-y-auto">
-                {products.map((item) => (
-                    <Card 
-                        key={item.id}
-                        className={cn(
-                            "cursor-pointer hover:border-primary transition-colors",
-                             selectedProduct?.id === item.id && activeAction === 'merch' && "border-primary ring-2 ring-primary",
-                             (item.stock <= 0 || isProcessing) && "opacity-50 cursor-not-allowed"
-                        )}
-                        onClick={() => !(item.stock <= 0 || isProcessing) && handleSelectProduct(item)}
-                    >
-                      <CardContent className="p-3 flex items-center gap-4">
-                         <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden shrink-0">
-                            {item.image_url ? (
-                              <Image src={item.image_url} alt={item.name} width={64} height={64} className="object-cover w-full h-full" />
-                            ) : (
-                              <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div className="flex-grow">
-                            <p className="font-semibold">{item.name}</p>
-                            <p className="text-sm text-muted-foreground">Stock: {item.stock}</p>
-                            <p className="text-sm font-bold text-primary">{item.points} pts</p>
-                          </div>
-                      </CardContent>
-                    </Card>
-                ))}
-                 {products.length === 0 && (
-                    <div className="text-center text-muted-foreground py-10">
-                        <p>No products available for redemption.</p>
-                        <p className="text-sm">You can add merchandise from the "Merchandise" page.</p>
+            <CardContent className="space-y-4">
+                 <RadioGroup value={activeAction} onValueChange={(value) => setActiveAction(value as any)} className="grid grid-cols-3 gap-2">
+                    <div>
+                        <RadioGroupItem value="check-in" id="check-in" className="peer sr-only" />
+                        <Label htmlFor="check-in" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                           <CheckCircle className="mb-3 h-6 w-6" />
+                           Check-in
+                        </Label>
                     </div>
-                 )}
+                     <div>
+                        <RadioGroupItem value="merch" id="merch" className="peer sr-only" />
+                        <Label htmlFor="merch" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                           <Shirt className="mb-3 h-6 w-6" />
+                           Merch
+                        </Label>
+                    </div>
+                     <div>
+                        <RadioGroupItem value="activity" id="activity" className="peer sr-only" />
+                        <Label htmlFor="activity" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                           <Flame className="mb-3 h-6 w-6" />
+                           Activity
+                        </Label>
+                    </div>
+                </RadioGroup>
+
+                <div className={cn("pt-4 space-y-2", activeAction === 'merch' ? 'block' : 'hidden')}>
+                    <h4 className="font-semibold">Select Merchandise</h4>
+                     <ScrollArea className="h-72">
+                        {products.map((item) => (
+                            <Card 
+                                key={item.id}
+                                className={cn(
+                                    "cursor-pointer hover:border-primary transition-colors mb-2",
+                                    selectedProduct?.id === item.id && "border-primary ring-2 ring-primary",
+                                    (item.stock <= 0 || isProcessing) && "opacity-50 cursor-not-allowed"
+                                )}
+                                onClick={() => !(item.stock <= 0 || isProcessing) && setSelectedProduct(item)}
+                            >
+                                <CardContent className="p-3 flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden shrink-0">
+                                    {item.image_url ? (
+                                    <Image src={item.image_url} alt={item.name} width={64} height={64} className="object-cover w-full h-full" />
+                                    ) : (
+                                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                                    )}
+                                </div>
+                                <div className="flex-grow">
+                                    <p className="font-semibold">{item.name}</p>
+                                    <p className="text-sm text-muted-foreground">Stock: {item.stock}</p>
+                                    <p className="text-sm font-bold text-primary">{item.points} pts</p>
+                                </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                     </ScrollArea>
+                </div>
+
+                 <div className={cn("pt-4 space-y-2", activeAction === 'activity' ? 'block' : 'hidden')}>
+                    <h4 className="font-semibold">Select Activity</h4>
+                     <ScrollArea className="h-72">
+                        {activities.map((act) => (
+                            <Card 
+                                key={act.id}
+                                className={cn(
+                                    "cursor-pointer hover:border-primary transition-colors mb-2",
+                                    selectedActivity?.id === act.id && "border-primary ring-2 ring-primary",
+                                    isProcessing && "opacity-50 cursor-not-allowed"
+                                )}
+                                onClick={() => !isProcessing && setSelectedActivity(act)}
+                            >
+                                <CardContent className="p-3">
+                                    <p className="font-semibold">{act.name}</p>
+                                    <p className="text-sm text-muted-foreground">{act.description}</p>
+                                    <p className="text-sm font-bold text-primary mt-1">{act.points_reward} pts reward</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </ScrollArea>
+                </div>
+
             </CardContent>
         </Card>
     </div>

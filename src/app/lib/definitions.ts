@@ -86,3 +86,13 @@ export type UserProfile = {
   role: string;
   booth_id: string | null;
 };
+
+export type Activity = {
+  id: string;
+  booth_id: string;
+  name: string;
+  description: string;
+  points_reward: number;
+  created_at: string;
+  updated_at: string;
+};

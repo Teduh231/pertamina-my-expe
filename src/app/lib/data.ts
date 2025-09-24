@@ -1,4 +1,4 @@
-import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn } from '@/app/lib/definitions';
+import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn, Activity } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
@@ -154,6 +154,18 @@ export async function getProductsByBooth(boothId: string): Promise<Product[]> {
       return await supabaseQuery(query);
     } catch (error) {
       console.error("Failed to fetch products for booth, returning empty array:", error);
+      return [];
+    }
+}
+
+export async function getActivitiesByBooth(boothId: string): Promise<Activity[]> {
+    noStore();
+    const supabaseAdmin = createSupabaseServerClient();
+    try {
+      const query = supabaseAdmin.from('activities').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
+      return await supabaseQuery(query);
+    } catch (error) {
+      console.error("Failed to fetch activities for booth, returning empty array:", error);
       return [];
     }
 }

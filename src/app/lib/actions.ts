@@ -1,7 +1,7 @@
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
+import { Activity, Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
 import { getBoothById, getAttendees } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -539,4 +539,20 @@ export async function uploadImage(formData: FormData) {
     const { data: { publicUrl } } = supabaseClient.storage.from('images').getPublicUrl(filePath);
 
     return { success: true, url: publicUrl, path: filePath };
+}
+
+export async function createActivity(activityData: Omit<Activity, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabaseAdmin
+        .from('activities')
+        .insert([activityData])
+        .select()
+        .single();
+
+    if (error || !data) {
+        console.error('Supabase error creating activity:', error);
+        return { success: false, error: 'Database error: Could not create activity.' };
+    }
+    
+    revalidatePath(`/booth-dashboard/${activityData.booth_id}/activity`);
+    return { success: true, activity: data };
 }
