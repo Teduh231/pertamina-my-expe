@@ -25,8 +25,7 @@ CREATE POLICY "Allow tenant to read transactions for own booth"
 ON transactions
 FOR SELECT
 USING (
-    (get_my_claim('role')::text = 'admin') OR
-    (booth_id IN (SELECT booth_id FROM tenants WHERE id = auth.uid()))
+    booth_id = (SELECT booth_id FROM tenants WHERE id = auth.uid() AND booth_id IS NOT NULL)
 );
 
 -- Allow authenticated users (tenants) to create transactions for their own booth
@@ -34,6 +33,5 @@ CREATE POLICY "Allow tenant to create transactions for own booth"
 ON transactions
 FOR INSERT
 WITH CHECK (
-    (get_my_claim('role')::text = 'admin') OR
-    (booth_id IN (SELECT booth_id FROM tenants WHERE id = auth.uid()))
+    booth_id = (SELECT booth_id FROM tenants WHERE id = auth.uid() AND booth_id IS NOT NULL)
 );
