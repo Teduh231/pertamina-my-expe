@@ -160,7 +160,7 @@ export async function getProductsByBooth(boothId: string): Promise<Product[]> {
 
 export async function getActivitiesByBooth(boothId: string): Promise<Activity[]> {
     noStore();
-    const supabaseAdmin = createSupabaseServerClient();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
       const query = supabaseAdmin.from('activities').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
       return await supabaseQuery(query);
