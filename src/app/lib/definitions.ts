@@ -66,6 +66,13 @@ export type Product = {
   created_at: string;
 };
 
+export type TransactionItem = {
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    points: number;
+};
+
 export type Transaction = {
   id: string;
   booth_id: string;
@@ -75,6 +82,8 @@ export type Transaction = {
   product_name: string;
   points_spent: number;
   created_at: string;
+  items: TransactionItem[];
+  discount: number;
 };
 
 export type Tenant = {
@@ -113,3 +122,4 @@ export type ActivityParticipant = {
     email: string;
   };
 };
+

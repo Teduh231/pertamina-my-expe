@@ -10,7 +10,7 @@ export default async function BoothDashboardPosPage({ params }: { params: { id: 
   const [booth, products, transactions] = await Promise.all([
     getBoothById(boothId),
     getProductsByBooth(boothId),
-    getRecentTransactions(boothId, 5)
+    getRecentTransactions(boothId, 10) // Fetch more for the dashboard
   ]);
 
   if (!booth) {
