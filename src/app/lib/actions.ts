@@ -7,6 +7,8 @@ import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase as supabaseClient } from './supabase/client';
 import { supabaseAdmin } from './supabase/server';
+import { cookies }from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 
 // Placeholder function for sending email.
 // You need to integrate a real email service like SendGrid, Resend, or Nodemailer.
@@ -71,13 +73,33 @@ export async function exportAttendeesToCsv(boothId: string): Promise<string> {
 }
 
 export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_user_email?: string, booth_user_password?: string }, boothId?: string) {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+          cookies: {
+              get(name: string) {
+                  return cookieStore.get(name)?.value
+              },
+          },
+      }
+  );
+  
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Authentication required.' };
+  }
+
   const { attendees, booth_user_email, booth_user_password, ...restOfBoothData } = formData;
+  const dataToUpsert = { ...restOfBoothData };
 
   if (boothId) {
     // Update existing booth
     const { error } = await supabaseAdmin
       .from('booths')
-      .update(restOfBoothData)
+      .update(dataToUpsert)
       .eq('id', boothId);
     
     if (error) {
@@ -87,10 +109,13 @@ export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_use
     revalidatePath(`/booths/${boothId}`);
     revalidatePath(`/booth-dashboard/${boothId}`);
   } else {
-    // Create new booth
+    // Create new booth, initiated by a tenant, so it should be pending
+    dataToUpsert.user_id = user.id;
+    dataToUpsert.status = 'pending';
+    
     const { data, error } = await supabaseAdmin
       .from('booths')
-      .insert([restOfBoothData])
+      .insert([dataToUpsert])
       .select('id')
       .single();
 
@@ -100,8 +125,10 @@ export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_use
     }
     boothId = data.id;
 
-    // If user details are provided, create the user and tenant record
-    if (booth_user_email && booth_user_password) {
+    // If user details are provided, create the user and tenant record (admin-only feature)
+    const {data: { session }} = await supabase.auth.getSession();
+    const userRole = session?.user?.user_metadata?.role;
+    if (userRole === 'admin' && booth_user_email && booth_user_password) {
         const createTenantResult = await createTenantUser({
             name: restOfBoothData.booth_manager, // Use booth manager name for the tenant name
             email: booth_user_email,
@@ -120,12 +147,27 @@ export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_use
   revalidatePath('/booths');
   revalidatePath('/tenants');
   revalidatePath('/dashboard');
+  revalidatePath('/tenant-dashboard');
   return { success: true, boothId };
 }
 
 export async function deleteBooth(boothId: string) {
-    // We don't need to delete attendees anymore as they are not tied to a booth.
-    // We will delete check_ins related to this booth.
+    const { data, error } = await supabaseAdmin
+      .from('booths')
+      .select('image_path')
+      .eq('id', boothId)
+      .single();
+
+    if (error) {
+      console.error('Supabase error fetching booth for deletion:', error);
+    }
+    if (data?.image_path) {
+        const { error: storageError } = await supabaseAdmin.storage.from('images').remove([data.image_path]);
+        if (storageError) {
+            console.error('Supabase storage error deleting image:', storageError);
+        }
+    }
+
     const { error: checkinError } = await supabaseAdmin
       .from('check_ins')
       .delete()
@@ -136,18 +178,15 @@ export async function deleteBooth(boothId: string) {
       return { success: false, error: 'Database error: Could not delete associated check-ins.' };
     }
     
-    // Also, unassign any tenants associated with this booth
     const { error: tenantUnassignError } = await supabaseAdmin
       .from('tenants')
       .update({ booth_id: null })
       .eq('booth_id', boothId);
 
     if (tenantUnassignError) {
-        // Log the error but don't block deletion
         console.error('Supabase error unassigning tenants:', tenantUnassignError);
     }
   
-    // Then, delete the booth itself
     const { error: boothError } = await supabaseAdmin
       .from('booths')
       .delete()
@@ -161,6 +200,7 @@ export async function deleteBooth(boothId: string) {
     revalidatePath('/booths');
     revalidatePath('/dashboard');
     revalidatePath('/tenants');
+    revalidatePath('/tenant-dashboard');
     return { success: true };
 }
 
@@ -477,4 +517,26 @@ export async function createCheckIn(attendeeId: string, boothId: string) {
   }
   revalidatePath(`/booth-dashboard/${boothId}`);
   return { success: true, checkIn: data };
+}
+
+export async function uploadImage(formData: FormData) {
+    const file = formData.get('file') as File;
+    if (!file) {
+        return { success: false, error: 'No file provided.' };
+    }
+
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExtension}`;
+    const filePath = `public/${fileName}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage.from('images').upload(filePath, file);
+
+    if (uploadError) {
+        console.error('Supabase storage error:', uploadError);
+        return { success: false, error: 'Failed to upload image.' };
+    }
+
+    const { data: { publicUrl } } = supabaseClient.storage.from('images').getPublicUrl(filePath);
+
+    return { success: true, url: publicUrl, path: filePath };
 }

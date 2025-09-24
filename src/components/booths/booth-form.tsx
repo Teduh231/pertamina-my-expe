@@ -26,40 +26,46 @@ import { Booth } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, UserPlus } from 'lucide-react';
-import React from 'react';
-import { createOrUpdateBooth } from '@/app/lib/actions';
+import React, { useState } from 'react';
+import { createOrUpdateBooth, uploadImage } from '@/app/lib/actions';
 import { Separator } from '../ui/separator';
+import { ImageUpload } from '../ui/image-upload';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Booth name must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   location: z.string().min(3, { message: 'Location is required.' }),
   booth_manager: z.string().min(2, { message: 'Booth manager name is required.' }),
-  status: z.enum(['draft', 'published', 'canceled']),
-  image_url: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
-  // Booth user fields - only for creation
+  status: z.enum(['draft', 'published', 'canceled', 'pending']),
+  image_url: z.string().optional(),
+  image_path: z.string().optional(),
   booth_user_email: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
   booth_user_password: z.string().min(6, { message: 'Password must be at least 6 characters.' }).optional().or(z.literal('')),
 }).refine(data => {
-    // If one of the user fields is filled, the other must be too.
     if (data.booth_user_email || data.booth_user_password) {
         return !!data.booth_user_email && !!data.booth_user_password;
     }
     return true;
 }, {
     message: "Both email and password are required to create a booth user.",
-    path: ["booth_user_email"], // Point error to the email field
+    path: ["booth_user_email"],
 });
 
 type BoothFormProps = {
   booth?: Booth;
   onFinished?: () => void;
+  context?: 'admin' | 'tenant';
 };
 
-export function BoothForm({ booth, onFinished }: BoothFormProps) {
+export function BoothForm({ booth, onFinished, context = 'admin' }: BoothFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const defaultStatus = context === 'tenant' ? 'pending' : (booth?.status || 'draft');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,9 +73,10 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
       name: booth?.name || '',
       description: booth?.description || '',
       location: booth?.location || '',
-      booth_manager: booth?.booth_manager || '',
-      status: booth?.status || 'draft',
+      booth_manager: booth?.booth_manager || user?.user_metadata?.name || '',
+      status: defaultStatus,
       image_url: booth?.image_url || '',
+      image_path: booth?.image_path || '',
       booth_user_email: '',
       booth_user_password: ''
     },
@@ -77,14 +84,35 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
+    let imageUrl = values.image_url;
+    let imagePath = values.image_path;
+
+    if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        const uploadResult = await uploadImage(formData);
+        if (!uploadResult.success) {
+            toast({ variant: 'destructive', title: 'Image Upload Failed', description: uploadResult.error });
+            setIsSubmitting(false);
+            return;
+        }
+        imageUrl = uploadResult.url;
+        imagePath = uploadResult.path;
+    }
+
+    const dataToSubmit = {
+      ...values,
+      image_url: imageUrl,
+      image_path: imagePath,
+    };
     
-    const result = await createOrUpdateBooth(values, booth?.id);
+    const result = await createOrUpdateBooth(dataToSubmit, booth?.id);
     setIsSubmitting(false);
 
     if (result.success) {
       toast({
-        title: `Booth ${booth ? 'updated' : 'created'} successfully!`,
-        description: `"${values.name}" is now saved.`,
+        title: `Booth ${booth ? 'updated' : 'request submitted'}!`,
+        description: `"${values.name}" is now ${booth ? 'saved' : 'pending approval'}.`,
       });
       router.refresh();
       if (onFinished) {
@@ -139,12 +167,15 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
                     name="image_url"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Image URL</FormLabel>
+                        <FormLabel>Booth Banner</FormLabel>
                         <FormControl>
-                            <Input type="url" placeholder="https://example.com/image.png" {...field} />
+                            <ImageUpload
+                                onFileSelect={setImageFile}
+                                currentImageUrl={field.value}
+                            />
                         </FormControl>
                         <FormDescription>
-                            Provide a URL for the booth's banner image.
+                            Upload a banner image for your booth.
                         </FormDescription>
                         <FormMessage />
                         </FormItem>
@@ -180,6 +211,7 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
                   )}
                 />
                 
+                {context === 'admin' &&
                  <FormField
                   control={form.control}
                   name="status"
@@ -196,19 +228,21 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
                           <SelectItem value="draft">Draft</SelectItem>
                           <SelectItem value="published">Published</SelectItem>
                           <SelectItem value="canceled">Canceled</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        'Draft' booths are hidden. 'Published' are visible to the public.
+                        'Draft' booths are hidden. 'Published' are visible. 'Pending' need approval.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                }
             </div>
         </div>
 
-        {!booth && (
+        {context === 'admin' && !booth && (
             <>
                 <Separator />
                 <div className="space-y-4">
@@ -255,7 +289,7 @@ export function BoothForm({ booth, onFinished }: BoothFormProps) {
             <Button type="button" variant="ghost" onClick={onFinished}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {booth ? 'Save Changes' : 'Create Booth'}
+                {booth ? 'Save Changes' : 'Submit for Approval'}
             </Button>
         </div>
       </form>

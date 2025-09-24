@@ -26,15 +26,17 @@ import { Product } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, PlusCircle, Package, ImageIcon } from 'lucide-react';
-import { createProduct } from '@/app/lib/actions';
+import { createProduct, uploadImage } from '@/app/lib/actions';
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const productSchema = z.object({
   name: z.string().min(2, { message: 'Product name must be at least 2 characters.' }),
   points: z.coerce.number().min(0, { message: 'Points must be a positive number.' }),
   stock: z.coerce.number().min(0, { message: 'Stock must be a positive number.' }),
-  image_url: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+  image_url: z.string().optional(),
+  image_path: z.string().optional(),
 });
 
 type MerchandisePageContentProps = {
@@ -46,6 +48,7 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
@@ -54,13 +57,39 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
       points: 10,
       stock: 100,
       image_url: '',
+      image_path: '',
     },
   });
 
   async function onSubmit(values: z.infer<typeof productSchema>) {
     setIsSubmitting(true);
+    let imageUrl = '';
+    let imagePath = '';
+
+    if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        const uploadResult = await uploadImage(formData);
+
+        if (!uploadResult.success) {
+            toast({
+                variant: 'destructive',
+                title: 'Image Upload Failed',
+                description: uploadResult.error,
+            });
+            setIsSubmitting(false);
+            return;
+        }
+        imageUrl = uploadResult.url!;
+        imagePath = uploadResult.path!;
+    }
     
-    const result = await createProduct({ ...values, booth_id: boothId });
+    const result = await createProduct({ 
+        ...values, 
+        booth_id: boothId,
+        image_url: imageUrl,
+        image_path: imagePath
+    });
     
     if (result.success) {
       toast({
@@ -68,6 +97,7 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
         description: `"${values.name}" has been added to your merchandise list.`,
       });
       form.reset();
+      setImageFile(null);
       router.refresh();
     } else {
       toast({
@@ -100,17 +130,20 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
               )}
             />
              <FormField
-              control={form.control}
-              name="image_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/image.png" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                control={form.control}
+                name="image_url"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Product Image</FormLabel>
+                        <FormControl>
+                           <ImageUpload
+                                onFileSelect={setImageFile}
+                                currentImageUrl={field.value}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
             />
             <FormField
               control={form.control}

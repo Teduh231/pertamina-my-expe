@@ -1,7 +1,8 @@
-export type BoothStatus = 'draft' | 'published' | 'canceled';
+export type BoothStatus = 'draft' | 'published' | 'canceled' | 'pending';
 
 export type Booth = {
   id: string;
+  user_id: string;
   name: string;
   location: string;
   description: string;
@@ -11,6 +12,7 @@ export type Booth = {
   raffles: Raffle[];
   created_at: string;
   image_url?: string;
+  image_path?: string;
 };
 
 export type Attendee = {
@@ -58,6 +60,7 @@ export type Product = {
   points: number;
   stock: number;
   image_url?: string;
+  image_path?: string;
   created_at: string;
 };
 
@@ -76,6 +79,7 @@ export type Tenant = {
   email: string;
   booth_id: string | null;
   boothName?: string;
+  status: 'pending' | 'approved' | 'rejected';
 };
 
 export type UserProfile = {
