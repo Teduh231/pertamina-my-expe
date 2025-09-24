@@ -2,7 +2,6 @@ import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, Che
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
-import { supabaseAdmin as serverAdminClient } from './supabase/server'; // Import the admin client
 
 // This is a special instance of the Supabase client for use in server components
 // where we might not have access to the service role key, but can use the user's session.
@@ -28,46 +27,6 @@ async function supabaseQuery(query: any) {
     throw new Error(`Supabase query failed: ${error.message}`);
   }
   return data;
-}
-
-export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    noStore();
-    // Use the admin client on the server, but a regular client on the client
-    // This function can be called from both environments.
-    const supabaseClient = typeof window === 'undefined' 
-      ? serverAdminClient
-      : supabase;
-
-    try {
-        const { data: roleData, error: roleError } = await supabaseClient
-            .from('user_roles')
-            .select('role')
-            .eq('id', userId)
-            .single();
-
-        if (roleError && roleError.code !== 'PGRST116') { // PGRST116: row not found
-             console.error('Error fetching user role:', roleError?.message);
-             return null;
-        }
-
-        const { data: tenantData, error: tenantError } = await supabaseClient
-            .from('tenants')
-            .select('booth_id')
-            .eq('id', userId)
-            .single();
-        
-        if (tenantError && tenantError.code !== 'PGRST116') {
-             console.error('Error fetching tenant info:', tenantError?.message);
-        }
-
-        return {
-            role: roleData?.role || 'tenant',
-            booth_id: tenantData?.booth_id || null,
-        };
-    } catch (error) {
-        console.error("Failed to fetch user profile, returning null:", error);
-        return null;
-    }
 }
 
 

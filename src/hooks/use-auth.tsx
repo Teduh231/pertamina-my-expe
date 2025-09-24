@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { supabase } from '@/app/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { getUserProfile } from '@/app/lib/data';
+import { getUserProfile } from '@/app/lib/get-user-profile-client';
 import type { UserProfile } from '@/app/lib/definitions';
 
 interface AuthContextType {
