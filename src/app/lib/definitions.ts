@@ -96,6 +96,7 @@ export type Activity = {
   points_reward: number;
   created_at: string;
   updated_at: string;
+  participant_count: number;
 };
 
 export type ActivityParticipant = {

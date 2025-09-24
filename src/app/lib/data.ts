@@ -164,8 +164,21 @@ export async function getActivitiesByBooth(boothId: string): Promise<Activity[]>
     noStore();
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
-      const query = supabaseAdmin.from('activities').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
-      return await supabaseQuery(query);
+      const { data, error } = await supabaseAdmin
+        .from('activities')
+        .select('*, activity_participants(count)')
+        .eq('booth_id', boothId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+          throw error;
+      }
+      
+      return data.map((activity: any) => ({
+        ...activity,
+        participant_count: activity.activity_participants[0]?.count || 0,
+      }));
+
     } catch (error) {
       console.error("Failed to fetch activities for booth, returning empty array:", error);
       return [];

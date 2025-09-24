@@ -15,20 +15,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Activity } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, PlusCircle, Flame, ChevronRight } from 'lucide-react';
+import { Loader2, PlusCircle, Flame, Users, Edit, Eye } from 'lucide-react';
 import { createActivity } from '@/app/lib/actions';
-import { format } from 'date-fns';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
 import Link from 'next/link';
 
 const activitySchema = z.object({
@@ -81,6 +74,8 @@ export function ActivityPageContent({ boothId, activities }: ActivityPageContent
     
     setIsSubmitting(false);
   }
+
+  const icons = [<Flame key="flame" className="h-6 w-6" />, <Users key="users" className="h-6 w-6" />];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -136,47 +131,44 @@ export function ActivityPageContent({ boothId, activities }: ActivityPageContent
       </div>
       <div className="lg:col-span-2">
          <h3 className="text-lg font-semibold mb-4 flex items-center"><Flame className="mr-2 h-5 w-5" />Current Activities</h3>
-         <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Activity</TableHead>
-                  <TableHead>Points</TableHead>
-                  <TableHead>Date Added</TableHead>
-                  <TableHead><span className="sr-only">Actions</span></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activities.length > 0 ? (
-                  activities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell className="font-medium">
-                        <Link href={`/booth-dashboard/${boothId}/activity/${activity.id}`} className="hover:underline">
-                          <p className="font-bold">{activity.name}</p>
-                          <p className="text-sm text-muted-foreground">{activity.description}</p>
-                        </Link>
-                      </TableCell>
-                      <TableCell>{activity.points_reward}</TableCell>
-                      <TableCell>{format(new Date(activity.created_at), 'PPP')}</TableCell>
-                      <TableCell>
-                        <Button asChild variant="ghost" size="icon">
-                            <Link href={`/booth-dashboard/${boothId}/activity/${activity.id}`}>
-                                <ChevronRight className="h-4 w-4" />
-                            </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
-                      No activities added yet.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-         </div>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {activities.length > 0 ? (
+                activities.map((activity, index) => (
+                    <Card key={activity.id} className="flex flex-col">
+                        <CardHeader>
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 text-primary">
+                                    {icons[index % icons.length]}
+                                </div>
+                                <Badge variant="outline" className="border-green-500 bg-green-500/10 text-green-700">Active</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-2">
+                            <CardTitle className="text-lg">{activity.name}</CardTitle>
+                            <CardDescription>{activity.description}</CardDescription>
+                            <div className="flex items-center justify-between text-sm text-muted-foreground bg-muted p-3 rounded-md mt-4">
+                                <span>{activity.participant_count} participants</span>
+                                <span className="font-bold text-primary">{activity.points_reward} points</span>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="flex items-center gap-2">
+                            <Button asChild className="flex-1">
+                                <Link href={`/booth-dashboard/${boothId}/activity/${activity.id}`}>
+                                    <Eye className="mr-2 h-4 w-4" /> View
+                                </Link>
+                            </Button>
+                            <Button variant="outline" size="icon">
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))
+            ) : (
+                <div className="md:col-span-2 text-center text-muted-foreground py-24 border-2 border-dashed rounded-lg">
+                    <p>No activities added yet.</p>
+                </div>
+            )}
+        </div>
       </div>
     </div>
   );
