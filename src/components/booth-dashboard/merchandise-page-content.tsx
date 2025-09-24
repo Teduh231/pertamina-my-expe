@@ -25,14 +25,16 @@ import {
 import { Product } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, PlusCircle, Package } from 'lucide-react';
+import { Loader2, PlusCircle, Package, ImageIcon } from 'lucide-react';
 import { createProduct } from '@/app/lib/actions';
 import { format } from 'date-fns';
+import Image from 'next/image';
 
 const productSchema = z.object({
   name: z.string().min(2, { message: 'Product name must be at least 2 characters.' }),
   points: z.coerce.number().min(0, { message: 'Points must be a positive number.' }),
   stock: z.coerce.number().min(0, { message: 'Stock must be a positive number.' }),
+  image_url: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
 });
 
 type MerchandisePageContentProps = {
@@ -51,6 +53,7 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
       name: '',
       points: 10,
       stock: 100,
+      image_url: '',
     },
   });
 
@@ -96,6 +99,19 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
                 </FormItem>
               )}
             />
+             <FormField
+              control={form.control}
+              name="image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://example.com/image.png" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="points"
@@ -135,7 +151,7 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Product Name</TableHead>
+                  <TableHead>Product</TableHead>
                   <TableHead>Points</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Date Added</TableHead>
@@ -145,7 +161,18 @@ export function MerchandisePageContent({ boothId, products }: MerchandisePageCon
                 {products.length > 0 ? (
                   products.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                            {product.image_url ? (
+                              <Image src={product.image_url} alt={product.name} width={48} height={48} className="object-cover w-full h-full" />
+                            ) : (
+                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span>{product.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>{product.points}</TableCell>
                       <TableCell>{product.stock}</TableCell>
                       <TableCell>{format(new Date(product.created_at), 'PPP')}</TableCell>

@@ -22,12 +22,14 @@ import {
   Info,
   Camera,
   CameraOff,
+  ImageIcon,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { redeemMerchandiseForAttendee, createCheckIn } from '@/app/lib/actions';
 import { getAttendeeById } from '@/app/lib/data';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
@@ -215,7 +217,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
   }
   
   const isCaptureDisabled = isProcessing;
-  const scannerTitle = activeAction === 'merch' && selectedProduct ? `Redeeming: ${selectedProduct.name}` : 'Scanner';
+  const scannerTitle = activeAction === 'merch' && selectedProduct ? `Redeeming: ${selectedProduct.name}` : 'QR Scanner';
   const scannerDescription = activeAction === 'merch' && selectedProduct ? `Scan attendee's QR to redeem for ${selectedProduct.points} points.` : "Start the scanner to check-in an attendee.";
 
   return (
@@ -286,18 +288,32 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
                 <CardTitle className="flex items-center"><Shirt className="mr-2 h-5 w-5"/>Redeem Merchandise</CardTitle>
                  <CardDescription>Click a product to activate redemption mode.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
+            <CardContent className="space-y-4 max-h-[calc(100vh-20rem)] overflow-y-auto">
                 {products.map((item) => (
-                    <Button
+                    <Card 
                         key={item.id}
-                        variant={selectedProduct?.id === item.id && activeAction === 'merch' ? "default" : "outline"}
-                        className="w-full justify-between h-12"
-                        onClick={() => handleSelectProduct(item)}
-                        disabled={item.stock <= 0 || isProcessing}
+                        className={cn(
+                            "cursor-pointer hover:border-primary transition-colors",
+                             selectedProduct?.id === item.id && activeAction === 'merch' && "border-primary ring-2 ring-primary",
+                             (item.stock <= 0 || isProcessing) && "opacity-50 cursor-not-allowed"
+                        )}
+                        onClick={() => !(item.stock <= 0 || isProcessing) && handleSelectProduct(item)}
                     >
-                        <span>{item.name} {item.stock <= 0 && '(Out of stock)'}</span>
-                        <span>{item.points} pts</span>
-                    </Button>
+                      <CardContent className="p-3 flex items-center gap-4">
+                         <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden shrink-0">
+                            {item.image_url ? (
+                              <Image src={item.image_url} alt={item.name} width={64} height={64} className="object-cover w-full h-full" />
+                            ) : (
+                              <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-grow">
+                            <p className="font-semibold">{item.name}</p>
+                            <p className="text-sm text-muted-foreground">Stock: {item.stock}</p>
+                            <p className="text-sm font-bold text-primary">{item.points} pts</p>
+                          </div>
+                      </CardContent>
+                    </Card>
                 ))}
                  {products.length === 0 && (
                     <div className="text-center text-muted-foreground py-10">

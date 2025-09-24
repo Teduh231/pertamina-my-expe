@@ -57,6 +57,7 @@ export type Product = {
   name: string;
   points: number;
   stock: number;
+  image_url?: string;
   created_at: string;
 };
 
