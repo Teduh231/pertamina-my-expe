@@ -324,12 +324,12 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                     </RadioGroup>
                 </CardContent>
             </Card>
-            <Card className="h-full flex flex-col">
+            <Card>
                 <CardHeader>
                     <CardTitle>{scannerTitle}</CardTitle>
                     <CardDescription>{scannerDescription}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 flex flex-col flex-grow">
+                <CardContent className="space-y-4">
                     <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
                         <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
                         <canvas ref={canvasRef} className="hidden" />
@@ -375,7 +375,6 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                             )}
                         </Alert>
                     )}
-                    <div className="flex-grow"></div>
                     <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
                         {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
                         {isProcessing ? 'Processing...' : isScanning ? 'Stop Scanner' : 'Start Scanner'}
