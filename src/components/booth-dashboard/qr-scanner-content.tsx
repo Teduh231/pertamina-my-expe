@@ -201,13 +201,24 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
   }, [stopCamera]);
   
   const handleSelectProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setActiveAction('merch');
-    setScanResult(null);
-    toast({
-      title: `Redeem: ${product.name}`,
-      description: 'The scanner is ready for merchandise redemption.',
-    });
+    if (selectedProduct?.id === product.id) {
+        // If the same product is clicked again, unselect it
+        setSelectedProduct(null);
+        setActiveAction('check-in'); // Revert to default check-in action
+        toast({
+            title: 'Redemption Mode Deactivated',
+            description: 'Scanner is back in check-in mode.',
+        });
+    } else {
+        // Select a new product
+        setSelectedProduct(product);
+        setActiveAction('merch');
+        setScanResult(null);
+        toast({
+            title: `Redeem: ${product.name}`,
+            description: 'The scanner is ready for merchandise redemption.',
+        });
+    }
   };
 
   const getScanResultVariant = (status: ScanResult['status']) => {
