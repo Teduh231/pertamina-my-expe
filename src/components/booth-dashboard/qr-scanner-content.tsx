@@ -271,7 +271,6 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
   return (
     <Dialog open={isSelectionModalOpen} onOpenChange={setIsSelectionModalOpen}>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ---- Column 1: Actions & Overview ---- */}
         <div className="lg:col-span-1 space-y-6">
              <Card>
                 <CardHeader>
@@ -305,39 +304,32 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                 </CardContent>
             </Card>
 
-             <Card>
+            <Card>
                 <CardHeader>
-                    <CardTitle>Booth Overview</CardTitle>
-                    <CardDescription>At a glance statistics for this booth.</CardDescription>
+                    <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
+                    <CardDescription>Most recent attendees who checked-in.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-md bg-muted">
-                        <div className='flex items-center gap-3'>
-                            <User className="h-6 w-6 text-primary"/>
-                            <p className='font-medium'>Total Check-ins</p>
-                        </div>
-                        <p className='text-2xl font-bold'>{sortedCheckIns.length}</p>
-                    </div>
-                     <div className="flex items-center justify-between p-3 rounded-md bg-muted">
-                        <div className='flex items-center gap-3'>
-                            <Shirt className="h-6 w-6 text-primary"/>
-                            <p className='font-medium'>Merchandise Items</p>
-                        </div>
-                        <p className='text-2xl font-bold'>{products.length}</p>
-                    </div>
-                     <div className="flex items-center justify-between p-3 rounded-md bg-muted">
-                        <div className='flex items-center gap-3'>
-                            <Flame className="h-6 w-6 text-primary"/>
-                            <p className='font-medium'>Available Activities</p>
-                        </div>
-                        <p className='text-2xl font-bold'>{activities.length}</p>
-                    </div>
-                </CardContent>
+                <ScrollArea className="h-72">
+                    <CardContent className="space-y-3">
+                        {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
+                            checkIn.attendees ? (
+                                <div key={checkIn.id} className="flex items-center justify-between text-sm">
+                                    <p className="font-medium flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" />{checkIn.attendees.name}</p>
+                                    <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
+                                </div>
+                            ) : null
+                        )) : (
+                            <div className="text-center text-muted-foreground py-10">
+                                <p>No attendees checked in yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </ScrollArea>
             </Card>
+
         </div>
 
 
-        {/* ---- Column 2: Scanner & History ---- */}
         <div className="lg:col-span-2 space-y-6">
             <Card className="h-full flex flex-col">
                 <CardHeader>
@@ -397,27 +389,34 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                 </CardContent>
             </Card>
 
-            <Card>
+             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
-                    <CardDescription>Most recent attendees who checked-in.</CardDescription>
+                    <CardTitle>Booth Overview</CardTitle>
+                    <CardDescription>At a glance statistics for this booth.</CardDescription>
                 </CardHeader>
-                <ScrollArea className="h-72">
-                    <CardContent className="space-y-3">
-                        {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
-                            checkIn.attendees ? (
-                                <div key={checkIn.id} className="flex items-center justify-between text-sm">
-                                    <p className="font-medium flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" />{checkIn.attendees.name}</p>
-                                    <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
-                                </div>
-                            ) : null
-                        )) : (
-                            <div className="text-center text-muted-foreground py-10">
-                                <p>No attendees checked in yet.</p>
-                            </div>
-                        )}
-                    </CardContent>
-                </ScrollArea>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+                        <div className='flex items-center gap-3'>
+                            <User className="h-6 w-6 text-primary"/>
+                            <p className='font-medium'>Total Check-ins</p>
+                        </div>
+                        <p className='text-2xl font-bold'>{sortedCheckIns.length}</p>
+                    </div>
+                     <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+                        <div className='flex items-center gap-3'>
+                            <Shirt className="h-6 w-6 text-primary"/>
+                            <p className='font-medium'>Merchandise Items</p>
+                        </div>
+                        <p className='text-2xl font-bold'>{products.length}</p>
+                    </div>
+                     <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+                        <div className='flex items-center gap-3'>
+                            <Flame className="h-6 w-6 text-primary"/>
+                            <p className='font-medium'>Available Activities</p>
+                        </div>
+                        <p className='text-2xl font-bold'>{activities.length}</p>
+                    </div>
+                </CardContent>
             </Card>
         </div>
 
