@@ -16,6 +16,7 @@ import {
   Gift,
   Shirt,
   Flame,
+  PieChart,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -59,7 +60,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   const tenantNavItems = assignedBoothId ? [
-    { href: `/booth-dashboard/${assignedBoothId}`, icon: QrCode, label: 'QR Scanner' },
+    { href: `/booth-dashboard/${assignedBoothId}/overview`, icon: PieChart, label: 'Overview' },
+    { href: `/booth-dashboard/${assignedBoothId}/scanner`, icon: QrCode, label: 'QR Scanner' },
     { href: `/booth-dashboard/${assignedBoothId}/merchandise`, icon: Shirt, label: 'Merchandise' },
     { href: `/booth-dashboard/${assignedBoothId}/activity`, icon: Flame, label: 'Activity' },
     { href: `/booth-dashboard/${assignedBoothId}/raffle`, icon: Ticket, label: 'Raffle' },
