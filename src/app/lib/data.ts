@@ -55,13 +55,12 @@ export async function getBooths(): Promise<Booth[]> {
 
 export async function getBoothById(id: string): Promise<Booth | undefined> {
   noStore();
-  const supabaseAdmin = createSupabaseServerClient();
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   try {
-    const query = supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('booths')
       .select(`
         *,
-        raffles (*),
         check_ins (
           attendee_id,
           checked_in_at,
@@ -74,7 +73,10 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
       `)
       .eq('id', id)
       .single();
-    return await supabaseQuery(query);
+      
+      if (error) throw error;
+
+    return data as Booth;
   } catch (error) {
     console.error(`Failed to fetch booth ${id}, returning undefined:`, error);
     return undefined;
@@ -98,7 +100,7 @@ export async function getAttendees(): Promise<Attendee[]> {
 
 export async function getAttendeeById(id: string): Promise<Attendee | null> {
     noStore();
-    const supabaseAdmin = createSupabaseServerClient();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
         const query = supabaseAdmin.from('attendees').select('*').eq('id', id).maybeSingle();
         return await supabaseQuery(query);

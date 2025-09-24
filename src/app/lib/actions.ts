@@ -2,7 +2,7 @@
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
 import { Activity, Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
-import { getBoothById, getAttendees } from './data';
+import { getBoothById, getAttendees, getAttendeeById } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase as supabaseClient } from './supabase/client';
@@ -323,23 +323,17 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
 
 export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string, boothId: string) {
     noStore();
-    // 1. Fetch attendee and product in parallel
-    const [attendeeResult, productResult] = await Promise.all([
-        supabaseAdmin.from('attendees').select('id, name, points').eq('id', attendeeId).single(),
-        supabaseAdmin.from('products').select('id, name, points, stock').eq('id', productId).single()
-    ]);
-
-    if (attendeeResult.error || !attendeeResult.data) {
+    const attendee = await getAttendeeById(attendeeId);
+    if (!attendee) {
         return { success: false, error: "Attendee not found." };
     }
-    if (productResult.error || !productResult.data) {
+
+    const { data: product, error: productError } = await supabaseAdmin.from('products').select('id, name, points, stock').eq('id', productId).single();
+
+    if (productError || !product) {
         return { success: false, error: "Product not found." };
     }
 
-    const attendee = attendeeResult.data;
-    const product = productResult.data;
-
-    // 2. Check stock and points
     if (product.stock <= 0) {
         return { success: false, error: `Sorry, "${product.name}" is out of stock.` };
     }
@@ -347,32 +341,16 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
         return { success: false, error: `Attendee has insufficient points. Needs ${product.points}, has ${attendee.points}.`, attendeeName: attendee.name, };
     }
 
-    // 3. Perform the transaction
     const newAttendeePoints = attendee.points - product.points;
 
-    const [updateAttendeeResult, updateProductResult, createTransactionResult] = await Promise.all([
-        supabaseAdmin.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id),
-        supabaseAdmin.from('products').update({ stock: product.stock - 1 }).eq('id', product.id),
-        supabaseAdmin.from('transactions').insert({
-            user_id: attendee.id,
-            user_name: attendee.name,
-            product_name: product.name,
-            points: product.points,
-        })
-    ]);
+    const { error: updateAttendeeError } = await supabaseAdmin.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id);
+    const { error: updateProductError } = await supabaseAdmin.from('products').update({ stock: product.stock - 1 }).eq('id', product.id);
 
-    if (updateAttendeeResult.error || updateProductResult.error || createTransactionResult.error) {
-        console.error("Transaction failed:", {
-            attendeeError: updateAttendeeResult.error,
-            productError: updateProductResult.error,
-            transactionError: createTransactionResult.error,
-        });
-        // Here you might want to add logic to revert the parts of the transaction that succeeded
+    if (updateAttendeeError || updateProductError) {
         return { success: false, error: "Database error during transaction." };
     }
-
+    
     revalidatePath(`/booth-dashboard/${boothId}`);
-    revalidatePath('/pos');
 
     return {
         success: true,

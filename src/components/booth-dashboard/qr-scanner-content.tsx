@@ -23,6 +23,8 @@ import {
   CameraOff,
   ImageIcon,
   Flame,
+  Clock,
+  User,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -33,6 +35,7 @@ import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
 
 type ScanResult = { 
   status: 'success' | 'error' | 'info'; 
@@ -233,17 +236,21 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
     return "Start the scanner to check-in an attendee.";
   }, [activeAction, selectedProduct, selectedActivity]);
 
+  const sortedCheckIns = useMemo(() => {
+    return booth.check_ins.sort((a, b) => new Date(b.checked_in_at).getTime() - new Date(a.checked_in_at).getTime());
+  }, [booth.check_ins]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
-        <Card className="h-full">
+        <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle>{scannerTitle}</CardTitle>
                 <CardDescription>
                     {scannerDescription}
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-grow flex flex-col">
                 <div className="aspect-video w-full bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
                     <video ref={videoRef} className={cn("w-full h-full object-cover", isScanning ? "block" : "hidden")} autoPlay muted playsInline />
                     <canvas ref={canvasRef} className="hidden" />
@@ -272,12 +279,9 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                         <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
                     </Alert>
                 )}
-                <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
-                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
-                    {isProcessing ? 'Processing...' : isScanning ? 'Stop Scanner' : 'Start Scanner'}
-                </Button>
+                <div className="flex-grow">
                  {scanResult && (
-                    <Alert variant={getScanResultVariant(scanResult.status)}>
+                    <Alert variant={getScanResultVariant(scanResult.status)} className="h-full">
                         {scanResult.status === 'success' && <CheckCircle className="h-4 w-4" />}
                         {scanResult.status === 'error' && <XCircle className="h-4 w-4" />}
                         {scanResult.status === 'info' && <Info className="h-4 w-4" />}
@@ -291,6 +295,11 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                         )}
                     </Alert>
                 )}
+                </div>
+                 <Button onClick={isScanning ? stopCamera : startScanning} className="w-full" disabled={isProcessing}>
+                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4" />}
+                    {isProcessing ? 'Processing...' : isScanning ? 'Stop Scanner' : 'Start Scanner'}
+                </Button>
             </CardContent>
         </Card>
     </div>
@@ -325,6 +334,31 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                         </Label>
                     </div>
                 </RadioGroup>
+
+                <div className={cn("pt-4", activeAction === 'check-in' ? 'block' : 'hidden')}>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center"><Clock className="mr-2 h-5 w-5"/>Check-in History</CardTitle>
+                             <CardDescription>({sortedCheckIns.length}) attendees checked-in.</CardDescription>
+                        </CardHeader>
+                        <ScrollArea className="h-72">
+                            <CardContent className="space-y-3">
+                                {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
+                                    checkIn.attendees ? (
+                                        <div key={checkIn.attendee_id} className="flex items-center justify-between text-sm">
+                                            <p className="font-medium flex items-center gap-2"><User className="h-4 w-4" />{checkIn.attendees.name}</p>
+                                            <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
+                                        </div>
+                                    ) : null
+                                )) : (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <p>No attendees checked in yet.</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </ScrollArea>
+                    </Card>
+                </div>
 
                 <div className={cn("pt-4 space-y-2", activeAction === 'merch' ? 'block' : 'hidden')}>
                     <h4 className="font-semibold">Select Merchandise</h4>

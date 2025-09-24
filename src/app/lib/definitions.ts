@@ -13,6 +13,7 @@ export type Booth = {
   created_at: string;
   image_url?: string;
   image_path?: string;
+  check_ins?: CheckIn[];
 };
 
 export type Attendee = {
