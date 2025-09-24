@@ -199,7 +199,7 @@ export function QrScannerContent({ booth, products }: { booth: Booth & { check_i
   }
   
   const isCaptureDisabled = !hasCameraPermission || isProcessing;
-  const scannerTitle = activeAction === 'merch' && selectedProduct ? `Redeeming: ${selectedProduct.name}` : 'QR Code Scanner';
+  const scannerTitle = activeAction === 'merch' && selectedProduct ? `Redeeming: ${selectedProduct.name}` : 'Scanner';
   const scannerDescription = activeAction === 'merch' && selectedProduct ? `Scan attendee's QR to redeem for ${selectedProduct.points} points.` : "Aim at a QR code, then capture to check-in an attendee.";
 
   return (

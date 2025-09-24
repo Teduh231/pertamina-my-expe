@@ -20,15 +20,7 @@ export default async function BoothDashboardScannerPage({ params }: { params: { 
   return (
     <ProtectedRoute>
         <AppLayout>
-            <Card>
-                <CardHeader>
-                    <CardTitle>QR Scanner</CardTitle>
-                    <CardDescription>Check-in attendees and redeem merchandise points.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <QrScannerContent booth={booth} products={products} />
-                </CardContent>
-            </Card>
+            <QrScannerContent booth={booth} products={products} />
         </AppLayout>
     </ProtectedRoute>
   );
