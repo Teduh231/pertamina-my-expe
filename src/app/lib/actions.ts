@@ -1,8 +1,8 @@
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Activity, Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
-import { getBoothById, getAttendees, getAttendeeById } from './data';
+import { Activity, ActivityParticipant, Attendee, Booth, Product, Raffle, RaffleWinner, Tenant } from './definitions';
+import { getBoothById, getAttendees, getAttendeeById, getActivityById } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase as supabaseClient } from './supabase/client';
@@ -522,7 +522,7 @@ export async function uploadImage(formData: FormData) {
 export async function createActivity(activityData: Omit<Activity, 'id' | 'created_at' | 'updated_at'>) {
     const { data, error } = await supabaseAdmin
         .from('activities')
-        .insert([activityData])
+        .insert([{...activityData, updated_at: new Date() }])
         .select()
         .single();
 
@@ -533,4 +533,71 @@ export async function createActivity(activityData: Omit<Activity, 'id' | 'create
     
     revalidatePath(`/booth-dashboard/${activityData.booth_id}/activity`);
     return { success: true, activity: data };
+}
+
+
+export async function addActivityParticipant(activityId: string, attendeeId: string) {
+    noStore();
+    // 1. Get attendee and activity details
+    const attendee = await getAttendeeById(attendeeId);
+    const activity = await getActivityById(activityId);
+
+    if (!attendee) {
+        return { success: false, error: "Attendee not found." };
+    }
+    if (!activity) {
+        return { success: false, error: "Activity not found." };
+    }
+
+    // 2. Check if already participated
+    const { data: existingParticipant, error: checkError } = await supabaseAdmin
+        .from('activity_participants')
+        .select('id')
+        .eq('activity_id', activityId)
+        .eq('attendee_id', attendeeId)
+        .maybeSingle();
+
+    if (checkError) {
+        console.error('Error checking for existing participant:', checkError);
+        return { success: false, error: 'Database error while checking participation.' };
+    }
+    if (existingParticipant) {
+        return { success: false, error: `Attendee has already completed "${activity.name}".`, attendeeName: attendee.name, isInfo: true };
+    }
+
+    // 3. Award points and create participant record
+    const newTotalPoints = attendee.points + activity.points_reward;
+    const { error: updatePointsError } = await supabaseAdmin
+        .from('attendees')
+        .update({ points: newTotalPoints })
+        .eq('id', attendeeId);
+
+    if (updatePointsError) {
+        return { success: false, error: "Failed to update attendee points." };
+    }
+
+    const { error: insertError } = await supabaseAdmin
+        .from('activity_participants')
+        .insert({
+            activity_id: activityId,
+            attendee_id: attendeeId,
+            points_awarded: activity.points_reward,
+        });
+    
+    if (insertError) {
+        // Attempt to roll back points
+        await supabaseAdmin.from('attendees').update({ points: attendee.points }).eq('id', attendeeId);
+        return { success: false, error: "Failed to record activity completion." };
+    }
+    
+    revalidatePath(`/booth-dashboard/${activity.booth_id}/activity`);
+    revalidatePath(`/booth-dashboard/${activity.booth_id}/activity/${activityId}`);
+
+    return {
+        success: true,
+        message: `Awarded ${activity.points_reward} points for completing "${activity.name}".`,
+        attendeeName: attendee.name,
+        pointsAwarded: activity.points_reward,
+        totalPoints: newTotalPoints,
+    };
 }

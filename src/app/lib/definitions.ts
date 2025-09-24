@@ -97,3 +97,15 @@ export type Activity = {
   created_at: string;
   updated_at: string;
 };
+
+export type ActivityParticipant = {
+  id: string;
+  activity_id: string;
+  attendee_id: string;
+  completed_at: string;
+  points_awarded: number;
+  attendees: {
+    name: string;
+    email: string;
+  };
+};

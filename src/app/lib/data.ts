@@ -1,4 +1,4 @@
-import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn, Activity } from '@/app/lib/definitions';
+import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn, Activity, ActivityParticipant } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
@@ -168,6 +168,34 @@ export async function getActivitiesByBooth(boothId: string): Promise<Activity[]>
       return await supabaseQuery(query);
     } catch (error) {
       console.error("Failed to fetch activities for booth, returning empty array:", error);
+      return [];
+    }
+}
+
+export async function getActivityById(activityId: string): Promise<Activity | null> {
+    noStore();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    try {
+      const query = supabaseAdmin.from('activities').select('*').eq('id', activityId).maybeSingle();
+      return await supabaseQuery(query);
+    } catch (error) {
+      console.error(`Failed to fetch activity ${activityId}, returning null:`, error);
+      return null;
+    }
+}
+
+export async function getActivityParticipants(activityId: string): Promise<ActivityParticipant[]> {
+    noStore();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    try {
+      const query = supabaseAdmin
+        .from('activity_participants')
+        .select('*, attendees(name, email)')
+        .eq('activity_id', activityId)
+        .order('completed_at', { ascending: false });
+      return await supabaseQuery(query);
+    } catch (error) {
+      console.error(`Failed to fetch participants for activity ${activityId}, returning empty array:`, error);
       return [];
     }
 }

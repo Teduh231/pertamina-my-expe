@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { redeemMerchandiseForAttendee, createCheckIn } from '@/app/lib/actions';
+import { redeemMerchandiseForAttendee, createCheckIn, addActivityParticipant } from '@/app/lib/actions';
 import { getAttendeeById } from '@/app/lib/data';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -53,6 +53,8 @@ type ScanResult = {
   attendeeName?: string;
   pointsUsed?: number;
   remainingPoints?: number;
+  pointsAwarded?: number;
+  totalPoints?: number;
 };
 
 type HydratedCheckIn = CheckIn & {
@@ -139,14 +141,36 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
   }, [booth.id, router, stopCamera]);
   
   const handleActivityJoin = useCallback(async (attendeeId: string) => {
-    // TODO: Implement activity join logic
     if (!selectedActivity) return;
     setIsProcessing(true);
-    setScanResult({ status: 'info', message: `Simulating join for ${selectedActivity.name}. Not yet implemented.`, attendeeName: 'Attendee' });
+    
+    const result = await addActivityParticipant(selectedActivity.id, attendeeId);
+
+    if (result.success) {
+      setScanResult({
+        status: 'success',
+        message: result.message,
+        attendeeName: result.attendeeName,
+        pointsAwarded: result.pointsAwarded,
+        totalPoints: result.totalPoints,
+      });
+      toast({
+        title: 'Activity Completed!',
+        description: `${result.attendeeName} earned ${result.pointsAwarded} points.`,
+      });
+      router.refresh();
+    } else {
+      setScanResult({
+        status: result.isInfo ? 'info' : 'error',
+        message: result.error,
+        attendeeName: result.attendeeName,
+      });
+    }
+
     setIsProcessing(false);
     setSelectedActivity(null);
     stopCamera();
-  }, [selectedActivity, stopCamera]);
+  }, [selectedActivity, stopCamera, router, toast]);
 
 
   const processQrData = useCallback((qrData: string) => {
@@ -341,10 +365,12 @@ export function QrScannerContent({ booth, products, activities }: { booth: Booth
                             {scanResult.status === 'info' && <Info className="h-4 w-4" />}
                             <AlertTitle>{scanResult.attendeeName || "Scan Result"}</AlertTitle>
                             <AlertDescription>{scanResult.message}</AlertDescription>
-                            {scanResult.status === 'success' && scanResult.pointsUsed !== undefined && (
+                            {scanResult.status === 'success' && (scanResult.pointsUsed !== undefined || scanResult.pointsAwarded !== undefined) && (
                                 <div className='mt-2 text-xs'>
-                                    <p>Points Used: {scanResult.pointsUsed}</p>
-                                    <p>Remaining Points: {scanResult.remainingPoints}</p>
+                                    {scanResult.pointsUsed !== undefined && <p>Points Used: {scanResult.pointsUsed}</p>}
+                                    {scanResult.pointsAwarded !== undefined && <p>Points Awarded: {scanResult.pointsAwarded}</p>}
+                                    {scanResult.remainingPoints !== undefined && <p>Remaining Points: {scanResult.remainingPoints}</p>}
+                                    {scanResult.totalPoints !== undefined && <p>New Total Points: {scanResult.totalPoints}</p>}
                                 </div>
                             )}
                         </Alert>

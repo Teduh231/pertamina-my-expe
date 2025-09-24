@@ -26,9 +26,10 @@ import {
 import { Activity } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, PlusCircle, Flame } from 'lucide-react';
+import { Loader2, PlusCircle, Flame, ChevronRight } from 'lucide-react';
 import { createActivity } from '@/app/lib/actions';
 import { format } from 'date-fns';
+import Link from 'next/link';
 
 const activitySchema = z.object({
   name: z.string().min(3, { message: 'Activity name must be at least 3 characters.' }),
@@ -142,6 +143,7 @@ export function ActivityPageContent({ boothId, activities }: ActivityPageContent
                   <TableHead>Activity</TableHead>
                   <TableHead>Points</TableHead>
                   <TableHead>Date Added</TableHead>
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -149,16 +151,25 @@ export function ActivityPageContent({ boothId, activities }: ActivityPageContent
                   activities.map((activity) => (
                     <TableRow key={activity.id}>
                       <TableCell className="font-medium">
-                        <p className="font-bold">{activity.name}</p>
-                        <p className="text-sm text-muted-foreground">{activity.description}</p>
+                        <Link href={`/booth-dashboard/${boothId}/activity/${activity.id}`} className="hover:underline">
+                          <p className="font-bold">{activity.name}</p>
+                          <p className="text-sm text-muted-foreground">{activity.description}</p>
+                        </Link>
                       </TableCell>
                       <TableCell>{activity.points_reward}</TableCell>
                       <TableCell>{format(new Date(activity.created_at), 'PPP')}</TableCell>
+                      <TableCell>
+                        <Button asChild variant="ghost" size="icon">
+                            <Link href={`/booth-dashboard/${boothId}/activity/${activity.id}`}>
+                                <ChevronRight className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                       No activities added yet.
                     </TableCell>
                   </TableRow>
