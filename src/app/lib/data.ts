@@ -111,6 +111,18 @@ export async function getAttendeeById(id: string): Promise<Attendee | null> {
     }
 }
 
+export async function getAttendeesByName(name: string): Promise<Attendee[]> {
+    noStore();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    try {
+        const query = supabaseAdmin.from('attendees').select('*').ilike('name', `%${name}%`);
+        return await supabaseQuery(query);
+    } catch (error) {
+        console.error(`Failed to fetch attendees by name, returning empty array:`, error);
+        return [];
+    }
+}
+
 
 export async function getRaffles(boothId?: string): Promise<Raffle[]> {
     noStore();

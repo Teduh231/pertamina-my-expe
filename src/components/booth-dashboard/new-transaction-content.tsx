@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Booth, Product, Transaction, Attendee } from '@/app/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { redeemProduct } from '@/app/lib/actions';
 import { format } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
-import { getAttendeeById } from '@/app/lib/data';
+import { getAttendees } from '@/app/lib/data';
 
 type CartItem = Product & { quantity: number };
 
@@ -25,12 +25,22 @@ interface NewTransactionContentProps {
 export function NewTransactionContent({ booth, products }: NewTransactionContentProps) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [attendeeId, setAttendeeId] = useState('');
-    const [attendee, setAttendee] = useState<Attendee | null>(null);
+    const [attendeeName, setAttendeeName] = useState('');
+    const [allAttendees, setAllAttendees] = useState<Attendee[]>([]);
+    const [foundAttendees, setFoundAttendees] = useState<Attendee[]>([]);
+    const [selectedAttendee, setSelectedAttendee] = useState<Attendee | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const { toast } = useToast();
     
+    useEffect(() => {
+        const fetchAttendees = async () => {
+            const attendees = await getAttendees();
+            setAllAttendees(attendees);
+        };
+        fetchAttendees();
+    }, []);
+
     const filteredProducts = useMemo(() => {
         return products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [products, searchTerm]);
@@ -65,27 +75,34 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
         });
     };
 
-    const handleSearchAttendee = async () => {
-        if (!attendeeId) return;
+    const handleSearchAttendee = () => {
+        if (!attendeeName) {
+            setFoundAttendees([]);
+            return;
+        };
         setIsSearching(true);
-        const foundAttendee = await getAttendeeById(attendeeId);
-        if (foundAttendee) {
-            setAttendee(foundAttendee);
-        } else {
-            setAttendee(null);
+        const results = allAttendees.filter(a => a.name.toLowerCase().includes(attendeeName.toLowerCase()));
+        setFoundAttendees(results);
+        if (results.length === 0) {
             toast({ variant: 'destructive', title: 'Attendee Not Found' });
         }
         setIsSearching(false);
     };
 
+    const selectAttendee = (attendee: Attendee) => {
+        setSelectedAttendee(attendee);
+        setAttendeeName(attendee.name);
+        setFoundAttendees([]);
+    }
+
     const handleCreateTransaction = async () => {
-        if (cart.length === 0 || !attendee) {
+        if (cart.length === 0 || !selectedAttendee) {
             toast({ variant: 'destructive', title: 'Cannot create transaction', description: 'Please add items to the cart and select an attendee.' });
             return;
         }
 
-        if (attendee.points < total) {
-            toast({ variant: 'destructive', title: 'Insufficient Points', description: `${attendee.name} does not have enough points.` });
+        if (selectedAttendee.points < total) {
+            toast({ variant: 'destructive', title: 'Insufficient Points', description: `${selectedAttendee.name} does not have enough points.` });
             return;
         }
 
@@ -94,25 +111,26 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
         // For multi-product cart, you would loop or send the whole cart.
         // For this implementation, we'll process one product at a time for simplicity.
         let allSuccess = true;
-        let totalPointsSpent = 0;
         
         // This should be wrapped in a proper DB transaction in a real app.
         for (const item of cart) {
-             const result = await redeemProduct(attendee.id, item.id, booth.id);
-             if(!result.success){
-                allSuccess = false;
-                toast({ variant: 'destructive', title: 'Transaction Failed', description: `Error with item: ${item.name}. ${result.error}` });
-                break;
+             for (let i = 0; i < item.quantity; i++) {
+                const result = await redeemProduct(selectedAttendee.id, item.id, booth.id);
+                if(!result.success){
+                    allSuccess = false;
+                    toast({ variant: 'destructive', title: 'Transaction Failed', description: `Error with item: ${item.name}. ${result.error}` });
+                    break;
+                }
              }
-             totalPointsSpent += item.points * item.quantity; // Assuming redeemProduct handles quantity
+             if (!allSuccess) break;
         }
 
 
         if (allSuccess) {
             toast({ title: 'Transaction Successful!' });
             setCart([]);
-            setAttendee(null);
-            setAttendeeId('');
+            setSelectedAttendee(null);
+            setAttendeeName('');
         }
 
         setIsProcessing(false);
@@ -165,18 +183,30 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-end gap-2">
-                            <div className="flex-1 space-y-1">
-                                <label htmlFor="attendee-id" className="text-sm font-medium">Attendee ID</label>
-                                <Input id="attendee-id" placeholder="Enter attendee ID..." value={attendeeId} onChange={e => setAttendeeId(e.target.value)} />
+                            <div className="flex-1 space-y-1 relative">
+                                <label htmlFor="attendee-name" className="text-sm font-medium">Attendee Name</label>
+                                <Input id="attendee-name" placeholder="Enter attendee name..." value={attendeeName} onChange={e => setAttendeeName(e.target.value)} />
+                                 {foundAttendees.length > 0 && (
+                                    <Card className="absolute z-10 w-full mt-1 bg-background shadow-lg">
+                                        <CardContent className="p-2 max-h-48 overflow-y-auto">
+                                            {foundAttendees.map(attendee => (
+                                                <div key={attendee.id} onClick={() => selectAttendee(attendee)} className="p-2 hover:bg-muted rounded-md cursor-pointer">
+                                                    <p className="font-semibold">{attendee.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{attendee.email}</p>
+                                                </div>
+                                            ))}
+                                        </CardContent>
+                                    </Card>
+                                 )}
                             </div>
-                             <Button onClick={handleSearchAttendee} disabled={isSearching || !attendeeId}>
+                             <Button onClick={handleSearchAttendee} disabled={isSearching || !attendeeName}>
                                 {isSearching ? <Loader2 className="h-4 w-4 animate-spin"/> : <Search className="h-4 w-4"/>}
                             </Button>
                         </div>
-                        {attendee && (
+                        {selectedAttendee && (
                             <div className="p-3 rounded-lg bg-muted">
-                                <p className="font-semibold">{attendee.name}</p>
-                                <p className="text-sm text-primary">Available Points: {attendee.points} pts</p>
+                                <p className="font-semibold">{selectedAttendee.name}</p>
+                                <p className="text-sm text-primary">Available Points: {selectedAttendee.points} pts</p>
                             </div>
                         )}
                         <div className="flex items-center justify-center p-4 border-2 border-dashed rounded-lg text-muted-foreground">
@@ -185,7 +215,7 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
                         </div>
                     </CardContent>
                      <CardFooter>
-                        <Button className="w-full" onClick={handleCreateTransaction} disabled={isProcessing || !attendee || cart.length === 0}>
+                        <Button className="w-full" onClick={handleCreateTransaction} disabled={isProcessing || !selectedAttendee || cart.length === 0}>
                             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                             Create Transaction
                         </Button>
