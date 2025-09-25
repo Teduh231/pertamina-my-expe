@@ -80,6 +80,7 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
   const visibleBooths = isAdmin ? booths : booths.filter(b => b.id === assignedBoothId);
   const currentReportDetails = reportTypes.find(r => r.id === selectedReport);
   const isDownloadable = selectedReport === 'attendance';
+  const selectedBoothName = booths.find(b => b.id === selectedBoothId)?.name;
 
   return (
     <div className="space-y-8">
@@ -94,16 +95,23 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
                 <CardTitle>Step 1: Select a Booth</CardTitle>
             </CardHeader>
             <CardContent>
-                <Select value={selectedBoothId} onValueChange={setSelectedBoothId} disabled={!isAdmin}>
-                    <SelectTrigger id="booth-select" className="max-w-md">
-                        <SelectValue placeholder="Choose a booth..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {visibleBooths.map(booth => (
-                            <SelectItem key={booth.id} value={booth.id}>{booth.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                {isAdmin ? (
+                    <Select value={selectedBoothId} onValueChange={setSelectedBoothId}>
+                        <SelectTrigger id="booth-select" className="max-w-md">
+                            <SelectValue placeholder="Choose a booth..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {visibleBooths.map(booth => (
+                                <SelectItem key={booth.id} value={booth.id}>{booth.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                ) : (
+                    <div className="p-4 rounded-lg bg-muted max-w-md">
+                        <p className="font-semibold">{selectedBoothName || "Your Assigned Booth"}</p>
+                        <p className="text-sm text-muted-foreground">As a tenant, you can only generate reports for your assigned booth.</p>
+                    </div>
+                )}
             </CardContent>
         </Card>
 
@@ -116,7 +124,7 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
                 {reportTypes.map((report) => (
                     <div
                         key={report.id}
-                        onClick={() => setSelectedReport(report.id)}
+                        onClick={() => selectedBoothId && setSelectedReport(report.id)}
                         className={cn(
                             "p-4 rounded-lg border-2 cursor-pointer transition-all bg-card",
                             selectedReport === report.id ? "border-primary ring-2 ring-primary" : "hover:border-primary/50",
@@ -136,6 +144,7 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
             <Card>
                 <CardHeader>
                     <CardTitle>Step 3: Generate "{currentReportDetails.title}"</CardTitle>
+                    <CardDescription>Booth: <span className="font-semibold text-primary">{selectedBoothName}</span></CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center text-center p-8 bg-muted/50 rounded-lg">
                     <currentReportDetails.icon className="h-16 w-16 text-muted-foreground mb-4" />
