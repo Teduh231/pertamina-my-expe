@@ -7,7 +7,7 @@ export default async function ReportsPage() {
   const booths = await getBooths();
   
   return (
-    <ProtectedRoute adminOnly={true}>
+    <ProtectedRoute>
       <AppLayout>
         <ReportGenerator booths={booths} />
       </AppLayout>

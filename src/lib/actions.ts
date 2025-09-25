@@ -512,7 +512,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
         return { success: false, error: 'Database error: Could not create product.' };
     }
     
-    revalidatePath(`/booth-dashboard/${productData.booth_id}`);
+    revalidatePath(`/booth-dashboard/${productData.booth_id}/pos`);
     return { success: true, product: data };
 }
 
@@ -531,7 +531,7 @@ export async function createCheckIn(attendeeId: string, boothId: string) {
     }
     return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
   }
-  revalidatePath(`/booth-dashboard/${boothId}`);
+  revalidatePath(`/booth-dashboard/${boothId}/scanner`);
   return { success: true, checkIn: data };
 }
 

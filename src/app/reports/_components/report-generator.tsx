@@ -9,7 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { exportAttendeesToCsv } from '@/app/lib/actions';
+import { exportBoothAttendeesToCsv } from '@/app/lib/actions';
+import { useAuth } from '@/hooks/use-auth';
 
 type ReportOptions = {
   attendeeList: boolean;
@@ -19,7 +20,8 @@ type ReportOptions = {
 };
 
 export function ReportGenerator({ booths }: { booths: Booth[] }) {
-  const [selectedBoothId, setSelectedBoothId] = useState<string>('');
+  const { isAdmin, assignedBoothId } = useAuth();
+  const [selectedBoothId, setSelectedBoothId] = useState<string>(!isAdmin && assignedBoothId ? assignedBoothId : '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportOptions, setReportOptions] = useState<ReportOptions>({
     attendeeList: true,
@@ -47,12 +49,13 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
     }
 
     try {
-      // For now, we only export the attendee list as that's what's implemented.
-      // In the future, this would generate a more complex PDF/XLS report.
       if (reportOptions.attendeeList) {
-        const checkInsCount = selectedBooth.check_ins?.length || 0;
-        if (checkInsCount === 0) {
-            toast({
+        const csvData = await exportBoothAttendeesToCsv(selectedBooth.id);
+        
+        // Check if csv is just headers (i.e., no data)
+        const rows = csvData.split('\n');
+        if (rows.length <= 1) {
+             toast({
                 title: 'No attendees to export',
                 description: `There are no checked-in attendees for "${selectedBooth.name}".`,
             });
@@ -60,7 +63,6 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
             return;
         }
 
-        const csvData = await exportAttendeesToCsv(selectedBooth.id);
         const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -82,6 +84,7 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
       }
 
     } catch (error) {
+      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Report Generation Failed',
@@ -96,6 +99,8 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
     setReportOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
+  const visibleBooths = isAdmin ? booths : booths.filter(b => b.id === assignedBoothId);
+
   return (
     <Card className="max-w-3xl mx-auto">
       <CardHeader>
@@ -107,12 +112,12 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="booth-select">Select Booth</Label>
-          <Select value={selectedBoothId} onValueChange={setSelectedBoothId}>
+          <Select value={selectedBoothId} onValueChange={setSelectedBoothId} disabled={!isAdmin}>
             <SelectTrigger id="booth-select">
               <SelectValue placeholder="Choose a booth..." />
             </SelectTrigger>
             <SelectContent>
-              {booths.map(booth => (
+              {visibleBooths.map(booth => (
                 <SelectItem key={booth.id} value={booth.id}>
                   {booth.name}
                 </SelectItem>

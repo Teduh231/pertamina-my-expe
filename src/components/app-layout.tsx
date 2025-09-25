@@ -68,6 +68,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: `/booth-dashboard/${assignedBoothId}/pos`, icon: ShoppingBasket, label: 'POS' },
     { href: `/booth-dashboard/${assignedBoothId}/activity`, icon: Flame, label: 'Activity' },
     { href: `/booth-dashboard/${assignedBoothId}/raffle`, icon: Ticket, label: 'Raffle' },
+    { href: '/reports', icon: FileText, label: 'Report' },
     { href: `/booth-dashboard/${assignedBoothId}/prizes`, icon: Gift, label: 'Prize History' },
   ] : [];
 
@@ -122,6 +123,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="flex md:hidden"/>
+                    
                     <h1 className="text-lg font-semibold capitalize hidden md:block">
                         {getPageTitle()}
                     </h1>
