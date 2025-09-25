@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -192,7 +193,7 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
                                             {foundAttendees.map(attendee => (
                                                 <div key={attendee.id} onClick={() => selectAttendee(attendee)} className="p-2 hover:bg-muted rounded-md cursor-pointer">
                                                     <p className="font-semibold">{attendee.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{attendee.email}</p>
+                                                    <p className="text-xs text-muted-foreground">{attendee.phone_number}</p>
                                                 </div>
                                             ))}
                                         </CardContent>

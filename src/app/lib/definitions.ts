@@ -21,7 +21,7 @@ export type Attendee = {
   id: string;
   // booth_id is no longer needed here. An attendee is not tied to a single booth.
   name: string;
-  email: string;
+  phone_number: string;
   registered_at: string;
   custom_response?: string;
   qr_code_url?: string;
@@ -38,7 +38,7 @@ export type CheckIn = {
 export type RaffleWinner = {
   attendeeId: string;
   name: string;
-  email: string;
+  phone_number: string;
 };
 
 export type RaffleStatus = 'upcoming' | 'active' | 'finished';
@@ -119,7 +119,8 @@ export type ActivityParticipant = {
   points_awarded: number;
   attendees: {
     name: string;
-    email: string;
+    phone_number: string;
   };
 };
+
 

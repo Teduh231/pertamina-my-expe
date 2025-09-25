@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -23,7 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 const formSchema = z
   .object({
     name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-    email: z.string().email({ message: 'Please enter a valid email address.' }),
+    phone_number: z.string().min(10, { message: 'Please enter a valid phone number.' }),
     custom_response: z.string().optional(),
     piiConsent: z.boolean().default(false),
   })
@@ -49,7 +50,7 @@ export function AttendeeRegistrationForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      email: '',
+      phone_number: '',
       custom_response: '',
       piiConsent: false,
     },
@@ -92,7 +93,7 @@ export function AttendeeRegistrationForm() {
     if (result.success) {
         toast({
             title: 'Registration Successful!',
-            description: `Thank you for registering. A confirmation has been sent to your email.`,
+            description: `Thank you for registering. A confirmation has been sent to your phone.`,
             variant: 'default',
         });
         form.reset();
@@ -124,12 +125,12 @@ export function AttendeeRegistrationForm() {
         />
         <FormField
           control={form.control}
-          name="email"
+          name="phone_number"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input placeholder="jane.doe@example.com" {...field} />
+                <Input placeholder="081234567890" {...field} type="tel" />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -12,10 +12,10 @@ import { cookies }from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { format } from 'date-fns';
 
-// Placeholder function for sending email.
-// You need to integrate a real email service like SendGrid, Resend, or Nodemailer.
-async function sendQrCodeEmail(recipientEmail: string, attendeeName: string, boothName:string, qrCodeUrl: string) {
-  console.log(`Simulating sending email to ${recipientEmail}`);
+// Placeholder function for sending message.
+// You need to integrate a real messaging service like Twilio.
+async function sendQrCodeMessage(recipientPhoneNumber: string, attendeeName: string, boothName:string, qrCodeUrl: string) {
+  console.log(`Simulating sending SMS to ${recipientPhoneNumber}`);
   console.log(`Attendee: ${attendeeName}`);
   console.log(`Booth: ${boothName}`);
   console.log(`QR Code URL: ${qrCodeUrl}`);
@@ -50,10 +50,10 @@ export async function exportBoothAttendeesToCsv(boothId: string): Promise<string
     const checkIns = booth.check_ins || [];
 
     if (checkIns.length === 0) {
-        return "attendee_id,name,email,checked_in_at\n";
+        return "attendee_id,name,phone_number,checked_in_at\n";
     }
 
-    const headers = ['attendee_id', 'name', 'email', 'checked_in_at'];
+    const headers = ['attendee_id', 'name', 'phone_number', 'checked_in_at'];
     const csvRows = [headers.join(',')];
 
     for (const checkIn of checkIns) {
@@ -61,7 +61,7 @@ export async function exportBoothAttendeesToCsv(boothId: string): Promise<string
             const values = [
                 checkIn.attendee_id,
                 checkIn.attendees.name,
-                checkIn.attendees.email,
+                checkIn.attendees.phone_number,
                 format(new Date(checkIn.checked_in_at), 'yyyy-MM-dd HH:mm:ss'),
             ].map(value => {
                 if (typeof value === 'string' && value.includes(',')) {
@@ -89,10 +89,10 @@ export async function exportAttendeesToCsv(boothId: string): Promise<string> {
     const attendees = allAttendees;
 
     if (attendees.length === 0) {
-        return "id,name,email,registered_at,custom_response\n";
+        return "id,name,phone_number,registered_at,points,custom_response\n";
     }
 
-    const headers = ['id', 'name', 'email', 'registered_at', 'points', 'custom_response'];
+    const headers = ['id', 'name', 'phone_number', 'registered_at', 'points', 'custom_response'];
     const csvRows = [headers.join(',')];
 
     for (const attendee of attendees) {
@@ -252,8 +252,8 @@ export async function registerAttendee(registrationData: Omit<Attendee, 'id' | '
 
     if (error || !newAttendee) {
         console.error('Supabase error registering attendee:', error);
-        if (error?.code === '23505') { // unique_violation for email
-            return { success: false, error: 'This email address has already been registered.' };
+        if (error?.code === '23505') { // unique_violation for phone_number
+            return { success: false, error: 'This phone number has already been registered.' };
         }
         return { success: false, error: 'Database error: Could not register attendee.' };
     }
@@ -270,7 +270,7 @@ export async function registerAttendee(registrationData: Omit<Attendee, 'id' | '
     if (updateError) {
         console.error('Supabase error updating attendee with QR code:', updateError);
     } else {
-        await sendQrCodeEmail(newAttendee.email, newAttendee.name, 'EventFlow', qrCodeUrl);
+        await sendQrCodeMessage(newAttendee.phone_number, newAttendee.name, 'EventFlow', qrCodeUrl);
     }
 
     revalidatePath(`/booths`); // Revalidate booths pages
@@ -332,7 +332,7 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
   const newWinner: RaffleWinner = {
     attendeeId: winner.id,
     name: winner.name,
-    email: winner.email,
+    phone_number: winner.phone_number,
   };
 
   const updatedWinners = [...(raffle.winners || []), newWinner];
@@ -512,7 +512,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
         return { success: false, error: 'Database error: Could not create product.' };
     }
     
-    revalidatePath(`/booth-dashboard/${productData.booth_id}`);
+    revalidatePath(`/booth-dashboard/${productData.booth_id}/pos`);
     return { success: true, product: data };
 }
 
@@ -531,7 +531,7 @@ export async function createCheckIn(attendeeId: string, boothId: string) {
     }
     return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
   }
-  revalidatePath(`/booth-dashboard/${boothId}`);
+  revalidatePath(`/booth-dashboard/${boothId}/scanner`);
   return { success: true, checkIn: data };
 }
 
@@ -696,6 +696,12 @@ export async function redeemProduct(attendeeId: string, productId: string, booth
             product_id: productId,
             product_name: product.name,
             points_spent: product.points,
+            items: [{
+                product_id: productId,
+                product_name: product.name,
+                quantity: 1,
+                points: product.points
+            }]
         })
         .select()
         .single();

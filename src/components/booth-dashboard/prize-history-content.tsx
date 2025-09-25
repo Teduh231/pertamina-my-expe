@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -33,13 +34,13 @@ type PrizeWinner = RaffleWinner & {
 
 function exportPrizesToCsv(winners: PrizeWinner[]): void {
     if (winners.length === 0) return;
-    const headers = ['name', 'email', 'boothName', 'prize', 'drawnAt'];
+    const headers = ['name', 'phone_number', 'boothName', 'prize', 'drawnAt'];
     const csvRows = [headers.join(',')];
   
     for (const winner of winners) {
       const values = [
         winner.name,
-        winner.email,
+        winner.phone_number,
         winner.boothName,
         winner.prize,
         winner.drawnAt,
@@ -84,7 +85,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
     return allWinners.filter(
       winner =>
         winner.name.toLowerCase().includes(lowercasedFilter) ||
-        winner.email.toLowerCase().includes(lowercasedFilter) ||
+        winner.phone_number.toLowerCase().includes(lowercasedFilter) ||
         winner.prize.toLowerCase().includes(lowercasedFilter)
     );
   }, [allWinners, searchTerm]);
@@ -108,7 +109,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
             <TableHeader>
                 <TableRow>
                 <TableHead>Winner Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Phone Number</TableHead>
                 <TableHead>Prize</TableHead>
                 <TableHead>Date Won</TableHead>
                 </TableRow>
@@ -118,7 +119,7 @@ export function PrizeHistoryContent({ raffles }: { raffles: Raffle[] }) {
                 filteredWinners.map(winner => (
                     <TableRow key={`${winner.attendeeId}-${winner.boothName}-${winner.prize}`}>
                     <TableCell className="font-medium">{winner.name}</TableCell>
-                    <TableCell>{winner.email}</TableCell>
+                    <TableCell>{winner.phone_number}</TableCell>
                     <TableCell>{winner.prize}</TableCell>
                     <TableCell>{winner.drawnAt}</TableCell>
                     </TableRow>

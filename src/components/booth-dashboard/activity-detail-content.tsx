@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -96,7 +97,7 @@ export function ActivityDetailContent({ activity, participants, boothId }: Activ
                     </Avatar>
                     <div>
                       <p className="font-semibold">{p.attendees.name}</p>
-                      <p className="text-sm text-muted-foreground">{p.attendees.email}</p>
+                      <p className="text-sm text-muted-foreground">{p.attendees.phone_number}</p>
                       <p className="text-xs text-muted-foreground">Completed on {format(new Date(p.completed_at), 'PPP p')}</p>
                     </div>
                   </div>

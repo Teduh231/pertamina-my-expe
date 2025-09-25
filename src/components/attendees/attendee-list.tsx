@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { Attendee } from '@/app/lib/definitions';
@@ -26,13 +27,13 @@ function exportAllAttendeesToCsv(attendees: Attendee[]): void {
   if (attendees.length === 0) {
     return;
   }
-  const headers = ['name', 'email', 'registered_at'];
+  const headers = ['name', 'phone_number', 'registered_at'];
   const csvRows = [headers.join(',')];
 
   for (const attendee of attendees) {
     const values = [
       attendee.name,
-      attendee.email,
+      attendee.phone_number,
       attendee.registered_at
     ].map(value => {
       if (typeof value === 'string' && value.includes(',')) {
@@ -63,7 +64,7 @@ export function AttendeeList({ attendees }: { attendees: Attendee[] }) {
     return attendees.filter(
       (attendee) =>
         attendee.name.toLowerCase().includes(lowercasedFilter) ||
-        attendee.email.toLowerCase().includes(lowercasedFilter)
+        attendee.phone_number.toLowerCase().includes(lowercasedFilter)
     );
   }, [attendees, searchTerm]);
 
@@ -94,7 +95,7 @@ export function AttendeeList({ attendees }: { attendees: Attendee[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="hidden sm:table-cell">Phone Number</TableHead>
               <TableHead>Points</TableHead>
               <TableHead className="hidden md:table-cell">Registered On</TableHead>
             </TableRow>
@@ -105,9 +106,9 @@ export function AttendeeList({ attendees }: { attendees: Attendee[] }) {
                 <TableRow key={attendee.id}>
                   <TableCell className="font-medium">
                     <div>{attendee.name}</div>
-                    <div className="text-muted-foreground text-sm sm:hidden">{attendee.email}</div>
+                    <div className="text-muted-foreground text-sm sm:hidden">{attendee.phone_number}</div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{attendee.email}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{attendee.phone_number}</TableCell>
                    <TableCell>{attendee.points}</TableCell>
                   <TableCell className="hidden md:table-cell">{format(parseISO(attendee.registered_at), 'PPP')}</TableCell>
                 </TableRow>

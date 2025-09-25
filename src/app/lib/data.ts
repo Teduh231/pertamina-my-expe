@@ -68,7 +68,7 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
           attendees (
             id,
             name,
-            email
+            phone_number
           )
         )
       `)
@@ -229,7 +229,7 @@ export async function getActivityParticipants(activityId: string): Promise<Activ
     try {
       const query = supabaseAdmin
         .from('activity_participants')
-        .select('*, attendees(name, email)')
+        .select('*, attendees(name, phone_number)')
         .eq('activity_id', activityId)
         .order('completed_at', { ascending: false });
       return await supabaseQuery(query);

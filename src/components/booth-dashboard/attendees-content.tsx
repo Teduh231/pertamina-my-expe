@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { Attendee } from '@/app/lib/definitions';
@@ -61,7 +62,7 @@ export function AttendeesContent({ attendees, boothName, boothId }: { attendees:
     return attendees.filter(
       (attendee) =>
         attendee.name.toLowerCase().includes(lowercasedFilter) ||
-        attendee.email.toLowerCase().includes(lowercasedFilter)
+        attendee.phone_number.toLowerCase().includes(lowercasedFilter)
     );
   }, [attendees, searchTerm]);
 
@@ -92,7 +93,7 @@ export function AttendeesContent({ attendees, boothName, boothId }: { attendees:
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="hidden sm:table-cell">Phone Number</TableHead>
               <TableHead>Points</TableHead>
               <TableHead className="hidden md:table-cell">Checked-in At</TableHead>
             </TableRow>
@@ -103,9 +104,9 @@ export function AttendeesContent({ attendees, boothName, boothId }: { attendees:
                 <TableRow key={attendee.id}>
                   <TableCell className="font-medium">
                     <div>{attendee.name}</div>
-                    <div className="text-muted-foreground text-sm sm:hidden">{attendee.email}</div>
+                    <div className="text-muted-foreground text-sm sm:hidden">{attendee.phone_number}</div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{attendee.email}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{attendee.phone_number}</TableCell>
                    <TableCell>{attendee.points}</TableCell>
                   <TableCell className="hidden md:table-cell">{format(parseISO(attendee.checked_in_at), 'PPP p')}</TableCell>
                 </TableRow>

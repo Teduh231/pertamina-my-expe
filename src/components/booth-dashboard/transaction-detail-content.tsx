@@ -1,10 +1,11 @@
+
 'use client';
 
 import React from 'react';
 import { Transaction } from '@/app/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, Calendar, Hash, DollarSign, ShoppingBag, CreditCard } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Hash, DollarSign, ShoppingBag, CreditCard, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Separator } from '../ui/separator';
@@ -12,7 +13,7 @@ import { Badge } from '../ui/badge';
 import Image from 'next/image';
 
 interface TransactionDetailContentProps {
-  transaction: Transaction & { attendee: { name: string, email: string, points: number } };
+  transaction: Transaction & { attendee: { name: string, phone_number: string, points: number } };
   boothId: string;
 }
 
@@ -48,7 +49,7 @@ export function TransactionDetailContent({ transaction, boothId }: TransactionDe
                 <h3 className="font-semibold text-lg">Customer</h3>
                 <div className="p-4 rounded-lg bg-muted space-y-2">
                     <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {transaction.attendee.name}</p>
-                    <p className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-muted-foreground" /> {transaction.attendee.email}</p>
+                    <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {transaction.attendee.phone_number}</p>
                 </div>
             </div>
             <div className="space-y-4">

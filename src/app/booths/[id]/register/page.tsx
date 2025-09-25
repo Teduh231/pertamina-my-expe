@@ -1,3 +1,4 @@
+
 import { getBoothById } from '@/app/lib/data';
 import { notFound } from 'next/navigation';
 import {

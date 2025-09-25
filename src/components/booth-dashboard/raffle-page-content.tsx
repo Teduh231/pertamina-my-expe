@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -191,7 +192,7 @@ export function RafflePageContent({ booth, activeRaffles, finishedRaffles }: Raf
                                     <h4 className="font-semibold mb-2 flex items-center"><Trophy className="mr-2 h-4 w-4 text-yellow-500" /> Winners</h4>
                                     <div className="space-y-1 text-sm max-h-24 overflow-y-auto">
                                         {raffle.winners.map(winner => (
-                                            <p key={winner.attendeeId} className="text-muted-foreground truncate" title={`${winner.name} (${winner.email})`}>{winner.name}</p>
+                                            <p key={winner.attendeeId} className="text-muted-foreground truncate" title={`${winner.name} (${winner.phone_number})`}>{winner.name}</p>
                                         ))}
                                     </div>
                                 </div>
