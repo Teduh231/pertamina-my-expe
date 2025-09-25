@@ -1,27 +1,39 @@
--- Skema ini tidak akan dieksekusi secara otomatis.
--- Anda harus menyalin dan menjalankan kueri ini di Supabase SQL Editor Anda.
+-- Gunakan skrip ini untuk membuat ulang tabel attendees dari awal
+-- dengan phone_number sebagai pengganti email.
+-- PENTING: Ini akan menghapus tabel attendees yang ada dan semua datanya.
 
--- Hapus tabel yang ada jika perlu (PERHATIAN: INI AKAN MENGHAPUS SEMUA DATA!)
-DROP TABLE IF EXISTS attendees CASCADE;
+-- Hapus tabel yang ada jika ada
+DROP TABLE IF EXISTS attendees;
 
--- Buat tabel attendees baru
+-- Buat kembali tabel attendees dengan phone_number
 CREATE TABLE attendees (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    phone_number TEXT NOT NULL,
-    registered_at TIMESTAMPTZ DEFAULT NOW(),
+    phone_number TEXT NOT NULL UNIQUE,
+    registered_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     custom_response TEXT,
     qr_code_url TEXT,
-    points INTEGER DEFAULT 100
+    points INTEGER DEFAULT 100 NOT NULL
 );
 
--- Tambahkan constraint unik ke kolom phone_number
-ALTER TABLE attendees
-ADD CONSTRAINT attendees_phone_number_key UNIQUE (phone_number);
+-- Skrip untuk menambahkan relasi antara check_ins dan attendees
 
--- Tambahkan foreign key constraint dari check_ins ke attendees
--- Ini akan membuat relasi antara kedua tabel.
-ALTER TABLE public.check_ins
+-- 1. (Opsional tapi aman) Hapus constraint lama jika ada, untuk menghindari error jika dijalankan ulang
+ALTER TABLE IF EXISTS public.check_ins DROP CONSTRAINT IF EXISTS check_ins_attendee_id_fkey;
+
+-- 2. Hapus semua data check-in yang tidak memiliki attendee yang valid (data yatim)
+-- Ini adalah langkah penting untuk membersihkan data sebelum menambahkan constraint.
+DELETE FROM public.check_ins
+WHERE attendee_id IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1
+    FROM public.attendees
+    WHERE public.attendees.id = public.check_ins.attendee_id
+);
+
+-- 3. Tambahkan foreign key constraint dengan ON DELETE CASCADE
+-- ON DELETE CASCADE akan secara otomatis menghapus check-in jika attendee terkait dihapus.
+ALTER TABLE IF EXISTS public.check_ins
 ADD CONSTRAINT check_ins_attendee_id_fkey
 FOREIGN KEY (attendee_id)
 REFERENCES public.attendees (id)
