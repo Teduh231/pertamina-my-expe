@@ -58,28 +58,25 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
   noStore();
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   try {
-    const { data, error } = await supabaseAdmin
+    const { data: boothData, error: boothError } = await supabaseAdmin
       .from('booths')
-      .select(`
-        *,
-        check_ins (
-          attendee_id,
-          checked_in_at,
-          attendees (
-            id,
-            name,
-            phone_number
-          )
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .single();
       
-      if (error) throw error;
+    if (boothError) throw boothError;
 
-    return data as Booth;
-  } catch (error) {
-    console.error(`Failed to fetch booth ${id}, returning undefined:`, error);
+    const { data: checkInsData, error: checkInsError } = await supabaseAdmin
+        .from('check_ins')
+        .select('*, attendees(*)')
+        .eq('booth_id', id);
+
+    if (checkInsError) throw checkInsError;
+
+    return { ...boothData, check_ins: checkInsData } as Booth;
+
+  } catch (error: any) {
+    console.error(`Failed to fetch booth ${id}, returning undefined:`, error.message);
     return undefined;
   }
 }
