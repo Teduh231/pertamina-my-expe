@@ -18,6 +18,7 @@ import {
   Flame,
   PieChart,
   ShoppingBasket,
+  Settings,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -70,6 +71,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: `/booth-dashboard/${assignedBoothId}/raffle`, icon: Ticket, label: 'Raffle' },
     { href: '/reports', icon: FileText, label: 'Report' },
     { href: `/booth-dashboard/${assignedBoothId}/prizes`, icon: Gift, label: 'Prize History' },
+    { href: `/booth-dashboard/${assignedBoothId}/settings`, icon: Settings, label: 'Settings' },
   ] : [];
 
   const navItems = isAdmin ? adminNavItems : tenantNavItems;
