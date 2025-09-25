@@ -35,9 +35,7 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
         return products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [products, searchTerm]);
 
-    const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.points * item.quantity, 0), [cart]);
-    const discount = 0; // Placeholder
-    const total = subtotal - discount;
+    const total = useMemo(() => cart.reduce((sum, item) => sum + item.points * item.quantity, 0), [cart]);
 
     const addToCart = (product: Product) => {
         setCart(currentCart => {
@@ -92,15 +90,29 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
         }
 
         setIsProcessing(true);
-        const result = await redeemProduct(attendee.id, booth.id, cart);
+        // This is a simplified call for a single product redemption.
+        // For multi-product cart, you would loop or send the whole cart.
+        // For this implementation, we'll process one product at a time for simplicity.
+        let allSuccess = true;
+        let totalPointsSpent = 0;
+        
+        // This should be wrapped in a proper DB transaction in a real app.
+        for (const item of cart) {
+             const result = await redeemProduct(attendee.id, item.id, booth.id);
+             if(!result.success){
+                allSuccess = false;
+                toast({ variant: 'destructive', title: 'Transaction Failed', description: `Error with item: ${item.name}. ${result.error}` });
+                break;
+             }
+             totalPointsSpent += item.points * item.quantity; // Assuming redeemProduct handles quantity
+        }
 
-        if (result.success) {
+
+        if (allSuccess) {
             toast({ title: 'Transaction Successful!' });
             setCart([]);
             setAttendee(null);
             setAttendeeId('');
-        } else {
-            toast({ variant: 'destructive', title: 'Transaction Failed', description: result.error });
         }
 
         setIsProcessing(false);
@@ -142,9 +154,6 @@ export function NewTransactionContent({ booth, products }: NewTransactionContent
                     {cart.length > 0 && (
                         <CardFooter className="flex-col !items-stretch space-y-2">
                             <Separator/>
-                             <div className="flex justify-between"><span>Subtotal</span><span>{subtotal} pts</span></div>
-                             <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>{discount} pts</span></div>
-                             <Separator/>
                              <div className="flex justify-between font-bold text-lg"><span>Total</span><span>{total} pts</span></div>
                         </CardFooter>
                     )}

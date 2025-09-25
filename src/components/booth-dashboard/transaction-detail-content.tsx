@@ -38,7 +38,7 @@ export function TransactionDetailContent({ transaction, boothId }: TransactionDe
           <div>
             <CardTitle>Transaction #{transaction.id.substring(0, 8)}</CardTitle>
             <CardDescription>
-              Completed on {format(new Date(transaction.created_at), 'MMMM d, yyyy \'at\' p')}
+              Completed on {format(new Date(transaction.created_at), 'MMMM d, yyyy \\'at\\' p')}
             </CardDescription>
           </div>
            <Badge variant="default">Paid</Badge>
@@ -80,10 +80,6 @@ export function TransactionDetailContent({ transaction, boothId }: TransactionDe
             <div className="flex justify-between w-full max-w-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>{subtotal} pts</span>
-            </div>
-            <div className="flex justify-between w-full max-w-sm">
-                <span className="text-muted-foreground">Discount</span>
-                <span>-{transaction.discount} pts</span>
             </div>
             <div className="flex justify-between w-full max-w-sm font-bold text-lg">
                 <span>Total</span>
