@@ -3,9 +3,13 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Booth, Product, Activity, CheckIn, Attendee } from '@/app/lib/definitions';
-import { Users, Flame, Award, BarChart, MapPin, User, QrCode, Download, PieChartIcon } from 'lucide-react';
+import { Users, Flame, Award, BarChart as BarChartIcon, MapPin, User, QrCode, Download, PieChartIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
+import { BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
+import { format, subDays, parseISO } from 'date-fns';
+
 
 type HydratedCheckIn = CheckIn & { attendees: Attendee | null };
 
@@ -14,6 +18,13 @@ type OverviewContentProps = {
     products: Product[];
     activities: Activity[];
 }
+
+const chartConfig = {
+  checkIns: {
+    label: 'Check-ins',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig;
 
 function StatCard({ title, value, subtext, icon: Icon }: { title: string, value: string | number, subtext: string, icon: React.ElementType }) {
     return (
@@ -60,6 +71,28 @@ export function OverviewContent({ booth, products, activities }: OverviewContent
     // Placeholder for revenue
     const revenue = 12400000;
 
+    const dailyCheckins = React.useMemo(() => {
+        const data: { [key: string]: number } = {};
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const date = format(subDays(today, i), 'MMM d');
+            data[date] = 0;
+        }
+
+        booth.check_ins?.forEach(checkIn => {
+            const checkInDate = parseISO(checkIn.checked_in_at);
+            const diffDays = (today.getTime() - checkInDate.getTime()) / (1000 * 3600 * 24);
+
+            if (diffDays < 7) {
+                const dateStr = format(checkInDate, 'MMM d');
+                if (data[dateStr] !== undefined) {
+                    data[dateStr]++;
+                }
+            }
+        });
+        return Object.keys(data).map(date => ({ date, checkIns: data[date] }));
+    }, [booth.check_ins]);
+
 
     return (
         <div className="space-y-6">
@@ -86,28 +119,45 @@ export function OverviewContent({ booth, products, activities }: OverviewContent
                     title="Revenue"
                     value={`Rp ${new Intl.NumberFormat('id-ID').format(revenue / 1000000)}M`}
                     subtext="From merchandise sales"
-                    icon={BarChart}
+                    icon={BarChartIcon}
                 />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Booth Information</CardTitle>
+                            <CardTitle>Daily Check-in Activity</CardTitle>
+                             <CardDescription>Last 7 days</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center gap-4 text-sm p-3 bg-muted rounded-md">
-                                <MapPin className="h-5 w-5 text-primary"/>
-                                <span>{booth.location}</span>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm p-3 bg-muted rounded-md">
-                                <User className="h-5 w-5 text-primary"/>
-                                <span>Manager: {booth.booth_manager}</span>
-                            </div>
-                             <div className="flex items-center gap-4 text-sm p-3 bg-muted rounded-md">
-                                <Users className="h-5 w-5 text-primary"/>
-                                <span>{totalCheckIns} attendees checked in</span>
-                            </div>
+                        <CardContent className="pl-2">
+                            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                <BarChart accessibilityLayer data={dailyCheckins}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="date"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                    fontSize={12}
+                                />
+                                 <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                    fontSize={12}
+                                    allowDecimals={false}
+                                />
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent indicator="dot" />}
+                                />
+                                <Bar
+                                    dataKey="checkIns"
+                                    fill="var(--color-checkIns)"
+                                    radius={4}
+                                />
+                                </BarChart>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
                 </div>
@@ -120,12 +170,33 @@ export function OverviewContent({ booth, products, activities }: OverviewContent
                             <ActionButton href={`/booth-dashboard/${booth.id}/scanner`} icon={QrCode} variant="secondary">
                                 Open QR Scanner
                             </ActionButton>
-                             <ActionButton href="#" icon={Download}>
+                             <ActionButton href="/reports" icon={Download}>
                                 Export Attendee List
                             </ActionButton>
-                             <ActionButton href="#" icon={PieChartIcon}>
-                                View Analytics
+                             <ActionButton href="/reports" icon={PieChartIcon}>
+                                View Full Analytics
                             </ActionButton>
+                        </CardContent>
+                    </Card>
+                </div>
+                 <div className="lg:col-span-3">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Booth Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="flex items-center gap-4 text-sm p-3 bg-muted rounded-md">
+                                <MapPin className="h-5 w-5 text-primary"/>
+                                <span>{booth.location}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm p-3 bg-muted rounded-md">
+                                <User className="h-5 w-5 text-primary"/>
+                                <span>Manager: {booth.booth_manager}</span>
+                            </div>
+                             <div className="flex items-center gap-4 text-sm p-3 bg-muted rounded-md">
+                                <Users className="h-5 w-5 text-primary"/>
+                                <span>{totalCheckIns} attendees checked in</span>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
