@@ -5,39 +5,37 @@ import { Booth } from '@/app/lib/definitions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, BarChart, Users, Award, Flame, PieChart, ShoppingBasket } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportBoothAttendeesToCsv } from '@/app/lib/actions';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
-type ReportOptions = {
-  attendeeList: boolean;
-  loyaltyPoints: boolean;
-  checkInData: boolean;
-  boothAnalytics: boolean;
-};
+type ReportType = 'attendance' | 'sales' | 'engagement' | 'activations' | 'points' | 'raffles';
+
+const reportTypes: { id: ReportType; title: string; description: string; icon: React.ElementType }[] = [
+    { id: 'attendance', title: 'Attendance Report', description: 'List of all attendees who checked-in to the booth.', icon: Users },
+    { id: 'sales', title: 'Sales Report', description: 'Detailed breakdown of all merchandise transactions.', icon: ShoppingBasket },
+    { id: 'engagement', title: 'Engagement Metrics', description: 'Analytics on attendee interactions and activity.', icon: PieChart },
+    { id: 'activations', title: 'Activation Analytics', description: 'Performance of each booth activity.', icon: Flame },
+    { id: 'points', title: 'Points Distribution', description: 'Track all points awarded and redeemed.', icon: Award },
+    { id: 'raffles', title: 'Raffle Results', description: 'Summary of all raffle winners and prizes.', icon: BarChart },
+];
 
 export function ReportGenerator({ booths }: { booths: Booth[] }) {
   const { isAdmin, assignedBoothId } = useAuth();
   const [selectedBoothId, setSelectedBoothId] = useState<string>(!isAdmin && assignedBoothId ? assignedBoothId : '');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [reportOptions, setReportOptions] = useState<ReportOptions>({
-    attendeeList: true,
-    loyaltyPoints: false,
-    checkInData: false,
-    boothAnalytics: true,
-  });
+  const [selectedReport, setSelectedReport] = useState<ReportType | null>(null);
   const { toast } = useToast();
 
   const handleGenerateReport = async () => {
     if (!selectedBoothId) {
-      toast({
-        variant: 'destructive',
-        title: 'No booth selected',
-        description: 'Please select a booth to generate a report.',
-      });
+      toast({ variant: 'destructive', title: 'No booth selected' });
+      return;
+    }
+    if (selectedReport !== 'attendance') {
+      toast({ title: 'Feature not available', description: 'This report type is coming soon.' });
       return;
     }
 
@@ -45,20 +43,15 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
     const selectedBooth = booths.find(e => e.id === selectedBoothId);
     if (!selectedBooth) {
         setIsGenerating(false);
+        toast({ variant: 'destructive', title: 'Booth not found' });
         return;
     }
 
     try {
-      if (reportOptions.attendeeList) {
         const csvData = await exportBoothAttendeesToCsv(selectedBooth.id);
-        
-        // Check if csv is just headers (i.e., no data)
         const rows = csvData.split('\n');
         if (rows.length <= 1) {
-             toast({
-                title: 'No attendees to export',
-                description: `There are no checked-in attendees for "${selectedBooth.name}".`,
-            });
+            toast({ title: 'No attendees to export', description: `There are no checked-in attendees for "${selectedBooth.name}".`});
             setIsGenerating(false);
             return;
         }
@@ -67,95 +60,100 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `${selectedBooth.name.replace(/\s/g, '_')}_report.csv`);
+        link.setAttribute('download', `${selectedBooth.name.replace(/\s/g, '_')}_${selectedReport}_report.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
         toast({
           title: 'Report Generated!',
-          description: `The attendee list for "${selectedBooth.name}" has been downloaded.`,
+          description: `The ${selectedReport} report for "${selectedBooth.name}" has been downloaded.`,
         });
-      } else {
-         toast({
-          title: 'Select a report type',
-          description: 'Please select at least one option to include in the report.',
-        });
-      }
-
     } catch (error) {
       console.error(error);
-      toast({
-        variant: 'destructive',
-        title: 'Report Generation Failed',
-        description: 'Could not generate the report. Please try again.',
-      });
+      toast({ variant: 'destructive', title: 'Report Generation Failed', description: 'Could not generate the report. Please try again.' });
     } finally {
       setIsGenerating(false);
     }
   };
   
-  const handleOptionChange = (option: keyof ReportOptions) => {
-    setReportOptions(prev => ({ ...prev, [option]: !prev[option] }));
-  };
-
   const visibleBooths = isAdmin ? booths : booths.filter(b => b.id === assignedBoothId);
+  const currentReportDetails = reportTypes.find(r => r.id === selectedReport);
+  const isDownloadable = selectedReport === 'attendance';
 
   return (
-    <Card className="max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>Report Generator</CardTitle>
-        <CardDescription>
-          Select a booth and choose the data to include in your report.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="booth-select">Select Booth</Label>
-          <Select value={selectedBoothId} onValueChange={setSelectedBoothId} disabled={!isAdmin}>
-            <SelectTrigger id="booth-select">
-              <SelectValue placeholder="Choose a booth..." />
-            </SelectTrigger>
-            <SelectContent>
-              {visibleBooths.map(booth => (
-                <SelectItem key={booth.id} value={booth.id}>
-                  {booth.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-8">
+        <div>
+            <h2 className="text-3xl font-bold tracking-tight">Report Generator</h2>
+            <p className="text-muted-foreground">Select a booth and a report type to generate a download.</p>
         </div>
         
-        <div className="space-y-2">
-          <Label>Report Contents</Label>
-          <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
-             <div className="flex items-center space-x-2">
-                <Checkbox id="attendeeList" checked={reportOptions.attendeeList} onCheckedChange={() => handleOptionChange('attendeeList')} />
-                <Label htmlFor="attendeeList" className="font-normal">Attendee Check-in List</Label>
-            </div>
-             <div className="flex items-center space-x-2">
-                <Checkbox id="loyaltyPoints" checked={reportOptions.loyaltyPoints} onCheckedChange={() => handleOptionChange('loyaltyPoints')} disabled />
-                <Label htmlFor="loyaltyPoints" className="font-normal text-muted-foreground">Points Report (coming soon)</Label>
-            </div>
-             <div className="flex items-center space-x-2">
-                <Checkbox id="checkInData" checked={reportOptions.checkInData} onCheckedChange={() => handleOptionChange('checkInData')} disabled />
-                <Label htmlFor="checkInData" className="font-normal text-muted-foreground">Transaction Report (coming soon)</Label>
-            </div>
-             <div className="flex items-center space-x-2">
-                <Checkbox id="boothAnalytics" checked={reportOptions.boothAnalytics} onCheckedChange={() => handleOptionChange('boothAnalytics')} disabled />
-                <Label htmlFor="boothAnalytics" className="font-normal text-muted-foreground">Full Analytics (coming soon)</Label>
-            </div>
-          </div>
-           <p className="text-xs text-muted-foreground pt-2">Note: Advanced reports are under development. Currently, only Attendee Check-in List export to CSV is supported.</p>
-        </div>
+        {/* Step 1: Select Booth */}
+        <Card>
+            <CardHeader>
+                <CardTitle>Step 1: Select a Booth</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Select value={selectedBoothId} onValueChange={setSelectedBoothId} disabled={!isAdmin}>
+                    <SelectTrigger id="booth-select" className="max-w-md">
+                        <SelectValue placeholder="Choose a booth..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {visibleBooths.map(booth => (
+                            <SelectItem key={booth.id} value={booth.id}>{booth.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </CardContent>
+        </Card>
 
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleGenerateReport} disabled={isGenerating || !selectedBoothId} className="w-full">
-          {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-          {isGenerating ? 'Generating...' : 'Generate and Download Report'}
-        </Button>
-      </CardFooter>
-    </Card>
+        {/* Step 2: Select Report Type */}
+        <Card>
+             <CardHeader>
+                <CardTitle>Step 2: Select a Report Type</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {reportTypes.map((report) => (
+                    <div
+                        key={report.id}
+                        onClick={() => setSelectedReport(report.id)}
+                        className={cn(
+                            "p-4 rounded-lg border-2 cursor-pointer transition-all bg-card",
+                            selectedReport === report.id ? "border-primary ring-2 ring-primary" : "hover:border-primary/50",
+                            !selectedBoothId && "opacity-50 cursor-not-allowed"
+                        )}
+                    >
+                        <report.icon className="h-8 w-8 text-primary mb-2" />
+                        <h3 className="font-semibold">{report.title}</h3>
+                        <p className="text-sm text-muted-foreground">{report.description}</p>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+
+        {/* Step 3: Generate Report */}
+        {selectedReport && currentReportDetails && (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Step 3: Generate "{currentReportDetails.title}"</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center text-center p-8 bg-muted/50 rounded-lg">
+                    <currentReportDetails.icon className="h-16 w-16 text-muted-foreground mb-4" />
+                    <p className="max-w-md mx-auto text-muted-foreground">
+                        {isDownloadable 
+                            ? `You are about to generate the ${currentReportDetails.title}. This will be downloaded as a CSV file.`
+                            : `The "${currentReportDetails.title}" is not available for download yet. This feature is coming soon.`
+                        }
+                    </p>
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleGenerateReport} disabled={isGenerating || !selectedBoothId || !isDownloadable} className="w-full sm:w-auto ml-auto">
+                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isGenerating ? 'Generating...' : 'Download Report'}
+                    </Button>
+                </CardFooter>
+            </Card>
+        )}
+    </div>
   );
 }
