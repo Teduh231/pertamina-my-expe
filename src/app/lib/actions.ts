@@ -10,6 +10,7 @@ import { supabase as supabaseClient } from './supabase/client';
 import { supabaseAdmin } from './supabase/server';
 import { cookies }from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { format } from 'date-fns';
 
 // Placeholder function for sending email.
 // You need to integrate a real email service like SendGrid, Resend, or Nodemailer.
@@ -37,6 +38,42 @@ export async function detectPiiInField(fieldName: string, fieldValue: string) {
     // Be cautious and assume PII if AI fails
     return { mayContainPii: true };
   }
+}
+
+export async function exportBoothAttendeesToCsv(boothId: string): Promise<string> {
+    noStore();
+    const booth = await getBoothById(boothId);
+    if (!booth) {
+        throw new Error('Booth not found');
+    }
+
+    const checkIns = booth.check_ins || [];
+
+    if (checkIns.length === 0) {
+        return "attendee_id,name,email,checked_in_at\n";
+    }
+
+    const headers = ['attendee_id', 'name', 'email', 'checked_in_at'];
+    const csvRows = [headers.join(',')];
+
+    for (const checkIn of checkIns) {
+        if (checkIn.attendees) {
+            const values = [
+                checkIn.attendee_id,
+                checkIn.attendees.name,
+                checkIn.attendees.email,
+                format(new Date(checkIn.checked_in_at), 'yyyy-MM-dd HH:mm:ss'),
+            ].map(value => {
+                if (typeof value === 'string' && value.includes(',')) {
+                    return `"${value}"`;
+                }
+                return value;
+            });
+            csvRows.push(values.join(','));
+        }
+    }
+
+    return csvRows.join('\n');
 }
 
 export async function exportAttendeesToCsv(boothId: string): Promise<string> {
