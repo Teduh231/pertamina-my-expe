@@ -77,91 +77,140 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
     }
   };
   
-  const visibleBooths = isAdmin ? booths : booths.filter(b => b.id === assignedBoothId);
   const currentReportDetails = reportTypes.find(r => r.id === selectedReport);
   const isDownloadable = selectedReport === 'attendance';
-  const selectedBoothName = booths.find(b => b.id === selectedBoothId)?.name;
+  const selectedBoothName = booths.find(b => b.id === selectedBoothId)?.name || "Your Booth";
 
   return (
     <div className="space-y-8">
         <div>
             <h2 className="text-3xl font-bold tracking-tight">Report Generator</h2>
-            <p className="text-muted-foreground">Select a booth and a report type to generate a download.</p>
+            <p className="text-muted-foreground">
+                {isAdmin 
+                    ? "Select a booth and a report type to generate a download."
+                    : "Generate insightful reports for your assigned booth."
+                }
+            </p>
         </div>
         
-        {/* Step 1: Select Booth */}
-        <Card>
-            <CardHeader>
-                <CardTitle>Step 1: Select a Booth</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {isAdmin ? (
-                    <Select value={selectedBoothId} onValueChange={setSelectedBoothId}>
-                        <SelectTrigger id="booth-select" className="max-w-md">
-                            <SelectValue placeholder="Choose a booth..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {visibleBooths.map(booth => (
-                                <SelectItem key={booth.id} value={booth.id}>{booth.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                ) : (
-                    <div className="p-4 rounded-lg bg-muted max-w-md">
-                        <p className="font-semibold">{selectedBoothName || "Your Assigned Booth"}</p>
-                        <p className="text-sm text-muted-foreground">As a tenant, you can only generate reports for your assigned booth.</p>
-                    </div>
+        {isAdmin ? (
+            // Admin View: 3-step process
+            <>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Step 1: Select a Booth</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Select value={selectedBoothId} onValueChange={setSelectedBoothId}>
+                            <SelectTrigger id="booth-select" className="max-w-md">
+                                <SelectValue placeholder="Choose a booth..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {booths.map(booth => (
+                                    <SelectItem key={booth.id} value={booth.id}>{booth.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Step 2: Select a Report Type</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {reportTypes.map((report) => (
+                            <div
+                                key={report.id}
+                                onClick={() => selectedBoothId && setSelectedReport(report.id)}
+                                className={cn(
+                                    "p-4 rounded-lg border-2 cursor-pointer transition-all bg-card",
+                                    selectedReport === report.id ? "border-primary ring-2 ring-primary" : "hover:border-primary/50",
+                                    !selectedBoothId && "opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                <report.icon className="h-8 w-8 text-primary mb-2" />
+                                <h3 className="font-semibold">{report.title}</h3>
+                                <p className="text-sm text-muted-foreground">{report.description}</p>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {selectedReport && currentReportDetails && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Step 3: Generate "{currentReportDetails.title}"</CardTitle>
+                            <CardDescription>Booth: <span className="font-semibold text-primary">{selectedBoothName}</span></CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center justify-center text-center p-8 bg-muted/50 rounded-lg">
+                            <currentReportDetails.icon className="h-16 w-16 text-muted-foreground mb-4" />
+                            <p className="max-w-md mx-auto text-muted-foreground">
+                                {isDownloadable 
+                                    ? `You are about to generate the ${currentReportDetails.title}. This will be downloaded as a CSV file.`
+                                    : `The "${currentReportDetails.title}" is not available for download yet. This feature is coming soon.`
+                                }
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={handleGenerateReport} disabled={isGenerating || !selectedBoothId || !isDownloadable} className="w-full sm:w-auto ml-auto">
+                                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                                {isGenerating ? 'Generating...' : 'Download Report'}
+                            </Button>
+                        </CardFooter>
+                    </Card>
                 )}
-            </CardContent>
-        </Card>
+            </>
+        ) : (
+            // Tenant View: 2-step process
+            <>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Step 1: Select a Report Type</CardTitle>
+                        <CardDescription>Reports will be generated for your booth: <span className="font-semibold text-primary">{selectedBoothName}</span></CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {reportTypes.map((report) => (
+                            <div
+                                key={report.id}
+                                onClick={() => setSelectedReport(report.id)}
+                                className={cn(
+                                    "p-4 rounded-lg border-2 cursor-pointer transition-all bg-card",
+                                    selectedReport === report.id ? "border-primary ring-2 ring-primary" : "hover:border-primary/50"
+                                )}
+                            >
+                                <report.icon className="h-8 w-8 text-primary mb-2" />
+                                <h3 className="font-semibold">{report.title}</h3>
+                                <p className="text-sm text-muted-foreground">{report.description}</p>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
 
-        {/* Step 2: Select Report Type */}
-        <Card>
-             <CardHeader>
-                <CardTitle>Step 2: Select a Report Type</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {reportTypes.map((report) => (
-                    <div
-                        key={report.id}
-                        onClick={() => selectedBoothId && setSelectedReport(report.id)}
-                        className={cn(
-                            "p-4 rounded-lg border-2 cursor-pointer transition-all bg-card",
-                            selectedReport === report.id ? "border-primary ring-2 ring-primary" : "hover:border-primary/50",
-                            !selectedBoothId && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <report.icon className="h-8 w-8 text-primary mb-2" />
-                        <h3 className="font-semibold">{report.title}</h3>
-                        <p className="text-sm text-muted-foreground">{report.description}</p>
-                    </div>
-                ))}
-            </CardContent>
-        </Card>
-
-        {/* Step 3: Generate Report */}
-        {selectedReport && currentReportDetails && (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Step 3: Generate "{currentReportDetails.title}"</CardTitle>
-                    <CardDescription>Booth: <span className="font-semibold text-primary">{selectedBoothName}</span></CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center text-center p-8 bg-muted/50 rounded-lg">
-                    <currentReportDetails.icon className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="max-w-md mx-auto text-muted-foreground">
-                        {isDownloadable 
-                            ? `You are about to generate the ${currentReportDetails.title}. This will be downloaded as a CSV file.`
-                            : `The "${currentReportDetails.title}" is not available for download yet. This feature is coming soon.`
-                        }
-                    </p>
-                </CardContent>
-                <CardFooter>
-                    <Button onClick={handleGenerateReport} disabled={isGenerating || !selectedBoothId || !isDownloadable} className="w-full sm:w-auto ml-auto">
-                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                        {isGenerating ? 'Generating...' : 'Download Report'}
-                    </Button>
-                </CardFooter>
-            </Card>
+                {selectedReport && currentReportDetails && (
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Step 2: Generate "{currentReportDetails.title}"</CardTitle>
+                            <CardDescription>Booth: <span className="font-semibold text-primary">{selectedBoothName}</span></CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center justify-center text-center p-8 bg-muted/50 rounded-lg">
+                            <currentReportDetails.icon className="h-16 w-16 text-muted-foreground mb-4" />
+                            <p className="max-w-md mx-auto text-muted-foreground">
+                                {isDownloadable 
+                                    ? `You are about to generate the ${currentReportDetails.title}. This will be downloaded as a CSV file.`
+                                    : `The "${currentReportDetails.title}" is not available for download yet. This feature is coming soon.`
+                                }
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={handleGenerateReport} disabled={isGenerating || !selectedBoothId || !isDownloadable} className="w-full sm:w-auto ml-auto">
+                                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                                {isGenerating ? 'Generating...' : 'Download Report'}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                )}
+            </>
         )}
     </div>
   );
