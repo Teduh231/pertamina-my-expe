@@ -17,16 +17,19 @@ export default async function BoothDashboardRafflePage({ params }: { params: { i
     notFound();
   }
 
+  const activeRaffles = allRaffles.filter(r => r.status !== 'finished');
+  const finishedRaffles = allRaffles.filter(r => r.status === 'finished' && r.winners.length > 0);
+
   return (
     <ProtectedRoute>
         <AppLayout>
             <Card>
                  <CardHeader>
                     <CardTitle>Raffle Management</CardTitle>
-                    <CardDescription>Create, manage, and draw winners for this booth's raffles.</CardDescription>
+                    <CardDescription>Create, manage, and view the history of this booth's raffles.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <RafflePageContent booth={booth} raffles={allRaffles} />
+                   <RafflePageContent booth={booth} activeRaffles={activeRaffles} finishedRaffles={finishedRaffles} />
                 </CardContent>
             </Card>
         </AppLayout>

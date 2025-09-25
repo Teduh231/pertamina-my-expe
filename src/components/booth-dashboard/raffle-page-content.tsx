@@ -41,10 +41,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PrizeHistoryContent } from './prize-history-content';
 
 type RafflePageContentProps = {
     booth: Booth;
-    raffles: Raffle[];
+    activeRaffles: Raffle[];
+    finishedRaffles: Raffle[];
 };
 
 const newRaffleSchema = z.object({
@@ -52,7 +55,7 @@ const newRaffleSchema = z.object({
     number_of_winners: z.coerce.number().min(1, 'There must be at least 1 winner.'),
 });
 
-export function RafflePageContent({ booth, raffles }: RafflePageContentProps) {
+export function RafflePageContent({ booth, activeRaffles, finishedRaffles }: RafflePageContentProps) {
     const [openNewRaffleDialog, setOpenNewRaffleDialog] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [isDrawing, setIsDrawing] = useState<string | null>(null);
@@ -66,8 +69,6 @@ export function RafflePageContent({ booth, raffles }: RafflePageContentProps) {
             number_of_winners: 1,
         },
     });
-    
-    const activeRaffles = useMemo(() => raffles.filter(r => r.status === 'active' || r.status === 'upcoming'), [raffles]);
 
     const getStatusVariant = (status: Raffle['status']) => {
         switch (status) {
@@ -139,7 +140,7 @@ export function RafflePageContent({ booth, raffles }: RafflePageContentProps) {
                 <DialogHeader>
                 <DialogTitle>Create New Raffle</DialogTitle>
                 <DialogDescription>
-                    Configure a new raffle for the "{booth.name}" booth. Attendees who have checked-in to this booth will be eligible.
+                    Configure a new raffle for the "{booth.name}" booth. Attendees who have checked-in will be eligible.
                 </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -165,66 +166,77 @@ export function RafflePageContent({ booth, raffles }: RafflePageContentProps) {
         </Dialog>
       </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {activeRaffles.map(raffle => (
-                 <Card key={raffle.id} className="flex flex-col bg-secondary/30">
-                 <CardHeader>
-                   <div className="flex items-center justify-between">
-                     <CardTitle className="text-xl">{raffle.prize}</CardTitle>
-                     <Badge variant={getStatusVariant(raffle.status)} className="capitalize">{raffle.status}</Badge>
-                   </div>
-                 </CardHeader>
-                 <CardContent className="space-y-4 flex-1">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>{raffle.winners?.length || 0} / {raffle.number_of_winners} winner(s) drawn</span>
-                    </div>
-                    {raffle.winners?.length > 0 && (
-                        <div>
-                            <h4 className="font-semibold mb-2 flex items-center"><Trophy className="mr-2 h-4 w-4 text-yellow-500" /> Winners</h4>
-                            <div className="space-y-1 text-sm max-h-24 overflow-y-auto">
-                                {raffle.winners.map(winner => (
-                                    <p key={winner.attendeeId} className="text-muted-foreground truncate" title={`${winner.name} (${winner.email})`}>{winner.name}</p>
-                                ))}
+       <Tabs defaultValue="active">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="active">Active Raffles</TabsTrigger>
+                <TabsTrigger value="history">Prize History</TabsTrigger>
+            </TabsList>
+            <TabsContent value="active" className="mt-6">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {activeRaffles.map(raffle => (
+                         <Card key={raffle.id} className="flex flex-col bg-secondary/30">
+                         <CardHeader>
+                           <div className="flex items-center justify-between">
+                             <CardTitle className="text-xl">{raffle.prize}</CardTitle>
+                             <Badge variant={getStatusVariant(raffle.status)} className="capitalize">{raffle.status}</Badge>
+                           </div>
+                         </CardHeader>
+                         <CardContent className="space-y-4 flex-1">
+                            <div className="flex items-center text-sm text-muted-foreground">
+                                <Users className="mr-2 h-4 w-4" />
+                                <span>{raffle.winners?.length || 0} / {raffle.number_of_winners} winner(s) drawn</span>
                             </div>
-                        </div>
-                    )}
-                 </CardContent>
-                 {(raffle.status === 'active' || raffle.status === 'upcoming') && (
-                     <CardFooter>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button className="w-full" disabled={isDrawing === raffle.id}>
-                                    {isDrawing === raffle.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
-                                    Draw Winner
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will randomly draw one winner from the eligible attendees who have checked into this booth. This action cannot be undone.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDrawWinner(raffle.id)}>Continue</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                     </CardFooter>
-                 )}
-               </Card>
-            ))}
-        </div>
-        {activeRaffles.length === 0 && (
-            <Card className="text-center py-12 bg-secondary/30 border-dashed">
-                <CardContent>
-                    <h3 className="text-lg font-medium">No Active Raffles</h3>
-                    <p className="text-sm text-muted-foreground">Create a new raffle to get started.</p>
-                </CardContent>
-            </Card>
-        )}
+                            {raffle.winners?.length > 0 && (
+                                <div>
+                                    <h4 className="font-semibold mb-2 flex items-center"><Trophy className="mr-2 h-4 w-4 text-yellow-500" /> Winners</h4>
+                                    <div className="space-y-1 text-sm max-h-24 overflow-y-auto">
+                                        {raffle.winners.map(winner => (
+                                            <p key={winner.attendeeId} className="text-muted-foreground truncate" title={`${winner.name} (${winner.email})`}>{winner.name}</p>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                         </CardContent>
+                         {(raffle.status === 'active' || raffle.status === 'upcoming') && (
+                             <CardFooter>
+                                 <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button className="w-full" disabled={isDrawing === raffle.id}>
+                                            {isDrawing === raffle.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
+                                            Draw Winner
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will randomly draw one winner from eligible attendees. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDrawWinner(raffle.id)}>Continue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                             </CardFooter>
+                         )}
+                       </Card>
+                    ))}
+                </div>
+                {activeRaffles.length === 0 && (
+                    <Card className="text-center py-12 bg-secondary/30 border-dashed">
+                        <CardContent>
+                            <h3 className="text-lg font-medium">No Active Raffles</h3>
+                            <p className="text-sm text-muted-foreground">Create a new raffle to get started.</p>
+                        </CardContent>
+                    </Card>
+                )}
+            </TabsContent>
+            <TabsContent value="history" className="mt-6">
+                <PrizeHistoryContent raffles={finishedRaffles} />
+            </TabsContent>
+       </Tabs>
     </div>
   );
 }
