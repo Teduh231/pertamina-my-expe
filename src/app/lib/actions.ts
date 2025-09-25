@@ -50,27 +50,23 @@ export async function exportBoothAttendeesToCsv(boothId: string): Promise<string
     const checkIns = booth.check_ins || [];
 
     if (checkIns.length === 0) {
-        return "attendee_id,name,phone_number,checked_in_at\n";
+        return "phone_number,checked_in_at\n";
     }
 
-    const headers = ['attendee_id', 'name', 'phone_number', 'checked_in_at'];
+    const headers = ['phone_number', 'checked_in_at'];
     const csvRows = [headers.join(',')];
 
     for (const checkIn of checkIns) {
-        if (checkIn.attendees) {
-            const values = [
-                checkIn.attendee_id,
-                checkIn.attendees.name,
-                checkIn.attendees.phone_number,
-                format(new Date(checkIn.checked_in_at), 'yyyy-MM-dd HH:mm:ss'),
-            ].map(value => {
-                if (typeof value === 'string' && value.includes(',')) {
-                    return `"${value}"`;
-                }
-                return value;
-            });
-            csvRows.push(values.join(','));
-        }
+        const values = [
+            checkIn.phone_number,
+            format(new Date(checkIn.checked_in_at), 'yyyy-MM-dd HH:mm:ss'),
+        ].map(value => {
+            if (typeof value === 'string' && value.includes(',')) {
+                return `"${value}"`;
+            }
+            return value;
+        });
+        csvRows.push(values.join(','));
     }
 
     return csvRows.join('\n');
@@ -516,10 +512,54 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
     return { success: true, product: data };
 }
 
-export async function createCheckIn(attendeeId: string, boothId: string) {
+/**
+ * Simulates calling an external Pertamina API to verify an attendee.
+ * In a real-world scenario, this would involve an actual HTTP request.
+ * @param qrData The data scanned from the QR code.
+ * @returns A promise that resolves with the attendee's phone number if verification is successful.
+ */
+export async function verifyAttendeeWithPertaminaAPI(qrData: string): Promise<{ success: true, phoneNumber: string } | { success: false, error: string }> {
+  console.log(`Verifying QR data with Pertamina API: ${qrData}`);
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // --- REPLACE THIS WITH YOUR ACTUAL API CALL ---
+  // For demonstration, we'll assume the QR data is valid and we can derive a phone number.
+  // A real implementation would look something like this:
+  /*
+  try {
+    const response = await fetch('https://api.pertamina.com/verify-attendee', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.PERTAMINA_API_KEY}` },
+      body: JSON.stringify({ qr_token: qrData })
+    });
+    const data = await response.json();
+    if (data.isValid) {
+      return { success: true, phoneNumber: data.phoneNumber };
+    } else {
+      return { success: false, error: data.errorMessage || 'Invalid QR code.' };
+    }
+  } catch (apiError) {
+    console.error('Pertamina API call failed:', apiError);
+    return { success: false, error: 'Could not connect to verification service.' };
+  }
+  */
+  
+  // For now, we'll just simulate a successful response with a dummy phone number.
+  const isSuccessful = true; //Math.random() > 0.1; // Simulate a 10% failure rate
+  if (isSuccessful) {
+    const dummyPhoneNumber = `0812${Math.random().toString().slice(2, 12)}`;
+    return { success: true, phoneNumber: dummyPhoneNumber };
+  } else {
+    return { success: false, error: "Verifikasi QR Code dari API Pertamina gagal." };
+  }
+}
+
+
+export async function createCheckIn(boothId: string, phoneNumber: string) {
   const { data, error } = await supabaseAdmin
     .from('check_ins')
-    .insert({ attendee_id: attendeeId, booth_id: boothId })
+    .insert({ booth_id: boothId, phone_number: phoneNumber })
     .select()
     .single();
 
@@ -527,7 +567,7 @@ export async function createCheckIn(attendeeId: string, boothId: string) {
     console.error('Supabase error creating check-in:', error);
     // Handle unique constraint violation gracefully
     if (error.code === '23505') {
-      return { success: false, error: 'Attendee has already checked into this specific booth.' };
+      return { success: false, error: 'Nomor telepon ini sudah pernah check-in di booth ini.' };
     }
     return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
   }

@@ -1,8 +1,9 @@
+
 'use client';
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Booth, Product, Activity, CheckIn, Attendee } from '@/app/lib/definitions';
+import { Booth, Product, Activity, CheckIn } from '@/app/lib/definitions';
 import { Users, Flame, Award, BarChart as BarChartIcon, MapPin, User, QrCode, Download, PieChartIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
@@ -11,10 +12,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '
 import { format, subDays, parseISO } from 'date-fns';
 
 
-type HydratedCheckIn = CheckIn & { attendees: Attendee | null };
-
 type OverviewContentProps = {
-    booth: Booth & { check_ins: HydratedCheckIn[] };
+    booth: Booth & { check_ins?: CheckIn[] };
     products: Product[];
     activities: Activity[];
 }

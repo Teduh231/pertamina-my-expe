@@ -68,7 +68,7 @@ export async function getBoothById(id: string): Promise<Booth | undefined> {
 
     const { data: checkInsData, error: checkInsError } = await supabaseAdmin
         .from('check_ins')
-        .select('*, attendees(*)')
+        .select('*')
         .eq('booth_id', id);
 
     if (checkInsError) throw checkInsError;

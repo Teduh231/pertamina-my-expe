@@ -30,10 +30,10 @@ export type Attendee = {
 
 export type CheckIn = {
   id: string;
-  attendee_id: string;
   booth_id: string;
   checked_in_at: string;
-}
+  phone_number: string; // Changed from attendee_id
+};
 
 export type RaffleWinner = {
   attendeeId: string;
@@ -122,6 +122,7 @@ export type ActivityParticipant = {
     phone_number: string;
   };
 };
+
 
 
 
