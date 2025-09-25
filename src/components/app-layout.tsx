@@ -62,8 +62,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const tenantNavItems = assignedBoothId ? [
     { href: `/booth-dashboard/${assignedBoothId}/overview`, icon: PieChart, label: 'Overview' },
-    { href: `/booth-dashboard/${assignedBoothId}/attendees`, icon: Users, label: 'Attendees' },
     { href: `/booth-dashboard/${assignedBoothId}/scanner`, icon: QrCode, label: 'Quick Scanner' },
+    { href: `/booth-dashboard/${assignedBoothId}/attendees`, icon: Users, label: 'Attendees' },
     { href: `/booth-dashboard/${assignedBoothId}/merchandise`, icon: Shirt, label: 'Merchandise' },
     { href: `/booth-dashboard/${assignedBoothId}/pos`, icon: ShoppingBasket, label: 'POS' },
     { href: `/booth-dashboard/${assignedBoothId}/activity`, icon: Flame, label: 'Activity' },
