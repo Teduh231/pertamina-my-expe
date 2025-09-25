@@ -41,6 +41,7 @@ import {
 } from './ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
+import { SheetTitle } from './ui/sheet';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
