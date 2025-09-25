@@ -41,16 +41,20 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
 
     setIsGenerating(true);
     const selectedBooth = booths.find(e => e.id === selectedBoothId);
-    if (!selectedBooth) return;
+    if (!selectedBooth) {
+        setIsGenerating(false);
+        return;
+    }
 
     try {
       // For now, we only export the attendee list as that's what's implemented.
       // In the future, this would generate a more complex PDF/XLS report.
       if (reportOptions.attendeeList) {
-        if (selectedBooth.attendees.length === 0) {
+        const checkInsCount = selectedBooth.check_ins?.length || 0;
+        if (checkInsCount === 0) {
             toast({
                 title: 'No attendees to export',
-                description: `There are no attendees for "${selectedBooth.name}".`,
+                description: `There are no checked-in attendees for "${selectedBooth.name}".`,
             });
             setIsGenerating(false);
             return;
@@ -122,22 +126,22 @@ export function ReportGenerator({ booths }: { booths: Booth[] }) {
           <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
              <div className="flex items-center space-x-2">
                 <Checkbox id="attendeeList" checked={reportOptions.attendeeList} onCheckedChange={() => handleOptionChange('attendeeList')} />
-                <Label htmlFor="attendeeList" className="font-normal">Attendee List</Label>
+                <Label htmlFor="attendeeList" className="font-normal">Attendee Check-in List</Label>
             </div>
              <div className="flex items-center space-x-2">
                 <Checkbox id="loyaltyPoints" checked={reportOptions.loyaltyPoints} onCheckedChange={() => handleOptionChange('loyaltyPoints')} disabled />
-                <Label htmlFor="loyaltyPoints" className="font-normal text-muted-foreground">Loyalty Points (coming soon)</Label>
+                <Label htmlFor="loyaltyPoints" className="font-normal text-muted-foreground">Points Report (coming soon)</Label>
             </div>
              <div className="flex items-center space-x-2">
                 <Checkbox id="checkInData" checked={reportOptions.checkInData} onCheckedChange={() => handleOptionChange('checkInData')} disabled />
-                <Label htmlFor="checkInData" className="font-normal text-muted-foreground">Check-in Data (coming soon)</Label>
+                <Label htmlFor="checkInData" className="font-normal text-muted-foreground">Transaction Report (coming soon)</Label>
             </div>
              <div className="flex items-center space-x-2">
                 <Checkbox id="boothAnalytics" checked={reportOptions.boothAnalytics} onCheckedChange={() => handleOptionChange('boothAnalytics')} disabled />
-                <Label htmlFor="boothAnalytics" className="font-normal text-muted-foreground">Booth Analytics (coming soon)</Label>
+                <Label htmlFor="boothAnalytics" className="font-normal text-muted-foreground">Full Analytics (coming soon)</Label>
             </div>
           </div>
-           <p className="text-xs text-muted-foreground pt-2">Note: PDF/XLS export is under development. Currently, only Attendee List export to CSV is supported.</p>
+           <p className="text-xs text-muted-foreground pt-2">Note: Advanced reports are under development. Currently, only Attendee Check-in List export to CSV is supported.</p>
         </div>
 
       </CardContent>
