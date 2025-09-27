@@ -63,11 +63,11 @@ export function EventDashboardNav({
 
   return (
     <Tabs value={activeTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-7">
+      <TabsList className="grid w-full grid-cols-7 h-auto bg-card p-1">
         {navItems.map((item) => (
             <TabsTrigger key={item.href} value={item.href} asChild>
-               <Link href={item.href}>
-                <item.icon className="mr-2 h-4 w-4" />
+               <Link href={item.href} className="flex items-center gap-2 py-2">
+                <item.icon className="h-4 w-4" />
                 {item.label}
                </Link>
             </TabsTrigger>
