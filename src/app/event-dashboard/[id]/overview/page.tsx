@@ -2,6 +2,7 @@ import { getEventById, getProductsByEvent, getActivitiesByEvent } from '@/app/li
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
 import { OverviewContent } from '@/components/event-dashboard/overview-content';
+import { EventDashboardNav } from '@/components/event-dashboard/event-dashboard-nav';
 
 export default async function EventDashboardOverviewPage({ params }: { params: { id: string } }) {
   const eventId = params.id;
@@ -18,7 +19,10 @@ export default async function EventDashboardOverviewPage({ params }: { params: {
 
   return (
     <ProtectedRoute>
-        <OverviewContent event={event} products={products} activities={activities} />
+        <div className="space-y-6">
+            <EventDashboardNav eventId={eventId} />
+            <OverviewContent event={event} products={products} activities={activities} />
+        </div>
     </ProtectedRoute>
   );
 }

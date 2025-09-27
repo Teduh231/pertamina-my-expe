@@ -1,11 +1,14 @@
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Wrench } from 'lucide-react';
+import { EventDashboardNav } from '@/components/event-dashboard/event-dashboard-nav';
 
-export default function EventSettingsPage() {
+export default function EventSettingsPage({ params }: { params: { id: string } }) {
 
   return (
     <ProtectedRoute>
+      <div className="space-y-6">
+        <EventDashboardNav eventId={params.id} />
         <Card>
             <CardHeader>
                 <CardTitle>Event Settings</CardTitle>
@@ -19,6 +22,7 @@ export default function EventSettingsPage() {
                 </div>
             </CardContent>
         </Card>
+      </div>
     </ProtectedRoute>
   );
 }

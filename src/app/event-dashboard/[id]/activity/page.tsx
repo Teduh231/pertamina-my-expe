@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ActivityPageContent } from '@/components/event-dashboard/activity-page-content';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Activity } from '@/app/lib/definitions';
+import { EventDashboardNav } from '@/components/event-dashboard/event-dashboard-nav';
 
 export default async function EventDashboardActivityPage({ params }: { params: { id: string } }) {
   const eventId = params.id;
@@ -16,6 +17,8 @@ export default async function EventDashboardActivityPage({ params }: { params: {
 
   return (
     <ProtectedRoute>
+      <div className="space-y-6">
+        <EventDashboardNav eventId={eventId} />
         <Card>
             <CardHeader>
                 <CardTitle>Activity Management</CardTitle>
@@ -25,6 +28,7 @@ export default async function EventDashboardActivityPage({ params }: { params: {
                <ActivityPageContent eventId={eventId} activities={activities} />
             </CardContent>
         </Card>
+      </div>
     </ProtectedRoute>
   );
 }

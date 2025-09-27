@@ -3,6 +3,7 @@ import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
 import { RafflePageContent } from '@/components/event-dashboard/raffle-page-content';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { EventDashboardNav } from '@/components/event-dashboard/event-dashboard-nav';
 
 export default async function EventDashboardRafflePage({ params }: { params: { id: string } }) {
   const eventId = params.id;
@@ -21,6 +22,8 @@ export default async function EventDashboardRafflePage({ params }: { params: { i
 
   return (
     <ProtectedRoute>
+      <div className="space-y-6">
+        <EventDashboardNav eventId={eventId} />
         <Card>
              <CardHeader>
                 <CardTitle>Raffle Management</CardTitle>
@@ -30,6 +33,7 @@ export default async function EventDashboardRafflePage({ params }: { params: { i
                <RafflePageContent event={event} activeRaffles={activeRaffles} finishedRaffles={finishedRaffles} />
             </CardContent>
         </Card>
+      </div>
     </ProtectedRoute>
   );
 }
