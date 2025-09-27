@@ -79,7 +79,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
              </Link>
           </SidebarHeader>
 
-          <SidebarContent>
+          <SidebarContent className="flex-1">
             <SidebarMenu>
               {navItems.filter(item => !item.adminOnly || isAdmin).map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -97,6 +97,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               ))}
             </SidebarMenu>
           </SidebarContent>
+           <SidebarContent>
+             <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+                         <LogOut className="shrink-0" />
+                         <span className="group-data-[state=collapsed]/sidebar:opacity-0 group-data-[state=collapsed]/sidebar:w-0 transition-all duration-300 ease-in-out">Logout</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+             </SidebarMenu>
+           </SidebarContent>
         </Sidebar>
 
         <div className="transition-all duration-300 ease-in-out md:ml-[var(--sidebar-width-collapsed)] group-data-[state=expanded]/sidebar:md:ml-[var(--sidebar-width)]">
