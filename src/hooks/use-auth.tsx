@@ -26,9 +26,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const fetchSessionAndProfile = async () => {
+      setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user ?? null;
       setUser(user);
@@ -54,8 +56,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           router.push('/login');
         }
-        // No need to set loading to false here as the initial load handles it.
-        // This prevents flashes of content.
       }
     );
 
@@ -64,6 +64,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [router]);
 
+  const isAdmin = profile?.role === 'admin';
+  const assignedEventId = profile?.event_id || null;
+
   const login = async (email: string, pass: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
@@ -71,12 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
   };
-
-  const isAdmin = profile?.role === 'admin';
-  const assignedEventId = profile?.event_id || null;
 
   const value = {
     user,
@@ -88,10 +86,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
   };
 
-  // Centralized loading and auth protection
-  const publicPaths = ['/login', '/']; 
-  const pathIsProtected = !publicPaths.includes(usePathname());
+  const publicPaths = ['/login', '/', '/booths/[id]/register', '/events/[id]/register']; 
   
+  const isPublicPath = (path: string) => {
+    if (publicPaths.includes(path)) return true;
+    // Handle dynamic paths
+    if (path.startsWith('/booths/') && path.endsWith('/register')) return true;
+    if (path.startsWith('/events/') && path.endsWith('/register')) return true;
+    return false;
+  }
+  
+  const pathIsProtected = !isPublicPath(pathname);
+
+  useEffect(() => {
+    if (!loading && !user && pathIsProtected) {
+      router.push('/login');
+    }
+    if (!loading && user && !pathIsProtected) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, pathIsProtected, router]);
+
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -100,23 +115,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   }
 
-  if (!user && pathIsProtected) {
-    // Redirect logic handled by middleware, but this is a client-side failsafe
-     if (typeof window !== 'undefined') {
-      router.push('/login');
-    }
-    return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-    );
-  }
-  
-  if (user && !pathIsProtected) {
-    if (typeof window !== 'undefined') {
-        router.push('/dashboard');
-    }
-    return (
+  if ((!user && pathIsProtected) || (user && !pathIsProtected)) {
+     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -132,4 +132,28 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+export const ProtectedRoute: React.FC<{ children: React.ReactNode, adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
+    const { user, profile, loading } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                router.push('/login');
+            } else if (adminOnly && profile?.role !== 'admin') {
+                router.push('/dashboard');
+            }
+        }
+    }, [user, profile, loading, router, adminOnly]);
+    
+    if (loading || !user || (adminOnly && profile?.role !== 'admin')) {
+        return (
+            <div className="flex h-[calc(100vh-theme(space.16))] w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+    return <>{children}</>;
 };
