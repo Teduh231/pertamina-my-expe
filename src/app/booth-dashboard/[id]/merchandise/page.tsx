@@ -2,6 +2,6 @@
 // We redirect to the POS page.
 import { redirect } from 'next/navigation';
 
-export default function BoothDashboardMerchandisePage({ params }: { params: { id: string } }) {
-  redirect(`/booth-dashboard/${params.id}/pos`);
+export default function EventDashboardMerchandisePage({ params }: { params: { id: string } }) {
+  redirect(`/event-dashboard/${params.id}/pos`);
 }

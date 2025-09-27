@@ -2,6 +2,6 @@
 // We redirect to the Raffle page.
 import { redirect } from 'next/navigation';
 
-export default function BoothDashboardPrizeHistoryPage({ params }: { params: { id: string } }) {
-  redirect(`/booth-dashboard/${params.id}/raffle`);
+export default function EventDashboardPrizeHistoryPage({ params }: { params: { id: string } }) {
+  redirect(`/event-dashboard/${params.id}/raffle`);
 }

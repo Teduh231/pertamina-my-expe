@@ -1,17 +1,17 @@
-import { getActivitiesByBooth } from '@/app/lib/data';
+import { getActivitiesByEvent } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
-import { ActivityPageContent } from '@/components/booth-dashboard/activity-page-content';
+import { ActivityPageContent } from '@/components/event-dashboard/activity-page-content';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AppLayout } from '@/components/app-layout';
 import { Activity } from '@/app/lib/definitions';
 
-export default async function BoothDashboardActivityPage({ params }: { params: { id: string } }) {
-  const boothId = params.id;
+export default async function EventDashboardActivityPage({ params }: { params: { id: string } }) {
+  const eventId = params.id;
   
-  const activities: Activity[] = await getActivitiesByBooth(boothId);
+  const activities: Activity[] = await getActivitiesByEvent(eventId);
 
-  if (!boothId) {
+  if (!eventId) {
     notFound();
   }
 
@@ -21,10 +21,10 @@ export default async function BoothDashboardActivityPage({ params }: { params: {
             <Card>
                 <CardHeader>
                     <CardTitle>Activity Management</CardTitle>
-                    <CardDescription>Create and manage activities for your booth.</CardDescription>
+                    <CardDescription>Create and manage activities for your event.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <ActivityPageContent boothId={boothId} activities={activities} />
+                   <ActivityPageContent eventId={eventId} activities={activities} />
                 </CardContent>
             </Card>
         </AppLayout>

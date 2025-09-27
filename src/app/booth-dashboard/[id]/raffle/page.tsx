@@ -1,19 +1,19 @@
-import { getBoothById, getRaffles } from '@/app/lib/data';
+import { getEventById, getRaffles } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
-import { RafflePageContent } from '@/components/booth-dashboard/raffle-page-content';
+import { RafflePageContent } from '@/components/event-dashboard/raffle-page-content';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AppLayout } from '@/components/app-layout';
 
-export default async function BoothDashboardRafflePage({ params }: { params: { id: string } }) {
-  const boothId = params.id;
+export default async function EventDashboardRafflePage({ params }: { params: { id: string } }) {
+  const eventId = params.id;
   
-  const [booth, allRaffles] = await Promise.all([
-    getBoothById(boothId),
-    getRaffles(boothId)
+  const [event, allRaffles] = await Promise.all([
+    getEventById(eventId),
+    getRaffles(eventId)
   ]);
 
-  if (!booth) {
+  if (!event) {
     notFound();
   }
 
@@ -26,10 +26,10 @@ export default async function BoothDashboardRafflePage({ params }: { params: { i
             <Card>
                  <CardHeader>
                     <CardTitle>Raffle Management</CardTitle>
-                    <CardDescription>Create, manage, and view the history of this booth's raffles.</CardDescription>
+                    <CardDescription>Create, manage, and view the history of this event's raffles.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <RafflePageContent booth={booth} activeRaffles={activeRaffles} finishedRaffles={finishedRaffles} />
+                   <RafflePageContent event={event} activeRaffles={activeRaffles} finishedRaffles={finishedRaffles} />
                 </CardContent>
             </Card>
         </AppLayout>

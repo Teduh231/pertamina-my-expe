@@ -1,26 +1,26 @@
-import { getBoothById, getProductsByBooth, getRecentTransactions } from '@/app/lib/data';
+import { getEventById, getProductsByEvent, getRecentTransactions } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
 import { AppLayout } from '@/components/app-layout';
-import { PosContent } from '@/components/booth-dashboard/pos-content';
+import { PosContent } from '@/components/event-dashboard/pos-content';
 
-export default async function BoothDashboardPosPage({ params }: { params: { id: string } }) {
-  const boothId = params.id;
+export default async function EventDashboardPosPage({ params }: { params: { id: string } }) {
+  const eventId = params.id;
   
-  const [booth, products, transactions] = await Promise.all([
-    getBoothById(boothId),
-    getProductsByBooth(boothId),
-    getRecentTransactions(boothId, 10) // Fetch more for the dashboard
+  const [event, products, transactions] = await Promise.all([
+    getEventById(eventId),
+    getProductsByEvent(eventId),
+    getRecentTransactions(eventId, 10) // Fetch more for the dashboard
   ]);
 
-  if (!booth) {
+  if (!event) {
     notFound();
   }
 
   return (
     <ProtectedRoute>
         <AppLayout>
-            <PosContent booth={booth} products={products} initialTransactions={transactions} />
+            <PosContent event={event} products={products} initialTransactions={transactions} />
         </AppLayout>
     </ProtectedRoute>
   );

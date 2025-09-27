@@ -1,25 +1,25 @@
-import { getBoothById, getProductsByBooth } from '@/app/lib/data';
+import { getEventById, getProductsByEvent } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
 import { AppLayout } from '@/components/app-layout';
-import { NewTransactionContent } from '@/components/booth-dashboard/new-transaction-content';
+import { NewTransactionContent } from '@/components/event-dashboard/new-transaction-content';
 
 export default async function NewTransactionPage({ params }: { params: { id: string } }) {
-  const boothId = params.id;
+  const eventId = params.id;
   
-  const [booth, products] = await Promise.all([
-    getBoothById(boothId),
-    getProductsByBooth(boothId),
+  const [event, products] = await Promise.all([
+    getEventById(eventId),
+    getProductsByEvent(eventId),
   ]);
 
-  if (!booth) {
+  if (!event) {
     notFound();
   }
 
   return (
     <ProtectedRoute>
         <AppLayout>
-            <NewTransactionContent booth={booth} products={products} />
+            <NewTransactionContent event={event} products={products} />
         </AppLayout>
     </ProtectedRoute>
   );

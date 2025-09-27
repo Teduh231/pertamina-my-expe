@@ -1,26 +1,26 @@
-import { getBoothById, getProductsByBooth, getActivitiesByBooth } from '@/app/lib/data';
+import { getEventById, getProductsByEvent, getActivitiesByEvent } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
-import { OverviewContent } from '@/components/booth-dashboard/overview-content';
+import { OverviewContent } from '@/components/event-dashboard/overview-content';
 import { AppLayout } from '@/components/app-layout';
 
-export default async function BoothDashboardOverviewPage({ params }: { params: { id: string } }) {
-  const boothId = params.id;
+export default async function EventDashboardOverviewPage({ params }: { params: { id: string } }) {
+  const eventId = params.id;
   
-  const [booth, products, activities] = await Promise.all([
-    getBoothById(boothId),
-    getProductsByBooth(boothId),
-    getActivitiesByBooth(boothId),
+  const [event, products, activities] = await Promise.all([
+    getEventById(eventId),
+    getProductsByEvent(eventId),
+    getActivitiesByEvent(eventId),
   ]);
 
-  if (!booth) {
+  if (!event) {
     notFound();
   }
 
   return (
     <ProtectedRoute>
         <AppLayout>
-            <OverviewContent booth={booth} products={products} activities={activities} />
+            <OverviewContent event={event} products={products} activities={activities} />
         </AppLayout>
     </ProtectedRoute>
   );

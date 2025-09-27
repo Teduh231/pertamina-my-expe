@@ -3,12 +3,12 @@ import { getActivityById, getActivityParticipants } from '@/app/lib/data';
 import { Activity, ActivityParticipant } from '@/app/lib/definitions';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { AppLayout } from '@/components/app-layout';
-import { ActivityDetailContent } from '@/components/booth-dashboard/activity-detail-content';
+import { ActivityDetailContent } from '@/components/event-dashboard/activity-detail-content';
 
-export default async function BoothActivityDetailPage({ params }: { params: { id: string; activityId: string } }) {
-  const { id: boothId, activityId } = params;
+export default async function EventActivityDetailPage({ params }: { params: { id: string; activityId: string } }) {
+  const { id: eventId, activityId } = params;
 
-  if (!boothId || !activityId) {
+  if (!eventId || !activityId) {
     notFound();
   }
   
@@ -24,7 +24,7 @@ export default async function BoothActivityDetailPage({ params }: { params: { id
   return (
     <ProtectedRoute>
         <AppLayout>
-           <ActivityDetailContent activity={activity} participants={participants} boothId={boothId} />
+           <ActivityDetailContent activity={activity} participants={participants} eventId={eventId} />
         </AppLayout>
     </ProtectedRoute>
   );
