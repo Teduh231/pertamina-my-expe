@@ -8,8 +8,8 @@ import {
   LayoutDashboard,
   Calendar,
   Users2,
-  ShoppingBasket,
   FileText,
+  Settings,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -33,8 +33,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', adminOnly: true },
     { href: '/events', icon: Calendar, label: 'Events', adminOnly: true },
     { href: '/staff', icon: Users2, label: 'User Management', adminOnly: true },
-    { href: '/products', icon: ShoppingBasket, label: 'Products', adminOnly: true },
     { href: '/reports', icon: FileText, label: 'Reports', adminOnly: true },
+    { href: '/settings', icon: Settings, label: 'Settings', adminOnly: true },
   ];
 
   const getPageTitle = () => {
