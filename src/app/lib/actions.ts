@@ -2,8 +2,8 @@
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Activity, ActivityParticipant, Attendee, Booth, Product, Raffle, RaffleWinner, Tenant, Transaction } from './definitions';
-import { getBoothById, getAttendees, getAttendeeById, getActivityById, getProductById } from './data';
+import { Activity, ActivityParticipant, Attendee, Event, Product, Raffle, RaffleWinner, Tenant, Transaction } from './definitions';
+import { getEventById, getAttendees, getAttendeeById, getActivityById, getProductById } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase as supabaseClient } from './supabase/client';
@@ -14,10 +14,10 @@ import { format } from 'date-fns';
 
 // Placeholder function for sending message.
 // You need to integrate a real messaging service like Twilio.
-async function sendQrCodeMessage(recipientPhoneNumber: string, attendeeName: string, boothName:string, qrCodeUrl: string) {
+async function sendQrCodeMessage(recipientPhoneNumber: string, attendeeName: string, eventName:string, qrCodeUrl: string) {
   console.log(`Simulating sending SMS to ${recipientPhoneNumber}`);
   console.log(`Attendee: ${attendeeName}`);
-  console.log(`Booth: ${boothName}`);
+  console.log(`Event: ${eventName}`);
   console.log(`QR Code URL: ${qrCodeUrl}`);
   
   // For now, we'll just return a success promise.
@@ -40,14 +40,14 @@ export async function detectPiiInField(fieldName: string, fieldValue: string) {
   }
 }
 
-export async function exportBoothAttendeesToCsv(boothId: string): Promise<string> {
+export async function exportEventAttendeesToCsv(eventId: string): Promise<string> {
     noStore();
-    const booth = await getBoothById(boothId);
-    if (!booth) {
-        throw new Error('Booth not found');
+    const event = await getEventById(eventId);
+    if (!event) {
+        throw new Error('Event not found');
     }
 
-    const checkIns = booth.check_ins || [];
+    const checkIns = event.check_ins || [];
 
     if (checkIns.length === 0) {
         return "phone_number,checked_in_at\n";
@@ -72,16 +72,16 @@ export async function exportBoothAttendeesToCsv(boothId: string): Promise<string
     return csvRows.join('\n');
 }
 
-export async function exportAttendeesToCsv(boothId: string): Promise<string> {
+export async function exportAttendeesToCsv(eventId: string): Promise<string> {
     noStore();
-    const booth = await getBoothById(boothId);
+    const event = await getEventById(eventId);
     const allAttendees = await getAttendees();
 
-    if (!booth) {
-        throw new Error('Booth not found');
+    if (!event) {
+        throw new Error('Event not found');
     }
     
-    // In the new model, we just export all attendees since they are not tied to a booth
+    // In the new model, we just export all attendees since they are not tied to an event
     const attendees = allAttendees;
 
     if (attendees.length === 0) {
@@ -106,7 +106,7 @@ export async function exportAttendeesToCsv(boothId: string): Promise<string> {
     return csvRows.join('\n');
 }
 
-export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_user_email?: string, booth_user_password?: string }, boothId?: string) {
+export async function createOrUpdateEvent(formData: Partial<Event>, eventId?: string) {
   const cookieStore = cookies();
   const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -126,74 +126,53 @@ export async function createOrUpdateBooth(formData: Partial<Booth> & { booth_use
     return { success: false, error: 'Authentication required.' };
   }
 
-  const { attendees, booth_user_email, booth_user_password, ...restOfBoothData } = formData;
-  const dataToUpsert = { ...restOfBoothData };
+  const { attendees, ...restOfEventData } = formData;
+  const dataToUpsert = { ...restOfEventData };
 
-  if (boothId) {
-    // Update existing booth
+  if (eventId) {
+    // Update existing event
     const { error } = await supabaseAdmin
-      .from('booths')
+      .from('events')
       .update(dataToUpsert)
-      .eq('id', boothId);
+      .eq('id', eventId);
     
     if (error) {
-      console.error('Supabase error updating booth:', error);
-      return { success: false, error: 'Database error: Could not update booth.' };
+      console.error('Supabase error updating event:', error);
+      return { success: false, error: 'Database error: Could not update event.' };
     }
-    revalidatePath(`/booths/${boothId}`);
-    revalidatePath(`/booth-dashboard/${boothId}`);
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/event-dashboard/${eventId}`);
   } else {
-    // Create new booth, initiated by a tenant, so it should be pending
+    // Create new event
     dataToUpsert.user_id = user.id;
-    dataToUpsert.status = 'pending';
     
     const { data, error } = await supabaseAdmin
-      .from('booths')
+      .from('events')
       .insert([dataToUpsert])
       .select('id')
       .single();
 
     if (error || !data) {
-        console.error('Supabase error creating booth:', error);
-        return { success: false, error: 'Database error: Could not create booth.' };
+        console.error('Supabase error creating event:', error);
+        return { success: false, error: 'Database error: Could not create event.' };
     }
-    boothId = data.id;
-
-    // If user details are provided, create the user and tenant record (admin-only feature)
-    const {data: { session }} = await supabase.auth.getSession();
-    const userRole = session?.user?.user_metadata?.role;
-    if (userRole === 'admin' && booth_user_email && booth_user_password) {
-        const createTenantResult = await createTenantUser({
-            name: restOfBoothData.booth_manager, // Use booth manager name for the tenant name
-            email: booth_user_email,
-            password: booth_user_password,
-            booth_id: boothId,
-        });
-
-        if (!createTenantResult.success) {
-            // Attempt to clean up the created booth if tenant creation fails
-            await supabaseAdmin.from('booths').delete().eq('id', boothId);
-            return { success: false, error: `Booth created, but failed to create user: ${createTenantResult.error}` };
-        }
-    }
+    eventId = data.id;
   }
 
-  revalidatePath('/booths');
-  revalidatePath('/tenants');
+  revalidatePath('/events');
   revalidatePath('/dashboard');
-  revalidatePath('/tenant-dashboard');
-  return { success: true, boothId };
+  return { success: true, eventId };
 }
 
-export async function deleteBooth(boothId: string) {
+export async function deleteEvent(eventId: string) {
     const { data, error } = await supabaseAdmin
-      .from('booths')
+      .from('events')
       .select('image_path')
-      .eq('id', boothId)
+      .eq('id', eventId)
       .single();
 
     if (error) {
-      console.error('Supabase error fetching booth for deletion:', error);
+      console.error('Supabase error fetching event for deletion:', error);
     }
     if (data?.image_path) {
         const { error: storageError } = await supabaseAdmin.storage.from('images').remove([data.image_path]);
@@ -205,41 +184,29 @@ export async function deleteBooth(boothId: string) {
     const { error: checkinError } = await supabaseAdmin
       .from('check_ins')
       .delete()
-      .eq('booth_id', boothId);
+      .eq('event_id', eventId);
 
     if (checkinError) {
       console.error('Supabase error deleting check-ins:', checkinError);
       return { success: false, error: 'Database error: Could not delete associated check-ins.' };
     }
-    
-    const { error: tenantUnassignError } = await supabaseAdmin
-      .from('tenants')
-      .update({ booth_id: null })
-      .eq('booth_id', boothId);
-
-    if (tenantUnassignError) {
-        console.error('Supabase error unassigning tenants:', tenantUnassignError);
-    }
   
-    const { error: boothError } = await supabaseAdmin
-      .from('booths')
+    const { error: eventError } = await supabaseAdmin
+      .from('events')
       .delete()
-      .eq('id', boothId);
+      .eq('id', eventId);
   
-    if (boothError) {
-      console.error('Supabase error deleting booth:', boothError);
-      return { success: false, error: 'Database error: Could not delete booth.' };
+    if (eventError) {
+      console.error('Supabase error deleting event:', eventError);
+      return { success: false, error: 'Database error: Could not delete event.' };
     }
   
-    revalidatePath('/booths');
+    revalidatePath('/events');
     revalidatePath('/dashboard');
-    revalidatePath('/tenants');
-    revalidatePath('/tenant-dashboard');
     return { success: true };
 }
 
 export async function registerAttendee(registrationData: Omit<Attendee, 'id' | 'registered_at' | 'qr_code_url' | 'points'>) {
-    // Attendee is no longer registered to a specific booth, so boothId is removed.
     const { data: newAttendee, error } = await supabaseClient
         .from('attendees')
         .insert([{ ...registrationData, points: 100 }]) // Award 100 points on registration
@@ -269,7 +236,7 @@ export async function registerAttendee(registrationData: Omit<Attendee, 'id' | '
         await sendQrCodeMessage(newAttendee.phone_number, newAttendee.name, 'EventFlow', qrCodeUrl);
     }
 
-    revalidatePath(`/booths`); // Revalidate booths pages
+    revalidatePath(`/events`); 
     revalidatePath('/attendees');
     revalidatePath('/dashboard');
     return { success: true };
@@ -282,11 +249,11 @@ export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'w
         console.error('Supabase error creating raffle:', error);
         return { success: false, error: 'Database error: Could not create raffle.' };
     }
-    revalidatePath(`/booth-dashboard/${raffleData.booth_id}`);
+    revalidatePath(`/event-dashboard/${raffleData.event_id}`);
     return { success: true };
 }
 
-export async function drawRaffleWinner(raffleId: string, boothId: string) {
+export async function drawRaffleWinner(raffleId: string, eventId: string) {
   noStore();
   const { data: raffle, error: raffleError } = await supabaseAdmin
     .from('raffles')
@@ -299,26 +266,25 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
     return { success: false, error: 'Could not find the specified raffle.' };
   }
 
-  // Get attendees who have checked in to this specific booth
   const { data: checkIns, error: checkInError } = await supabaseAdmin
     .from('check_ins')
     .select('attendees(*)')
-    .eq('booth_id', boothId);
+    .eq('event_id', eventId);
   
   if (checkInError || !checkIns) {
     console.error('Error fetching check-ins:', checkInError);
-    return { success: false, error: 'Could not fetch attendees for this booth.' };
+    return { success: false, error: 'Could not fetch attendees for this event.' };
   }
-  const attendeesForBooth = checkIns.map(ci => ci.attendees).filter(Boolean) as Attendee[];
+  const attendeesForEvent = checkIns.map(ci => ci.attendees).filter(Boolean) as Attendee[];
 
   const drawnWinnerIds = raffle.winners?.map((w: RaffleWinner) => w.attendeeId) || [];
-  const eligibleAttendees = attendeesForBooth.filter(
+  const eligibleAttendees = attendeesForEvent.filter(
     (attendee: Attendee) => attendee && !drawnWinnerIds.includes(attendee.id)
   );
 
   if (eligibleAttendees.length === 0) {
     await supabaseAdmin.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
-    revalidatePath(`/booth-dashboard/${raffle.booth_id}`);
+    revalidatePath(`/event-dashboard/${raffle.event_id}`);
     return { success: true, message: 'No more eligible attendees to draw.' };
   }
   
@@ -349,13 +315,13 @@ export async function drawRaffleWinner(raffleId: string, boothId: string) {
     return { success: false, error: 'Could not save the winner.' };
   }
   
-  revalidatePath(`/booth-dashboard/${raffle.booth_id}`);
+  revalidatePath(`/event-dashboard/${raffle.event_id}`);
   
   return { success: true, winner: newWinner };
 }
 
 
-export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string, boothId: string) {
+export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string, eventId: string) {
     noStore();
     const attendee = await getAttendeeById(attendeeId);
     if (!attendee) {
@@ -384,7 +350,7 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
         return { success: false, error: "Database error during transaction." };
     }
     
-    revalidatePath(`/booth-dashboard/${boothId}`);
+    revalidatePath(`/event-dashboard/${eventId}`);
 
     return {
         success: true,
@@ -394,107 +360,6 @@ export async function redeemMerchandiseForAttendee(attendeeId: string, productId
         remainingPoints: newAttendeePoints
     };
 }
-
-
-async function createTenantUser(tenantData: { name: string; email: string; password?: string; booth_id: string | null; }) {
-    if (!tenantData.password) {
-        return { success: false, error: 'Password is required for new users.' };
-    }
-    // 1. Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: tenantData.email,
-      password: tenantData.password,
-      email_confirm: true, // Auto-confirm email
-    });
-
-    if (authError) {
-      console.error('Supabase Auth error creating tenant user:', authError);
-      return { success: false, error: authError.message };
-    }
-
-    const userId = authData.user.id;
-
-    // 2. Insert into tenants table
-    const { error: dbError } = await supabaseAdmin
-      .from('tenants')
-      .insert({
-        id: userId, // Use the same ID from auth user
-        name: tenantData.name,
-        email: tenantData.email,
-        booth_id: tenantData.booth_id === 'unassigned' ? null : tenantData.booth_id,
-      });
-
-    if (dbError) {
-      console.error('Supabase DB error creating tenant record:', dbError);
-      // Attempt to clean up the created auth user
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      return { success: false, error: 'Database error: Could not create tenant record.' };
-    }
-    
-    return { success: true };
-}
-
-
-export async function createOrUpdateTenant(formData: FormData) {
-  const name = formData.get('name') as string;
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const booth_id = formData.get('booth_id') as string | null;
-  const tenantId = formData.get('tenantId') as string | undefined;
-
-  if (tenantId) {
-    // Update existing tenant logic (only name and booth assignment)
-    const { error } = await supabaseAdmin
-      .from('tenants')
-      .update({ name, booth_id: booth_id === 'unassigned' ? null : booth_id })
-      .eq('id', tenantId);
-
-    if (error) {
-      console.error('Supabase DB error updating tenant:', error);
-      return { success: false, error: 'Database error: Could not update tenant.' };
-    }
-  } else {
-    // Create new tenant and auth user
-    const result = await createTenantUser({
-        name,
-        email,
-        password,
-        booth_id,
-    });
-    if (!result.success) {
-        return result;
-    }
-  }
-
-  revalidatePath('/tenants');
-  return { success: true };
-}
-
-  
-export async function deleteTenant(tenantId: string) {
-    // First, delete the user from Supabase Auth
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(tenantId);
-    if (authError) {
-        // If user is already deleted from auth, we might get a "User not found" error.
-        // We can choose to ignore this or handle it, for now we log and continue.
-        console.warn('Supabase Auth error deleting tenant. Might be already deleted. Continuing...', authError.message);
-    }
-    
-    // Then, delete the record from the tenants table
-    const { error: dbError } = await supabaseAdmin
-      .from('tenants')
-      .delete()
-      .eq('id', tenantId);
-  
-    if (dbError) {
-      console.error('Supabase DB error deleting tenant:', dbError);
-      return { success: false, error: 'Database error: Could not delete tenant record.' };
-    }
-  
-    revalidatePath('/tenants');
-    return { success: true };
-}
-
 
 export async function createProduct(productData: Omit<Product, 'id' | 'created_at'>) {
     const { data, error } = await supabaseAdmin
@@ -508,7 +373,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
         return { success: false, error: 'Database error: Could not create product.' };
     }
     
-    revalidatePath(`/booth-dashboard/${productData.booth_id}/pos`);
+    revalidatePath(`/event-dashboard/${productData.event_id}/pos`);
     return { success: true, product: data };
 }
 
@@ -556,10 +421,10 @@ export async function verifyAttendeeWithPertaminaAPI(qrData: string): Promise<{ 
 }
 
 
-export async function createCheckIn(boothId: string, phoneNumber: string) {
+export async function createCheckIn(eventId: string, phoneNumber: string) {
   const { data, error } = await supabaseAdmin
     .from('check_ins')
-    .insert({ booth_id: boothId, phone_number: phoneNumber })
+    .insert({ event_id: eventId, phone_number: phoneNumber })
     .select()
     .single();
 
@@ -567,11 +432,11 @@ export async function createCheckIn(boothId: string, phoneNumber: string) {
     console.error('Supabase error creating check-in:', error);
     // Handle unique constraint violation gracefully
     if (error.code === '23505') {
-      return { success: false, error: 'Nomor telepon ini sudah pernah check-in di booth ini.' };
+      return { success: false, error: 'Nomor telepon ini sudah pernah check-in di event ini.' };
     }
     return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
   }
-  revalidatePath(`/booth-dashboard/${boothId}/scanner`);
+  revalidatePath(`/event-dashboard/${eventId}/scanner`);
   return { success: true, checkIn: data };
 }
 
@@ -609,7 +474,7 @@ export async function createActivity(activityData: Omit<Activity, 'id' | 'create
         return { success: false, error: 'Database error: Could not create activity.' };
     }
     
-    revalidatePath(`/booth-dashboard/${activityData.booth_id}/activity`);
+    revalidatePath(`/event-dashboard/${activityData.event_id}/activity`);
     return { success: true, activity: data };
 }
 
@@ -668,8 +533,8 @@ export async function addActivityParticipant(activityId: string, attendeeId: str
         return { success: false, error: "Failed to record activity completion." };
     }
     
-    revalidatePath(`/booth-dashboard/${activity.booth_id}/activity`);
-    revalidatePath(`/booth-dashboard/${activity.booth_id}/activity/${activityId}`);
+    revalidatePath(`/event-dashboard/${activity.event_id}/activity`);
+    revalidatePath(`/event-dashboard/${activity.event_id}/activity/${activityId}`);
 
     return {
         success: true,
@@ -681,7 +546,7 @@ export async function addActivityParticipant(activityId: string, attendeeId: str
 }
 
 
-export async function redeemProduct(attendeeId: string, productId: string, boothId: string) {
+export async function redeemProduct(attendeeId: string, productId: string, eventId: string) {
     noStore();
     
     // Transaction
@@ -730,7 +595,7 @@ export async function redeemProduct(attendeeId: string, productId: string, booth
     const { data: newTransaction, error: transactionError } = await supabaseAdmin
         .from('transactions')
         .insert({
-            booth_id: boothId,
+            event_id: eventId,
             attendee_id: attendeeId,
             attendee_name: attendee.name,
             product_id: productId,
@@ -752,8 +617,8 @@ export async function redeemProduct(attendeeId: string, productId: string, booth
         console.error("Failed to log transaction:", transactionError);
     }
     
-    revalidatePath(`/booth-dashboard/${boothId}/pos`);
-    revalidatePath(`/booth-dashboard/${boothId}/merchandise`);
+    revalidatePath(`/event-dashboard/${eventId}/pos`);
+    revalidatePath(`/event-dashboard/${eventId}/merchandise`);
 
     return {
         success: true,

@@ -1,5 +1,5 @@
 
-import { Booth, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn, Activity, ActivityParticipant } from '@/app/lib/definitions';
+import { Event, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn, Activity, ActivityParticipant } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
@@ -31,52 +31,51 @@ async function supabaseQuery(query: any) {
 }
 
 
-export async function getBooths(): Promise<Booth[]> {
+export async function getEvents(): Promise<Event[]> {
   noStore();
   const supabaseAdmin = createSupabaseServerClient();
   try {
-    // We now count check-ins instead of attendees directly linked to a booth.
     const query = supabaseAdmin
-      .from('booths')
+      .from('events')
       .select('*, check_ins(count)')
       .order('created_at', { ascending: false });
       
-    const boothsData = await supabaseQuery(query);
+    const eventsData = await supabaseQuery(query);
 
-    return boothsData.map((booth: any) => ({
-        ...booth,
-        attendees_count: booth.check_ins[0]?.count || 0,
+    return eventsData.map((event: any) => ({
+        ...event,
+        attendees_count: event.check_ins[0]?.count || 0,
     }));
 
   } catch (error) {
-     console.error("Failed to fetch booths, returning empty array:", error);
+     console.error("Failed to fetch events, returning empty array:", error);
      return [];
   }
 }
 
-export async function getBoothById(id: string): Promise<Booth | undefined> {
+export async function getEventById(id: string): Promise<Event | undefined> {
   noStore();
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   try {
-    const { data: boothData, error: boothError } = await supabaseAdmin
-      .from('booths')
+    const { data: eventData, error: eventError } = await supabaseAdmin
+      .from('events')
       .select('*')
       .eq('id', id)
       .single();
       
-    if (boothError) throw boothError;
+    if (eventError) throw eventError;
 
     const { data: checkInsData, error: checkInsError } = await supabaseAdmin
         .from('check_ins')
         .select('*')
-        .eq('booth_id', id);
+        .eq('event_id', id);
 
     if (checkInsError) throw checkInsError;
 
-    return { ...boothData, check_ins: checkInsData } as Booth;
+    return { ...eventData, check_ins: checkInsData } as Event;
 
   } catch (error: any) {
-    console.error(`Failed to fetch booth ${id}, returning undefined:`, error.message);
+    console.error(`Failed to fetch event ${id}, returning undefined:`, error.message);
     return undefined;
   }
 }
@@ -121,23 +120,23 @@ export async function getAttendeesByName(name: string): Promise<Attendee[]> {
 }
 
 
-export async function getRaffles(boothId?: string): Promise<Raffle[]> {
+export async function getRaffles(eventId?: string): Promise<Raffle[]> {
     noStore();
     const supabaseAdmin = createSupabaseServerClient();
     try {
       let query = supabaseAdmin
         .from('raffles')
-        .select('*, booths(id, name)')
+        .select('*, events(id, name)')
         .order('created_at', { ascending: false });
     
-      if (boothId) {
-        query = query.eq('booth_id', boothId);
+      if (eventId) {
+        query = query.eq('event_id', eventId);
       }
     
       const rafflesData = await supabaseQuery(query);
       return rafflesData.map((raffle: any) => ({
         ...raffle,
-        boothName: raffle.booths?.name,
+        eventName: raffle.events?.name,
       }));
     } catch (error) {
       console.error("Failed to fetch raffles, returning empty array:", error);
@@ -171,26 +170,26 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 
-export async function getProductsByBooth(boothId: string): Promise<Product[]> {
+export async function getProductsByEvent(eventId: string): Promise<Product[]> {
     noStore();
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
-      const query = supabaseAdmin.from('products').select('*').eq('booth_id', boothId).order('created_at', { ascending: false });
+      const query = supabaseAdmin.from('products').select('*').eq('event_id', eventId).order('created_at', { ascending: false });
       return await supabaseQuery(query);
     } catch (error) {
-      console.error("Failed to fetch products for booth, returning empty array:", error);
+      console.error("Failed to fetch products for event, returning empty array:", error);
       return [];
     }
 }
 
-export async function getActivitiesByBooth(boothId: string): Promise<Activity[]> {
+export async function getActivitiesByEvent(eventId: string): Promise<Activity[]> {
     noStore();
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
       const { data, error } = await supabaseAdmin
         .from('activities')
         .select('*, activity_participants(count)')
-        .eq('booth_id', boothId)
+        .eq('event_id', eventId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -203,7 +202,7 @@ export async function getActivitiesByBooth(boothId: string): Promise<Activity[]>
       }));
 
     } catch (error) {
-      console.error("Failed to fetch activities for booth, returning empty array:", error);
+      console.error("Failed to fetch activities for event, returning empty array:", error);
       return [];
     }
 }
@@ -236,14 +235,14 @@ export async function getActivityParticipants(activityId: string): Promise<Activ
     }
 }
 
-export async function getRecentTransactions(boothId: string, limit = 5): Promise<Transaction[]> {
+export async function getRecentTransactions(eventId: string, limit = 5): Promise<Transaction[]> {
     noStore();
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
         const query = supabaseAdmin
             .from('transactions')
             .select('*')
-            .eq('booth_id', boothId)
+            .eq('event_id', eventId)
             .order('created_at', { ascending: false })
             .limit(limit);
         return await supabaseQuery(query);
@@ -270,24 +269,3 @@ export async function getTransactionById(transactionId: string): Promise<Transac
         return null;
     }
 }
-
-export async function getTenants(): Promise<Tenant[]> {
-    noStore();
-    const supabaseAdmin = createSupabaseServerClient();
-    try {
-        const query = supabaseAdmin
-        .from('tenants')
-        .select('*, booths(id, name)');
-        
-        const tenantsData = await supabaseQuery(query);
-        return tenantsData.map((tenant: any) => ({
-            ...tenant,
-            boothName: tenant.booths?.name,
-        }));
-    } catch (error) {
-         console.error("Failed to fetch tenants, returning empty array:", error);
-         return [];
-    }
-}
-
-    

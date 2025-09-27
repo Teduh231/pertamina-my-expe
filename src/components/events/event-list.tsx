@@ -11,22 +11,21 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Calendar,
-  MapPin,
   Users,
   Edit,
-  Download,
   Eye,
   MoreVertical,
   PlusCircle,
   Loader2,
   Trash2,
   Image as ImageIcon,
+  MapPin,
+  LayoutDashboard,
+  Calendar,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { format, parseISO } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { deleteEvent, exportAttendeesToCsv } from '@/app/lib/actions';
+import { deleteEvent } from '@/app/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { EventForm } from './event-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -43,7 +42,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 type EventListProps = {
-  events: Event[];
+  events: (Event & { attendees_count?: number })[];
 };
 
 export function EventList({ events }: EventListProps) {
@@ -54,32 +53,6 @@ export function EventList({ events }: EventListProps) {
   const { toast } = useToast();
   const router = useRouter();
 
-
-  const handleExport = async (eventId: string, eventName: string) => {
-    toast({ title: 'Exporting...', description: 'Please wait while we prepare your CSV file.' });
-    try {
-      const csvData = await exportAttendeesToCsv(eventId);
-      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${eventName.replace(/\s/g, '_')}_attendees.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({
-        title: 'Export successful!',
-        description: `Attendee data for "${eventName}" has been downloaded.`,
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Export failed',
-        description: 'Could not export attendee data. Please try again.',
-      });
-    }
-  };
-  
   const handleDelete = async (eventId: string, eventName: string) => {
     setIsDeleting(true);
     const result = await deleteEvent(eventId);
@@ -116,7 +89,7 @@ export function EventList({ events }: EventListProps) {
     return events.filter((event) =>
       event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.speaker.toLowerCase().includes(searchTerm.toLowerCase())
+      event.event_manager.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [events, searchTerm]);
 
@@ -136,11 +109,11 @@ export function EventList({ events }: EventListProps) {
   return (
     <div className="space-y-6">
        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-[800px] bg-card border-border">
+        <DialogContent className="sm:max-w-[800px] bg-card border-border overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{selectedEvent ? 'Edit Event' : 'Create New Event'}</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 px-1">
              <EventForm event={selectedEvent} onFinished={() => setIsFormOpen(false)} />
           </div>
         </DialogContent>
@@ -167,7 +140,7 @@ export function EventList({ events }: EventListProps) {
       </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredEvents.map((event) => {
-          const attendeeCount = event.attendees?.length || 0;
+          const attendeeCount = (event as any).attendees_count || 0;
           return (
             <Card key={event.id} className="flex flex-col bg-card hover:border-primary/50 transition-all border-2 border-transparent overflow-hidden">
                 {event.image_url ? (
@@ -196,11 +169,9 @@ export function EventList({ events }: EventListProps) {
               </CardHeader>
               <CardContent className="flex-1 space-y-3 p-4 pt-0">
                 <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>
-                      {format(parseISO(event.date), 'EEE, MMM d, yyyy')} at {event.time}
-                    </span>
+                    <span>{event.created_at}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
@@ -208,17 +179,17 @@ export function EventList({ events }: EventListProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    <span>{attendeeCount} Attendees</span>
+                    <span>{attendeeCount} Check-ins</span>
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0">
                 <div className="flex w-full justify-end gap-2">
-                  <Button asChild variant="ghost" size="sm" disabled={event.status !== 'published'}>
-                    <Link href={`/events/${event.id}/register`} target="_blank">
-                      <Eye className="mr-2 h-4 w-4" />
-                      Public View
-                    </Link>
+                  <Button asChild variant="outline" size="sm">
+                     <Link href={`/event-dashboard/${event.id}`}>
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Dashboard
+                     </Link>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -229,14 +200,13 @@ export function EventList({ events }: EventListProps) {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openFormForEdit(event)}>
                          <Edit className="mr-2 h-4 w-4" />
-                         <span>Edit / Manage</span>
+                         <span>Edit Event</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleExport(event.id, event.name)}
-                        disabled={attendeeCount === 0}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        <span>Export Attendees</span>
+                       <DropdownMenuItem asChild>
+                         <Link href={`/events/${event.id}/register`} target="_blank">
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>Public View</span>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                         <AlertDialog>
@@ -254,7 +224,7 @@ export function EventList({ events }: EventListProps) {
                               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete the
-                                event "{event.name}" and all of its attendee data.
+                                event "{event.name}" and all of its associated data like check-ins and raffles.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

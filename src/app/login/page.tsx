@@ -1,11 +1,31 @@
+'use client';
+
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
-import { TenantLoginForm } from '@/components/auth/tenant-login-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  if (loading || user) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="mx-auto w-full max-w-md">
@@ -15,38 +35,17 @@ export default function LoginPage() {
                 <span className="text-2xl font-bold">EventFlow</span>
             </Link>
         </div>
-        <Tabs defaultValue="tenant" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="tenant">Tenant Login</TabsTrigger>
-            <TabsTrigger value="admin">Admin Login</TabsTrigger>
-          </TabsList>
-          <TabsContent value="tenant">
-            <Card>
-              <CardHeader>
-                <CardTitle>Booth Access</CardTitle>
-                <CardDescription>
-                  Sign in to manage your booth dashboard.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TenantLoginForm />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="admin">
-             <Card>
-              <CardHeader>
-                <CardTitle>Administrator Access</CardTitle>
-                <CardDescription>
-                  Sign in to manage the entire event.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AdminLoginForm />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Card>
+          <CardHeader>
+            <CardTitle>Administrator Access</CardTitle>
+            <CardDescription>
+              Sign in to manage the entire event.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminLoginForm />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

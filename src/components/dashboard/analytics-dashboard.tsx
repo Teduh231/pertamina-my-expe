@@ -26,11 +26,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Booth, Attendee } from '@/app/lib/definitions';
+import { Event, Attendee } from '@/app/lib/definitions';
 import { subDays, format, parseISO } from 'date-fns';
 
 type AnalyticsDashboardProps = {
-  booths: (Booth & { attendees_count?: number })[];
+  events: (Event & { attendees_count?: number })[];
   attendees: Attendee[];
 };
 
@@ -58,10 +58,10 @@ function StatCard({ title, value, subtext, icon: Icon }: { title: string, value:
     )
 }
 
-export function AnalyticsDashboard({ booths, attendees }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ events, attendees }: AnalyticsDashboardProps) {
   const totalAttendees = attendees.length;
-  const publishedBooths = booths.filter(
-    (booth) => booth.status === 'published'
+  const publishedEvents = events.filter(
+    (event) => event.status === 'published'
   ).length;
   
   const registrationData = React.useMemo(() => {
@@ -91,10 +91,10 @@ export function AnalyticsDashboard({ booths, attendees }: AnalyticsDashboardProp
   return (
     <>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total Booths" value={booths.length} subtext={`${publishedBooths} published`} icon={Calendar} />
-            <StatCard title="Total Attendees" value={totalAttendees} subtext="Across all booths" icon={Users} />
-            <StatCard title="Active Booths" value={publishedBooths} subtext="Ready for visitors" icon={CheckCircle} />
-            <StatCard title="Canceled Booths" value={booths.filter((e) => e.status === 'canceled').length} subtext="This year" icon={XCircle} />
+            <StatCard title="Total Events" value={events.length} subtext={`${publishedEvents} published`} icon={Calendar} />
+            <StatCard title="Total Attendees" value={totalAttendees} subtext="Across all events" icon={Users} />
+            <StatCard title="Active Events" value={publishedEvents} subtext="Ready for visitors" icon={CheckCircle} />
+            <StatCard title="Canceled Events" value={events.filter((e) => e.status === 'canceled').length} subtext="This year" icon={XCircle} />
         </div>
 
         <Card className="lg:col-span-3 bg-secondary/30">

@@ -1,14 +1,14 @@
 
-export type BoothStatus = 'draft' | 'published' | 'canceled' | 'pending';
+export type EventStatus = 'draft' | 'published' | 'canceled' | 'pending';
 
-export type Booth = {
+export type Event = {
   id: string;
   user_id: string;
   name: string;
   location: string;
   description: string;
-  booth_manager: string;
-  status: BoothStatus;
+  event_manager: string;
+  status: EventStatus;
   attendees: Attendee[];
   raffles: Raffle[];
   created_at: string;
@@ -19,7 +19,6 @@ export type Booth = {
 
 export type Attendee = {
   id: string;
-  // booth_id is no longer needed here. An attendee is not tied to a single booth.
   name: string;
   phone_number: string;
   registered_at: string;
@@ -30,9 +29,9 @@ export type Attendee = {
 
 export type CheckIn = {
   id: string;
-  booth_id: string;
+  event_id: string;
   checked_in_at: string;
-  phone_number: string; // Changed from attendee_id
+  phone_number: string;
 };
 
 export type RaffleWinner = {
@@ -45,8 +44,8 @@ export type RaffleStatus = 'upcoming' | 'active' | 'finished';
 
 export type Raffle = {
   id:string;
-  booth_id: string;
-  boothName: string;
+  event_id: string;
+  eventName: string;
   prize: string;
   number_of_winners: number;
   status: RaffleStatus;
@@ -57,7 +56,7 @@ export type Raffle = {
 
 export type Product = {
   id: string;
-  booth_id: string;
+  event_id: string;
   name: string;
   points: number;
   stock: number;
@@ -75,7 +74,7 @@ export type TransactionItem = {
 
 export type Transaction = {
   id: string;
-  booth_id: string;
+  event_id: string;
   attendee_id: string;
   attendee_name: string;
   product_id: string;
@@ -90,19 +89,19 @@ export type Tenant = {
   id: string;
   name: string;
   email: string;
-  booth_id: string | null;
-  boothName?: string;
+  event_id: string | null;
+  eventName?: string;
   status: 'pending' | 'approved' | 'rejected';
 };
 
 export type UserProfile = {
   role: string;
-  booth_id: string | null;
+  event_id: string | null;
 };
 
 export type Activity = {
   id: string;
-  booth_id: string;
+  event_id: string;
   name: string;
   description: string;
   points_reward: number;
@@ -122,7 +121,3 @@ export type ActivityParticipant = {
     phone_number: string;
   };
 };
-
-
-
-

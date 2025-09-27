@@ -1,6 +1,6 @@
 'use client';
 
-import { getBooths, getAttendees } from '@/app/lib/data';
+import { getEvents, getAttendees } from '@/app/lib/data';
 import { AppLayout } from '@/components/app-layout';
 import { AnalyticsDashboard } from '@/components/dashboard/analytics-dashboard';
 import { UpcomingEvents } from '@/components/dashboard/upcoming-events';
@@ -8,34 +8,23 @@ import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import type { Booth, Attendee } from '@/app/lib/definitions';
+import type { Event, Attendee } from '@/app/lib/definitions';
 
-// This component handles the logic for fetching data and rendering based on role.
+// This component handles the logic for fetching data.
 export default function DashboardPage() {
-  const { isAdmin, assignedBoothId, loading: authLoading } = useAuth();
-  const [booths, setBooths] = useState<Booth[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!isAdmin && assignedBoothId) {
-        redirect(`/booth-dashboard/${assignedBoothId}`);
-      } else if (isAdmin) {
-        // Fetch data only if the user is an admin
-        Promise.all([getBooths(), getAttendees()]).then(([boothData, attendeeData]) => {
-          setBooths(boothData);
-          setAttendees(attendeeData);
-          setLoading(false);
-        });
-      } else {
-        // Non-admin without assigned booth, or some other edge case
+      Promise.all([getEvents(), getAttendees()]).then(([eventData, attendeeData]) => {
+        setEvents(eventData);
+        setAttendees(attendeeData);
         setLoading(false);
-      }
-    }
-  }, [isAdmin, assignedBoothId, authLoading]);
+      });
+  }, []);
 
-  if (authLoading || (isAdmin && loading)) {
+  if (loading) {
     return (
       <div className="flex h-[calc(100vh-theme(space.16))] w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -43,24 +32,11 @@ export default function DashboardPage() {
     );
   }
 
-  // If not admin and no booth assigned, they might see a waiting page or be redirected.
-  // For now, we show a minimal layout if they somehow land here.
-  if (!isAdmin) {
-    return (
-      <AppLayout>
-        <div className="text-center">
-            <h1 className="text-2xl font-bold">Welcome</h1>
-            <p className="text-muted-foreground">You do not have administrative access.</p>
-        </div>
-      </AppLayout>
-    );
-  }
-
   return (
     <AppLayout>
       <div className="flex flex-col gap-6">
-         <AnalyticsDashboard booths={booths} attendees={attendees} />
-         <UpcomingEvents booths={booths} />
+         <AnalyticsDashboard events={events} attendees={attendees} />
+         <UpcomingEvents events={events} />
       </div>
     </AppLayout>
   );

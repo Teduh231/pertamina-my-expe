@@ -25,64 +25,80 @@ import {
 import { Event } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { CalendarIcon, Loader2 } from 'lucide-react';
-import React from 'react';
-import { createOrUpdateEvent } from '@/app/lib/actions';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar } from '../ui/calendar';
-import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { Loader2, UserPlus } from 'lucide-react';
+import React, { useState } from 'react';
+import { createOrUpdateEvent, uploadImage } from '@/app/lib/actions';
+import { Separator } from '../ui/separator';
+import { ImageUpload } from '../ui/image-upload';
 
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
-  date: z.date({ required_error: 'A date is required.'}),
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:MM).' }),
   location: z.string().min(3, { message: 'Location is required.' }),
-  speaker: z.string().min(2, { message: 'Speaker name is required.' }),
-  status: z.enum(['draft', 'published', 'canceled']),
-  image_url: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+  event_manager: z.string().min(2, { message: 'Event manager name is required.' }),
+  status: z.enum(['draft', 'published', 'canceled', 'pending']),
+  image_url: z.string().optional(),
+  image_path: z.string().optional(),
 });
 
 type EventFormProps = {
   event?: Event;
   onFinished?: () => void;
+  context?: 'admin' | 'tenant';
 };
 
-export function EventForm({ event, onFinished }: EventFormProps) {
+export function EventForm({ event, onFinished, context = 'admin' }: EventFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const defaultStatus = event?.status || 'draft';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: event?.name || '',
       description: event?.description || '',
-      date: event?.date ? parseISO(event.date) : undefined,
-      time: event?.time || '',
       location: event?.location || '',
-      speaker: event?.speaker || '',
-      status: event?.status || 'draft',
+      event_manager: event?.event_manager || '',
+      status: defaultStatus,
       image_url: event?.image_url || '',
+      image_path: event?.image_path || '',
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    
+    let imageUrl = values.image_url;
+    let imagePath = values.image_path;
+
+    if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        const uploadResult = await uploadImage(formData);
+        if (!uploadResult.success) {
+            toast({ variant: 'destructive', title: 'Image Upload Failed', description: uploadResult.error });
+            setIsSubmitting(false);
+            return;
+        }
+        imageUrl = uploadResult.url;
+        imagePath = uploadResult.path;
+    }
+
     const dataToSubmit = {
       ...values,
-      date: format(values.date, 'yyyy-MM-dd'),
+      image_url: imageUrl,
+      image_path: imagePath,
     };
-
+    
     const result = await createOrUpdateEvent(dataToSubmit, event?.id);
     setIsSubmitting(false);
 
     if (result.success) {
       toast({
-        title: `Event ${event ? 'updated' : 'created'} successfully!`,
-        description: `"${values.name}" is now saved.`,
+        title: `Event ${event ? 'updated' : 'created'}!`,
+        description: `"${values.name}" is now ${event ? 'saved' : 'created'}.`,
       });
       router.refresh();
       if (onFinished) {
@@ -109,7 +125,7 @@ export function EventForm({ event, onFinished }: EventFormProps) {
                     <FormItem>
                       <FormLabel>Event Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Tech Conference 2025" {...field} />
+                        <Input placeholder="e.g., Tech Startup Showcase" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -137,12 +153,15 @@ export function EventForm({ event, onFinished }: EventFormProps) {
                     name="image_url"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Image URL</FormLabel>
+                        <FormLabel>Event Banner</FormLabel>
                         <FormControl>
-                            <Input type="url" placeholder="https://example.com/image.png" {...field} />
+                            <ImageUpload
+                                onFileSelect={setImageFile}
+                                currentImageUrl={field.value}
+                            />
                         </FormControl>
                         <FormDescription>
-                            Provide a URL for the event's banner image.
+                            Upload a banner image for your event.
                         </FormDescription>
                         <FormMessage />
                         </FormItem>
@@ -150,63 +169,6 @@ export function EventForm({ event, onFinished }: EventFormProps) {
                 />
             </div>
             <div className="space-y-8">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="date"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                        <FormLabel>Date</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                )}
-                                >
-                                {field.value ? (
-                                    format(field.value, "PPP")
-                                ) : (
-                                    <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                date < new Date(new Date().setHours(0,0,0,0))
-                                }
-                                initialFocus
-                            />
-                            </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                  <FormField
-                    control={form.control}
-                    name="time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Time</FormLabel>
-                        <FormControl>
-                          <Input type="time" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <FormField
                   control={form.control}
                   name="location"
@@ -214,7 +176,7 @@ export function EventForm({ event, onFinished }: EventFormProps) {
                     <FormItem>
                       <FormLabel>Location</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Convention Center, New York" {...field} />
+                        <Input placeholder="e.g., Hall A, Section 3" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -223,10 +185,10 @@ export function EventForm({ event, onFinished }: EventFormProps) {
 
                 <FormField
                   control={form.control}
-                  name="speaker"
+                  name="event_manager"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Speaker / Host</FormLabel>
+                      <FormLabel>Event Manager / PIC</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Jane Doe" {...field} />
                       </FormControl>
@@ -235,7 +197,7 @@ export function EventForm({ event, onFinished }: EventFormProps) {
                   )}
                 />
                 
-                 <FormField
+                <FormField
                   control={form.control}
                   name="status"
                   render={({ field }) => (
@@ -254,13 +216,12 @@ export function EventForm({ event, onFinished }: EventFormProps) {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        'Draft' events are hidden. 'Published' are visible to the public.
+                        'Draft' events are hidden. 'Published' are visible.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
             </div>
         </div>
         

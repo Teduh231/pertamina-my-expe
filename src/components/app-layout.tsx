@@ -19,6 +19,7 @@ import {
   PieChart,
   ShoppingBasket,
   Settings,
+  Calendar,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -42,50 +43,33 @@ import {
 } from './ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
-import { SheetTitle } from './ui/sheet';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, isAdmin, assignedBoothId } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
-  const adminNavItems = [
+  const navItems = [
     { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
-    { href: '/booths', icon: Store, label: 'Booths' },
-    { href: '/tenants', icon: UserCog, label: 'Booth User Management' },
+    { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/attendees', icon: Users, label: 'All Attendees' },
     { href: '/reports', icon: FileText, label: 'Reports' },
   ];
 
-  const tenantNavItems = assignedBoothId ? [
-    { href: `/booth-dashboard/${assignedBoothId}/overview`, icon: PieChart, label: 'Overview' },
-    { href: `/booth-dashboard/${assignedBoothId}/scanner`, icon: QrCode, label: 'Quick Scanner' },
-    { href: `/booth-dashboard/${assignedBoothId}/attendees`, icon: Users, label: 'Attendees' },
-    { href: `/booth-dashboard/${assignedBoothId}/pos`, icon: ShoppingBasket, label: 'POS' },
-    { href: `/booth-dashboard/${assignedBoothId}/activity`, icon: Flame, label: 'Activity' },
-    { href: `/booth-dashboard/${assignedBoothId}/raffle`, icon: Ticket, label: 'Raffle' },
-    { href: '/reports', icon: FileText, label: 'Report' },
-    { href: `/booth-dashboard/${assignedBoothId}/settings`, icon: Settings, label: 'Settings' },
-  ] : [];
-
-  const navItems = isAdmin ? adminNavItems : tenantNavItems;
-
   const getPageTitle = () => {
-    const allNavItems = [...adminNavItems, ...tenantNavItems];
-    // Find the most specific match for the current path
-    const currentNavItem = allNavItems
+    const currentNavItem = navItems
         .filter(item => pathname.startsWith(item.href))
         .sort((a, b) => b.href.length - a.href.length)[0];
 
     if (currentNavItem) {
         return currentNavItem.label;
     }
-    if (pathname.startsWith('/booth-dashboard')) return 'Booth Dashboard';
+    if (pathname.startsWith('/event-dashboard')) return 'Event Dashboard';
     return 'Dashboard';
   }
 

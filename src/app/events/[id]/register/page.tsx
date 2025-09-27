@@ -1,3 +1,4 @@
+
 import { getEventById } from '@/app/lib/data';
 import { notFound } from 'next/navigation';
 import {
@@ -9,7 +10,6 @@ import {
 } from '@/components/ui/card';
 import { AttendeeRegistrationForm } from '@/components/events/attendee-registration-form';
 import { Calendar, MapPin, User, Clock } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 
@@ -59,20 +59,12 @@ export default async function EventRegistrationPage({
                <h3 className="text-xl font-bold">Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-muted-foreground">
                     <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-primary" />
-                        <span>{format(parseISO(event.date), 'EEEE, MMMM d, yyyy')}</span>
-                    </div>
-                     <div className="flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-primary" />
-                        <span>{event.time}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
                         <MapPin className="h-5 w-5 text-primary" />
                         <span>{event.location}</span>
                     </div>
                     <div className="flex items-center gap-3">
                         <User className="h-5 w-5 text-primary" />
-                        <span>Speaker: {event.speaker}</span>
+                        <span>Event Manager: {event.event_manager}</span>
                     </div>
                 </div>
             </div>
@@ -81,13 +73,13 @@ export default async function EventRegistrationPage({
           <div className="lg:col-span-1 mt-8 lg:mt-0">
             <Card className="shadow-lg lg:shadow-2xl">
               <CardHeader>
-                <CardTitle className="text-2xl text-center">Register for this Event</CardTitle>
+                <CardTitle className="text-2xl text-center">Register to Get Points</CardTitle>
                 <CardDescription className="text-center">
-                  Seats are limited. Secure your spot now!
+                  Get exclusive points by registering for our event.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AttendeeRegistrationForm event={event} />
+                <AttendeeRegistrationForm />
               </CardContent>
             </Card>
           </div>

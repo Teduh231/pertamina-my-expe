@@ -8,13 +8,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { TypingAnimation } from '@/components/ui/typing-animation';
 import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const features = [
   {
     icon: <Store className="h-10 w-10 text-primary" />,
-    title: 'Effortless Booth Management',
+    title: 'Effortless Event Management',
     description:
-      'Create, edit, and publish booths in minutes. Our intuitive interface makes managing your booths a breeze, from draft to completion.',
+      'Create, edit, and publish events in minutes. Our intuitive interface makes managing your events a breeze, from draft to completion.',
   },
   {
     icon: <BarChart className="h-10 w-10 text-primary" />,
@@ -37,8 +39,23 @@ const features = [
 ];
 
 export default function LandingPage() {
-  const heroTitle = "The Future of Booth Management is Here";
+  const heroTitle = "The Future of Event Management is Here";
   const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+  
+  if (loading || user) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+    );
+  }
   
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -48,17 +65,9 @@ export default function LandingPage() {
               <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={32} height={32} />
             </div>
             <div>
-              {loading ? (
-                 <Button variant="outline" disabled>Loading...</Button>
-              ) : user ? (
-                <Button asChild>
-                  <Link href="/dashboard">Go to Dashboard</Link>
-                </Button>
-              ) : (
-                <Button asChild variant="outline">
-                  <Link href="/login">Login</Link>
-                </Button>
-              )}
+              <Button asChild variant="outline">
+                <Link href="/login">Login</Link>
+              </Button>
             </div>
         </div>
       </header>
@@ -77,11 +86,11 @@ export default function LandingPage() {
                 </h1>
             </div>
             <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
-              Streamline your workflow, engage your audience, and host unforgettable booths with our AI-powered platform.
+              Streamline your workflow, engage your audience, and host unforgettable events with our AI-powered platform.
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Button asChild size="lg" className="btn-fill-center rounded-md">
-                <Link href="/dashboard">
+                <Link href="/login">
                   <span>Get Started</span>
                 </Link>
               </Button>
@@ -99,7 +108,7 @@ export default function LandingPage() {
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold">Powerful Features, Simple Interface</h2>
               <p className="mt-3 max-w-xl mx-auto text-muted-foreground">
-                Everything you need to manage your booths from start to finish.
+                Everything you need to manage your events from start to finish.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
