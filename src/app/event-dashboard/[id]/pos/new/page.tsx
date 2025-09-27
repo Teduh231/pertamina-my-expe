@@ -1,7 +1,6 @@
 import { getEventById, getProductsByEvent } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
-import { AppLayout } from '@/components/app-layout';
 import { NewTransactionContent } from '@/components/event-dashboard/new-transaction-content';
 
 export default async function NewTransactionPage({ params }: { params: { id: string } }) {
@@ -18,9 +17,7 @@ export default async function NewTransactionPage({ params }: { params: { id: str
 
   return (
     <ProtectedRoute>
-        <AppLayout>
-            <NewTransactionContent event={event} products={products} />
-        </AppLayout>
+        <NewTransactionContent event={event} products={products} />
     </ProtectedRoute>
   );
 }

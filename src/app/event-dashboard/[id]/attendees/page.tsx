@@ -1,7 +1,6 @@
 import { getEventById } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
-import { AppLayout } from '@/components/app-layout';
 import { AttendeesContent } from '@/components/event-dashboard/attendees-content';
 
 export default async function EventAttendeesPage({ params }: { params: { id: string } }) {
@@ -19,13 +18,11 @@ export default async function EventAttendeesPage({ params }: { params: { id: str
 
   return (
     <ProtectedRoute>
-      <AppLayout>
-        <AttendeesContent 
-          attendees={checkedInAttendees as any[]} 
-          eventName={event.name} 
-          eventId={event.id} 
-        />
-      </AppLayout>
+      <AttendeesContent 
+        attendees={checkedInAttendees as any[]} 
+        eventName={event.name} 
+        eventId={event.id} 
+      />
     </ProtectedRoute>
   );
 }

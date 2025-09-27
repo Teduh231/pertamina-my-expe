@@ -53,13 +53,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   const getPageTitle = () => {
-    const currentNavItem = navItems
-        .filter(item => pathname.startsWith(item.href))
-        .sort((a, b) => b.href.length - a.href.length)[0];
+    // Exact match first
+    const exactMatch = navItems.find(item => item.href === pathname);
+    if (exactMatch) return exactMatch.label;
+  
+    // Then check for prefixes, longest first
+    const prefixMatch = navItems
+      .filter(item => pathname.startsWith(item.href))
+      .sort((a, b) => b.href.length - a.href.length)[0];
+    
+    if (prefixMatch) return prefixMatch.label;
 
-    if (currentNavItem) {
-        return currentNavItem.label;
-    }
     if (pathname.startsWith('/event-dashboard')) return 'Event Dashboard';
     return 'Dashboard';
   }
@@ -79,13 +83,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
              </Link>
           </SidebarHeader>
 
-          <SidebarContent className="flex-1">
+          <SidebarContent className="flex-1 flex flex-col justify-between">
             <SidebarMenu>
               {navItems.filter(item => !item.adminOnly || isAdmin).map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
                     <Link href={item.href}>
@@ -96,8 +100,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-          </SidebarContent>
-           <SidebarContent>
              <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
@@ -109,8 +111,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
            </SidebarContent>
         </Sidebar>
 
-        <div className="transition-all duration-300 ease-in-out md:ml-[var(--sidebar-width-collapsed)] group-data-[state=expanded]/sidebar:md:ml-[var(--sidebar-width)]">
-            <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+        <div className="transition-all duration-300 ease-in-out md:ml-[var(--sidebar-width-collapsed)] group-data-[state=expanded]/sidebar:md:ml-[var(--sidebar-width)] flex flex-col h-screen">
+            <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 shrink-0">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="flex md:hidden"/>
                     

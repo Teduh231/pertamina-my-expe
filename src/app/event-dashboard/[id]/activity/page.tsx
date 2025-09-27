@@ -3,7 +3,6 @@ import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
 import { ActivityPageContent } from '@/components/event-dashboard/activity-page-content';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AppLayout } from '@/components/app-layout';
 import { Activity } from '@/app/lib/definitions';
 
 export default async function EventDashboardActivityPage({ params }: { params: { id: string } }) {
@@ -17,17 +16,15 @@ export default async function EventDashboardActivityPage({ params }: { params: {
 
   return (
     <ProtectedRoute>
-        <AppLayout>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Activity Management</CardTitle>
-                    <CardDescription>Create and manage activities for your event.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                   <ActivityPageContent eventId={eventId} activities={activities} />
-                </CardContent>
-            </Card>
-        </AppLayout>
+        <Card>
+            <CardHeader>
+                <CardTitle>Activity Management</CardTitle>
+                <CardDescription>Create and manage activities for your event.</CardDescription>
+            </CardHeader>
+            <CardContent>
+               <ActivityPageContent eventId={eventId} activities={activities} />
+            </CardContent>
+        </Card>
     </ProtectedRoute>
   );
 }

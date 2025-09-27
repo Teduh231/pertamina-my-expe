@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import { getActivityById, getActivityParticipants } from '@/app/lib/data';
 import { Activity, ActivityParticipant } from '@/app/lib/definitions';
 import { ProtectedRoute } from '@/hooks/use-auth';
-import { AppLayout } from '@/components/app-layout';
 import { ActivityDetailContent } from '@/components/event-dashboard/activity-detail-content';
 
 export default async function EventActivityDetailPage({ params }: { params: { id: string; activityId: string } }) {
@@ -23,9 +22,7 @@ export default async function EventActivityDetailPage({ params }: { params: { id
 
   return (
     <ProtectedRoute>
-        <AppLayout>
-           <ActivityDetailContent activity={activity} participants={participants} eventId={eventId} />
-        </AppLayout>
+       <ActivityDetailContent activity={activity} participants={participants} eventId={eventId} />
     </ProtectedRoute>
   );
 }

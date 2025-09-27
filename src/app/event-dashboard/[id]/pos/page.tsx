@@ -1,7 +1,6 @@
 import { getEventById, getProductsByEvent, getRecentTransactions } from '@/app/lib/data';
 import { ProtectedRoute } from '@/hooks/use-auth';
 import { notFound } from 'next/navigation';
-import { AppLayout } from '@/components/app-layout';
 import { PosContent } from '@/components/event-dashboard/pos-content';
 
 export default async function EventDashboardPosPage({ params }: { params: { id: string } }) {
@@ -19,9 +18,7 @@ export default async function EventDashboardPosPage({ params }: { params: { id: 
 
   return (
     <ProtectedRoute>
-        <AppLayout>
-            <PosContent event={event} products={products} initialTransactions={transactions} />
-        </AppLayout>
+        <PosContent event={event} products={products} initialTransactions={transactions} />
     </ProtectedRoute>
   );
 }
