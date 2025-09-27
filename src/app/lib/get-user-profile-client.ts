@@ -6,7 +6,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     try {
         const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
-            .select('role')
+            .select('role, event_id')
             .eq('id', userId)
             .single();
 
@@ -15,19 +15,9 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
              return null;
         }
 
-        const { data: tenantData, error: tenantError } = await supabase
-            .from('tenants')
-            .select('event_id')
-            .eq('id', userId)
-            .single();
-        
-        if (tenantError && tenantError.code !== 'PGRST116') {
-             console.error('Error fetching tenant info:', tenantError?.message);
-        }
-
         return {
-            role: roleData?.role || 'tenant',
-            event_id: tenantData?.event_id || null,
+            role: roleData?.role || 'staff', // Default to staff if no role found for some reason
+            event_id: roleData?.event_id || null,
         };
     } catch (error) {
         console.error("Failed to fetch user profile, returning null:", error);

@@ -2,7 +2,7 @@
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Activity, ActivityParticipant, Attendee, Event, Product, Raffle, RaffleWinner, Tenant, Transaction } from './definitions';
+import { Activity, ActivityParticipant, Attendee, Event, Product, Raffle, RaffleWinner, Transaction } from './definitions';
 import { getEventById, getAttendees, getAttendeeById, getActivityById, getProductById } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -141,7 +141,7 @@ export async function createOrUpdateEvent(formData: Partial<Event>, eventId?: st
       return { success: false, error: 'Database error: Could not update event.' };
     }
     revalidatePath(`/events/${eventId}`);
-    revalidatePath(`/event-dashboard/${eventId}`);
+    revalidatePath(`/events/manage/${eventId}`);
   } else {
     // Create new event
     dataToUpsert.user_id = user.id;
@@ -249,7 +249,7 @@ export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'w
         console.error('Supabase error creating raffle:', error);
         return { success: false, error: 'Database error: Could not create raffle.' };
     }
-    revalidatePath(`/event-dashboard/${raffleData.event_id}`);
+    revalidatePath(`/events/manage/${raffleData.event_id}`);
     return { success: true };
 }
 
@@ -284,7 +284,7 @@ export async function drawRaffleWinner(raffleId: string, eventId: string) {
 
   if (eligibleAttendees.length === 0) {
     await supabaseAdmin.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
-    revalidatePath(`/event-dashboard/${raffle.event_id}`);
+    revalidatePath(`/events/manage/${raffle.event_id}`);
     return { success: true, message: 'No more eligible attendees to draw.' };
   }
   
@@ -315,51 +315,108 @@ export async function drawRaffleWinner(raffleId: string, eventId: string) {
     return { success: false, error: 'Could not save the winner.' };
   }
   
-  revalidatePath(`/event-dashboard/${raffle.event_id}`);
+  revalidatePath(`/events/manage/${raffle.event_id}`);
   
   return { success: true, winner: newWinner };
 }
 
+async function createStaffUser(staffData: { name: string; email: string; password?: string; event_id: string | null; }) {
+    if (!staffData.password) {
+        return { success: false, error: 'Password is required for new users.' };
+    }
+    // 1. Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: staffData.email,
+      password: staffData.password,
+      email_confirm: true, // Auto-confirm email
+      user_metadata: { role: 'staff' },
+    });
 
-export async function redeemMerchandiseForAttendee(attendeeId: string, productId: string, eventId: string) {
-    noStore();
-    const attendee = await getAttendeeById(attendeeId);
-    if (!attendee) {
-        return { success: false, error: "Attendee not found." };
+    if (authError) {
+      console.error('Supabase Auth error creating staff user:', authError);
+      return { success: false, error: authError.message };
     }
 
-    const { data: product, error: productError } = await supabaseAdmin.from('products').select('id, name, points, stock').eq('id', productId).single();
+    const userId = authData.user.id;
 
-    if (productError || !product) {
-        return { success: false, error: "Product not found." };
-    }
+    // 2. Insert into user_roles table
+    const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({ id: userId, role: 'staff', event_id: staffData.event_id === 'unassigned' ? null : staffData.event_id });
 
-    if (product.stock <= 0) {
-        return { success: false, error: `Sorry, "${product.name}" is out of stock.` };
-    }
-    if (attendee.points < product.points) {
-        return { success: false, error: `Attendee has insufficient points. Needs ${product.points}, has ${attendee.points}.`, attendeeName: attendee.name, };
-    }
-
-    const newAttendeePoints = attendee.points - product.points;
-
-    const { error: updateAttendeeError } = await supabaseAdmin.from('attendees').update({ points: newAttendeePoints }).eq('id', attendee.id);
-    const { error: updateProductError } = await supabaseAdmin.from('products').update({ stock: product.stock - 1 }).eq('id', product.id);
-
-    if (updateAttendeeError || updateProductError) {
-        return { success: false, error: "Database error during transaction." };
+    if (roleError) {
+        console.error('Supabase DB error creating staff record:', roleError);
+        // Attempt to clean up the created auth user
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        return { success: false, error: 'Database error: Could not create staff record.' };
     }
     
-    revalidatePath(`/event-dashboard/${eventId}`);
-
-    return {
-        success: true,
-        message: `Successfully redeemed ${product.name} for ${attendee.name}.`,
-        attendeeName: attendee.name,
-        pointsUsed: product.points,
-        remainingPoints: newAttendeePoints
-    };
+    return { success: true };
 }
+
+
+export async function createOrUpdateStaff(formData: FormData) {
+  const name = formData.get('name') as string;
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const event_id = formData.get('event_id') as string | null;
+  const staffId = formData.get('staffId') as string | undefined;
+
+  if (staffId) {
+    // Update existing staff logic (only name and event assignment)
+    const { error } = await supabaseAdmin
+      .from('user_roles')
+      .update({ event_id: event_id === 'unassigned' ? null : event_id })
+      .eq('id', staffId);
+      
+    // Note: We don't update user's name in auth metadata here for simplicity,
+    // but a full implementation might want to.
+
+    if (error) {
+      console.error('Supabase DB error updating staff:', error);
+      return { success: false, error: 'Database error: Could not update staff.' };
+    }
+  } else {
+    // Create new staff and auth user
+    const result = await createStaffUser({
+        name,
+        email,
+        password,
+        event_id,
+    });
+    if (!result.success) {
+        return result;
+    }
+  }
+
+  revalidatePath('/staff');
+  return { success: true };
+}
+
+export async function deleteStaff(staffId: string) {
+    // First, delete the user from Supabase Auth
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(staffId);
+    if (authError) {
+        // If user is already deleted from auth, we might get a "User not found" error.
+        // We can choose to ignore this or handle it, for now we log and continue.
+        console.warn('Supabase Auth error deleting staff. Might be already deleted. Continuing...', authError.message);
+    }
+    
+    // Then, delete the record from the user_roles table
+    const { error: dbError } = await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('id', staffId);
+  
+    if (dbError) {
+      console.error('Supabase DB error deleting staff record:', dbError);
+      return { success: false, error: 'Database error: Could not delete staff record.' };
+    }
+  
+    revalidatePath('/staff');
+    return { success: true };
+}
+
 
 export async function createProduct(productData: Omit<Product, 'id' | 'created_at'>) {
     const { data, error } = await supabaseAdmin
@@ -373,7 +430,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
         return { success: false, error: 'Database error: Could not create product.' };
     }
     
-    revalidatePath(`/event-dashboard/${productData.event_id}/pos`);
+    revalidatePath(`/events/manage/${productData.event_id}/pos`);
     return { success: true, product: data };
 }
 
@@ -436,7 +493,7 @@ export async function createCheckIn(eventId: string, phoneNumber: string) {
     }
     return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
   }
-  revalidatePath(`/event-dashboard/${eventId}/scanner`);
+  revalidatePath(`/events/manage/${eventId}/scanner`);
   return { success: true, checkIn: data };
 }
 
@@ -474,7 +531,7 @@ export async function createActivity(activityData: Omit<Activity, 'id' | 'create
         return { success: false, error: 'Database error: Could not create activity.' };
     }
     
-    revalidatePath(`/event-dashboard/${activityData.event_id}/activity`);
+    revalidatePath(`/events/manage/${activityData.event_id}/activity`);
     return { success: true, activity: data };
 }
 
@@ -533,8 +590,8 @@ export async function addActivityParticipant(activityId: string, attendeeId: str
         return { success: false, error: "Failed to record activity completion." };
     }
     
-    revalidatePath(`/event-dashboard/${activity.event_id}/activity`);
-    revalidatePath(`/event-dashboard/${activity.event_id}/activity/${activityId}`);
+    revalidatePath(`/events/manage/${activity.event_id}/activity`);
+    revalidatePath(`/events/manage/${activity.event_id}/activity/${activityId}`);
 
     return {
         success: true,
@@ -617,8 +674,8 @@ export async function redeemProduct(attendeeId: string, productId: string, event
         console.error("Failed to log transaction:", transactionError);
     }
     
-    revalidatePath(`/event-dashboard/${eventId}/pos`);
-    revalidatePath(`/event-dashboard/${eventId}/merchandise`);
+    revalidatePath(`/events/manage/${eventId}/pos`);
+    revalidatePath(`/events/manage/${eventId}/merchandise`);
 
     return {
         success: true,
@@ -626,3 +683,4 @@ export async function redeemProduct(attendeeId: string, productId: string, event
         newTransaction,
     };
 }
+

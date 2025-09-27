@@ -34,7 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
 
       if (user) {
-        // Fetch profile on the client. This is safe as RLS should be in place.
         const userProfile = await getUserProfile(user.id);
         setProfile(userProfile);
       }
@@ -55,7 +54,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           router.push('/login');
         }
-        setLoading(false);
+        // No need to set loading to false here as the initial load handles it.
+        // This prevents flashes of content.
       }
     );
 
@@ -71,9 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await supabase.auth.signOut();
-    // We push to login here as a fallback, but the onAuthStateChange should handle it.
-    router.push('/login'); 
-    router.refresh(); // Force a refresh to clear any cached user data.
+    router.push('/login');
+    router.refresh();
   };
 
   const isAdmin = profile?.role === 'admin';
@@ -89,6 +88,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
   };
 
+  // Centralized loading and auth protection
+  const publicPaths = ['/login', '/']; 
+  const pathIsProtected = !publicPaths.includes(usePathname());
+  
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user && pathIsProtected) {
+    // Redirect logic handled by middleware, but this is a client-side failsafe
+     if (typeof window !== 'undefined') {
+      router.push('/login');
+    }
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
+  
+  if (user && !pathIsProtected) {
+    if (typeof window !== 'undefined') {
+        router.push('/dashboard');
+    }
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
@@ -98,35 +132,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-export const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ children, adminOnly = false }) => {
-    const { user, loading, isAdmin } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-  
-    useEffect(() => {
-      if (loading) return;
-  
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      if (adminOnly && !isAdmin) {
-        // If it's an admin-only route and user is not an admin, redirect to dashboard
-        router.push('/dashboard');
-      }
-
-    }, [user, loading, isAdmin, adminOnly, router, pathname]);
-  
-    if (loading || !user || (adminOnly && !isAdmin)) {
-      return (
-          <div className="flex h-screen items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-      );
-    }
-  
-    return <>{children}</>;
 };

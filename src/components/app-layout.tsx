@@ -20,6 +20,7 @@ import {
   ShoppingBasket,
   Settings,
   Calendar,
+  Users2,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -47,7 +48,7 @@ import Image from 'next/image';
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -55,13 +56,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const navItems = [
-    { href: '/dashboard', icon: BarChart2, label: 'Dashboard' },
-    { href: '/events', icon: Calendar, label: 'Events' },
-    { href: '/attendees', icon: Users, label: 'All Attendees' },
-    { href: '/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard', icon: BarChart2, label: 'Dashboard', adminOnly: true },
+    { href: '/events', icon: Calendar, label: 'Events', adminOnly: true },
+    { href: '/staff', icon: Users2, label: 'Staff', adminOnly: true },
+    { href: '/attendees', icon: Users, label: 'All Attendees', adminOnly: true },
+    { href: '/reports', icon: FileText, label: 'Reports', adminOnly: true },
   ];
 
   const getPageTitle = () => {
+    // Find the best match for the current path
     const currentNavItem = navItems
         .filter(item => pathname.startsWith(item.href))
         .sort((a, b) => b.href.length - a.href.length)[0];
@@ -69,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (currentNavItem) {
         return currentNavItem.label;
     }
-    if (pathname.startsWith('/event-dashboard')) return 'Event Dashboard';
+    if (pathname.startsWith('/events/manage')) return 'Event Dashboard';
     return 'Dashboard';
   }
 
@@ -86,7 +89,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           <SidebarContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {navItems.filter(item => !item.adminOnly || isAdmin).map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild

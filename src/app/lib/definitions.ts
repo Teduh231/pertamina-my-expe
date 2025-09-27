@@ -85,13 +85,12 @@ export type Transaction = {
   discount: number;
 };
 
-export type Tenant = {
+export type Staff = {
   id: string;
   name: string;
   email: string;
   event_id: string | null;
-  eventName?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  assignedEventName?: string;
 };
 
 export type UserProfile = {
@@ -121,3 +120,4 @@ export type ActivityParticipant = {
     phone_number: string;
   };
 };
+

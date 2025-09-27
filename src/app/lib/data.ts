@@ -1,5 +1,5 @@
 
-import { Event, Attendee, Raffle, Product, Transaction, Tenant, UserProfile, CheckIn, Activity, ActivityParticipant } from '@/app/lib/definitions';
+import { Event, Attendee, Raffle, Product, Transaction, UserProfile, CheckIn, Activity, ActivityParticipant, Staff } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
@@ -267,5 +267,50 @@ export async function getTransactionById(transactionId: string): Promise<Transac
     } catch (error) {
         console.error(`Failed to fetch transaction ${transactionId}, returning null:`, error);
         return null;
+    }
+}
+
+export async function getStaff(): Promise<Staff[]> {
+    noStore();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    try {
+        const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+        if (usersError) throw usersError;
+
+        const { data: roles, error: rolesError } = await supabaseAdmin.from('user_roles').select('*');
+        if (rolesError) throw rolesError;
+        
+        const staffUsers = users.users
+            .filter(user => user.user_metadata?.role === 'staff')
+            .map(user => {
+                const roleInfo = roles.find(r => r.id === user.id);
+                return {
+                    id: user.id,
+                    name: user.user_metadata?.full_name || user.email, // Fallback name
+                    email: user.email,
+                    event_id: roleInfo?.event_id || null,
+                };
+            });
+            
+        // Fetch event names for assigned staff
+        const eventIds = staffUsers.map(s => s.event_id).filter(Boolean) as string[];
+        if (eventIds.length > 0) {
+            const { data: events, error: eventsError } = await supabaseAdmin.from('events').select('id, name').in('id', eventIds);
+            if (eventsError) throw eventsError;
+
+            return staffUsers.map(staff => {
+                const assignedEvent = events.find(e => e.id === staff.event_id);
+                return {
+                    ...staff,
+                    assignedEventName: assignedEvent?.name,
+                };
+            });
+        }
+        
+        return staffUsers;
+
+    } catch (error) {
+        console.error("Failed to fetch staff, returning empty array:", error);
+        return [];
     }
 }
