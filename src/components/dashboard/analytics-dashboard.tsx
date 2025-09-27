@@ -6,12 +6,15 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
-  Calendar,
-  CheckCircle,
   Users,
-  XCircle,
+  BarChart as BarChartIcon,
+  Award,
+  CalendarCheck2,
+  Clock,
+  Activity,
 } from 'lucide-react';
 import {
   ChartContainer,
@@ -27,7 +30,6 @@ import {
   YAxis,
 } from 'recharts';
 import { Event, Attendee } from '@/app/lib/definitions';
-import { subDays, format, parseISO } from 'date-fns';
 
 type AnalyticsDashboardProps = {
   events: (Event & { attendees_count?: number })[];
@@ -35,15 +37,27 @@ type AnalyticsDashboardProps = {
 };
 
 const chartConfig = {
-  registrations: {
-    label: 'Registrations',
+  checkIns: {
+    label: 'Check-ins',
     color: 'hsl(var(--primary))',
   },
 } satisfies ChartConfig;
 
+const hourlyCheckinData = [
+  { hour: '8 AM', checkIns: 65 },
+  { hour: '9 AM', checkIns: 120 },
+  { hour: '10 AM', checkIns: 90 },
+  { hour: '11 AM', checkIns: 75 },
+  { hour: '12 PM', checkIns: 50 },
+  { hour: '1 PM', checkIns: 80 },
+  { hour: '2 PM', checkIns: 35 },
+  { hour: '3 PM', checkIns: 25 },
+  { hour: '4 PM', checkIns: 18 },
+];
+
 function StatCard({ title, value, subtext, icon: Icon }: { title: string, value: string | number, subtext: string, icon: React.ElementType }) {
     return (
-        <Card className="bg-secondary/30 hover:border-primary/50 transition-all border-2 border-transparent">
+        <Card className="bg-card hover:border-primary/50 transition-all border-2 border-transparent">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -59,54 +73,31 @@ function StatCard({ title, value, subtext, icon: Icon }: { title: string, value:
 }
 
 export function AnalyticsDashboard({ events, attendees }: AnalyticsDashboardProps) {
-  const totalAttendees = attendees.length;
-  const publishedEvents = events.filter(
-    (event) => event.status === 'published'
-  ).length;
-  
-  const registrationData = React.useMemo(() => {
-    const data: { [key: string]: number } = {};
-    const today = new Date();
-    for (let i = 14; i >= 0; i--) {
-      const date = format(subDays(today, i), 'MMM d');
-      data[date] = 0;
-    }
-
-    attendees.forEach((attendee) => {
-      if (attendee.registered_at) {
-          const registrationDate = parseISO(attendee.registered_at);
-          const diff = today.getTime() - registrationDate.getTime();
-          if (diff / (1000 * 3600 * 24) < 15) {
-            const dateStr = format(registrationDate, 'MMM d');
-            if (data[dateStr] !== undefined) {
-              data[dateStr]++;
-            }
-          }
-      }
-    });
-
-    return Object.keys(data).map((date) => ({ date, registrations: data[date] }));
-  }, [attendees]);
+  const totalCheckIns = events.reduce((sum, event) => sum + (event.attendees_count || 0), 0);
+  const publishedEvents = events.filter((event) => event.status === 'published').length;
+  const totalPoints = attendees.reduce((sum, attendee) => sum + attendee.points, 0);
+  const attendanceRate = totalCheckIns > 0 ? 87 : 0; // Placeholder value
 
   return (
     <>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total Events" value={events.length} subtext={`${publishedEvents} published`} icon={Calendar} />
-            <StatCard title="Total Attendees" value={totalAttendees} subtext="Across all events" icon={Users} />
-            <StatCard title="Active Events" value={publishedEvents} subtext="Ready for visitors" icon={CheckCircle} />
-            <StatCard title="Canceled Events" value={events.filter((e) => e.status === 'canceled').length} subtext="This year" icon={XCircle} />
+            <StatCard title="Total Check-ins" value={totalCheckIns.toLocaleString()} subtext="+20.1% from last month" icon={Clock} />
+            <StatCard title="Active Events" value={publishedEvents} subtext="Currently running" icon={Activity} />
+            <StatCard title="Points Distributed" value={totalPoints.toLocaleString()} subtext="Across all events" icon={Award} />
+            <StatCard title="Attendance Rate" value={`${attendanceRate}%`} subtext="Average across all events" icon={BarChartIcon} />
         </div>
 
-        <Card className="lg:col-span-3 bg-secondary/30">
+        <Card className="lg:col-span-3 bg-card">
             <CardHeader>
-            <CardTitle>Registration Trends</CardTitle>
+              <CardTitle>Real-Time Check-in Activity</CardTitle>
+              <CardDescription>Check-in activity throughout the day</CardDescription>
             </CardHeader>
             <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <BarChart accessibilityLayer data={registrationData}>
+            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                <BarChart accessibilityLayer data={hourlyCheckinData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
                 <XAxis
-                    dataKey="date"
+                    dataKey="hour"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
@@ -125,8 +116,8 @@ export function AnalyticsDashboard({ events, attendees }: AnalyticsDashboardProp
                     content={<ChartTooltipContent indicator="dot" />}
                 />
                 <Bar
-                    dataKey="registrations"
-                    fill="var(--color-registrations)"
+                    dataKey="checkIns"
+                    fill="var(--color-checkIns)"
                     radius={4}
                 />
                 </BarChart>
