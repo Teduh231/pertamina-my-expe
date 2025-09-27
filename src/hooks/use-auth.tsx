@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -12,7 +13,7 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isAdmin: boolean;
-  assignedBoothId: string | null;
+  assignedEventId: string | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<any>;
   logout: () => Promise<any>;
@@ -76,13 +77,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAdmin = profile?.role === 'admin';
-  const assignedBoothId = profile?.booth_id || null;
+  const assignedEventId = profile?.event_id || null;
 
   const value = {
     user,
     profile,
     isAdmin,
-    assignedBoothId,
+    assignedEventId,
     loading,
     login,
     logout,

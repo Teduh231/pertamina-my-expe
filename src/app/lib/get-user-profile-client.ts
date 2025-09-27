@@ -1,3 +1,4 @@
+
 import type { UserProfile } from '@/app/lib/definitions';
 import { supabase } from './supabase/client';
 
@@ -16,7 +17,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
         const { data: tenantData, error: tenantError } = await supabase
             .from('tenants')
-            .select('booth_id')
+            .select('event_id')
             .eq('id', userId)
             .single();
         
@@ -26,7 +27,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
         return {
             role: roleData?.role || 'tenant',
-            booth_id: tenantData?.booth_id || null,
+            event_id: tenantData?.event_id || null,
         };
     } catch (error) {
         console.error("Failed to fetch user profile, returning null:", error);
