@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LogOut,
   LayoutDashboard,
@@ -21,28 +21,13 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Button } from './ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
+import { UserProfileDropdown } from '@/components/user-profile-dropdown';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout, isAdmin } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    router.push('/login');
-  };
+  const { isAdmin } = useAuth();
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', adminOnly: true },
@@ -100,14 +85,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-             <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
-                         <LogOut className="shrink-0" />
-                         <span className="group-data-[state=collapsed]/sidebar:opacity-0 group-data-[state=collapsed]/sidebar:w-0 transition-all duration-300 ease-in-out">Logout</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-             </SidebarMenu>
            </SidebarContent>
         </Sidebar>
 
@@ -121,34 +98,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                                <Avatar className="h-9 w-9 shrink-0">
-                                    <AvatarImage src={`https://i.pravatar.cc/150?u=${user?.email}`} />
-                                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent side="bottom" align="end">
-                            <DropdownMenuLabel className="font-normal">
-                                <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none">My Account</p>
-                                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                                </div>
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Profile</DropdownMenuItem>
-                            <DropdownMenuItem>Settings</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleLogout}>
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Log out
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                <UserProfileDropdown />
             </header>
             <main className="flex-1 overflow-auto p-4 md:p-6">
                 {children}
