@@ -32,7 +32,7 @@ export default function LoginPage() {
       <div className="mx-auto w-full max-w-md">
         <div className="flex justify-center mb-6">
             <Link href="/" className="flex items-center gap-3">
-                <Image src="https://mypertamina.id/assets/img/logo_mypertamina.png" alt="My Pertamina Logo" width={40} height={40} />
+                <Image src="https://picsum.photos/seed/logo/40/40" alt="My Pertamina Logo" width={40} height={40} />
                 <div className="flex flex-col">
                     <span className="font-bold text-lg text-gray-800">My Pertamina</span>
                     <span className="font-semibold text-sm text-gray-600">Xperience</span>

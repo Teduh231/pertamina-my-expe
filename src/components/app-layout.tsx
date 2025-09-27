@@ -71,7 +71,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Sidebar>
           <SidebarHeader>
              <Link href="/dashboard" className="flex items-center gap-3">
-                <Image src="https://mypertamina.id/assets/img/logo_mypertamina.png" alt="My Pertamina Logo" width={32} height={32} className="shrink-0" />
+                <Image src="https://picsum.photos/seed/logo/40/40" alt="My Pertamina Logo" width={32} height={32} className="shrink-0" />
                 <div className="flex flex-col group-data-[state=collapsed]/sidebar:opacity-0 group-data-[state=collapsed]/sidebar:w-0 transition-all duration-300 ease-in-out">
                     <span className="font-bold text-sm text-gray-800">My Pertamina</span>
                     <span className="font-semibold text-xs text-gray-600">Xperience</span>
