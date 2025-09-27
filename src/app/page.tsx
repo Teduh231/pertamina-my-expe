@@ -10,6 +10,7 @@ import { TypingAnimation } from '@/components/ui/typing-animation';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const features = [
   {
@@ -52,7 +53,7 @@ export default function LandingPage() {
   if (loading || user) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <Loader2 className="h-8 w-8 animate-spin" />
         </div>
     );
   }
@@ -62,7 +63,11 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2">
-              <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={32} height={32} />
+              <Image src="https://mypertamina.id/assets/img/logo_mypertamina.png" alt="My Pertamina Logo" width={32} height={32} />
+               <div className="flex flex-col">
+                  <span className="font-bold text-sm text-gray-800">My Pertamina</span>
+                  <span className="font-semibold text-xs text-gray-600">Xperience</span>
+              </div>
             </div>
             <div>
               <Button asChild variant="outline">
@@ -130,7 +135,7 @@ export default function LandingPage() {
 
       <footer className="py-8 border-t">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} EventFlow. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} My Pertamina Xperience. All rights reserved.</p>
         </div>
       </footer>
     </div>

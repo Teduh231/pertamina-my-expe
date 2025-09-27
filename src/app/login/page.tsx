@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -21,7 +22,7 @@ export default function LoginPage() {
   if (loading || user) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <Loader2 className="h-8 w-8 animate-spin" />
         </div>
     );
   }
@@ -30,9 +31,12 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="mx-auto w-full max-w-md">
         <div className="flex justify-center mb-6">
-            <Link href="/" className="flex items-center gap-2">
-                <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={40} height={40} />
-                <span className="text-2xl font-bold">EventFlow</span>
+            <Link href="/" className="flex items-center gap-3">
+                <Image src="https://mypertamina.id/assets/img/logo_mypertamina.png" alt="My Pertamina Logo" width={40} height={40} />
+                <div className="flex flex-col">
+                    <span className="font-bold text-lg text-gray-800">My Pertamina</span>
+                    <span className="font-semibold text-sm text-gray-600">Xperience</span>
+                </div>
             </Link>
         </div>
         <Card>

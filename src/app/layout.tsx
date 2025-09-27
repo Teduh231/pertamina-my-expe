@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 
-const poppins = Poppins({ 
+const inter = Inter({ 
   subsets: ['latin'], 
-  weight: ['300', '400', '500', '600', '700'],
   variable: '--font-body' 
 });
 
@@ -22,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} font-body antialiased bg-background text-foreground`}>
+      <body className={`${inter.variable} font-body antialiased bg-background text-foreground`}>
         <AuthProvider>
             {children}
             <Toaster />

@@ -4,23 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BarChart2,
-  Users,
-  FileText,
   LogOut,
-  Store,
-  UserCog,
   LayoutDashboard,
-  QrCode,
-  Ticket,
-  Gift,
-  Shirt,
-  Flame,
-  PieChart,
-  ShoppingBasket,
-  Settings,
   Calendar,
   Users2,
+  ShoppingBasket,
+  FileText,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -56,15 +45,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const navItems = [
-    { href: '/dashboard', icon: BarChart2, label: 'Dashboard', adminOnly: true },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', adminOnly: true },
     { href: '/events', icon: Calendar, label: 'Events', adminOnly: true },
-    { href: '/staff', icon: Users2, label: 'Staff', adminOnly: true },
-    { href: '/attendees', icon: Users, label: 'All Attendees', adminOnly: true },
+    { href: '/staff', icon: Users2, label: 'User Management', adminOnly: true },
+    { href: '/products', icon: ShoppingBasket, label: 'Products', adminOnly: true },
     { href: '/reports', icon: FileText, label: 'Reports', adminOnly: true },
   ];
 
   const getPageTitle = () => {
-    // Find the best match for the current path
     const currentNavItem = navItems
         .filter(item => pathname.startsWith(item.href))
         .sort((a, b) => b.href.length - a.href.length)[0];
@@ -72,18 +60,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (currentNavItem) {
         return currentNavItem.label;
     }
-    if (pathname.startsWith('/events/manage')) return 'Event Dashboard';
+    if (pathname.startsWith('/event-dashboard')) return 'Event Dashboard';
     return 'Dashboard';
   }
 
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-[#F7F8FA] text-foreground">
         <Sidebar>
           <SidebarHeader>
-             <Link href="/dashboard" className="flex items-center gap-2">
-                <Image src="https://res.cloudinary.com/dye07cjmn/image/upload/v1757998495/595b1fb6-83c7-4474-8f51-ad09239bdc94.png" alt="EventFlow Logo" width={28} height={28} className="shrink-0" />
+             <Link href="/dashboard" className="flex items-center gap-3">
+                <Image src="https://mypertamina.id/assets/img/logo_mypertamina.png" alt="My Pertamina Logo" width={32} height={32} className="shrink-0" />
+                <div className="flex flex-col group-data-[state=collapsed]/sidebar:opacity-0 group-data-[state=collapsed]/sidebar:w-0 transition-all duration-300 ease-in-out">
+                    <span className="font-bold text-sm text-gray-800">My Pertamina</span>
+                    <span className="font-semibold text-xs text-gray-600">Xperience</span>
+                </div>
              </Link>
           </SidebarHeader>
 

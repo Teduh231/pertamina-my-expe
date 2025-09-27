@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -102,7 +102,7 @@ const SidebarProvider = React.forwardRef<
             style={
               {
                 "--sidebar-width": "16rem",
-                "--sidebar-width-collapsed": "4rem",
+                "--sidebar-width-collapsed": "5rem",
                 "--sidebar-width-mobile": "18rem",
               } as React.CSSProperties
             }
@@ -156,7 +156,7 @@ const Sidebar = React.forwardRef<
       ref={ref}
       data-collapsible={collapsible}
       className={cn(
-        "fixed top-0 left-0 z-50 h-full flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out hidden md:flex",
+        "fixed top-0 left-0 z-50 h-full flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out hidden md:flex",
         "group-data-[state=expanded]/sidebar:w-[var(--sidebar-width)]",
         "group-data-[state=collapsed]/sidebar:w-[var(--sidebar-width-collapsed)]",
         className
@@ -165,7 +165,7 @@ const Sidebar = React.forwardRef<
     >
       <div className="flex h-full flex-col relative">
         {children}
-        <SidebarTrigger className="absolute top-1/2 -right-[1.15rem] -translate-y-1/2 bg-background border-2 border-sidebar-border h-9 w-9 hidden md:flex" />
+        <SidebarTrigger className="absolute top-1/2 -right-4 -translate-y-1/2 bg-background border-2 border-sidebar-border h-8 w-8 hidden md:flex" />
       </div>
     </div>
   )
@@ -190,7 +190,7 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <PanelLeft className="transition-transform duration-300 group-data-[state=expanded]/sidebar:rotate-180" />
+      <ChevronLeft className="transition-transform duration-300 group-data-[state=expanded]/sidebar:rotate-180" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
@@ -204,7 +204,7 @@ const SidebarHeader = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("flex h-16 items-center border-b border-sidebar-border p-3 justify-center",
+      className={cn("flex h-16 items-center px-4 justify-start group-data-[state=collapsed]/sidebar:justify-center",
       className)}
       {...props}
     />
@@ -220,7 +220,7 @@ const SidebarContent = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-auto p-3",
+        "flex min-h-0 flex-1 flex-col overflow-auto px-4",
         className
       )}
       {...props}
@@ -235,7 +235,7 @@ const SidebarMenu = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ul
     ref={ref}
-    className={cn("flex w-full min-w-0 flex-col gap-2", className)}
+    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
     {...props}
   />
 ))
@@ -255,11 +255,11 @@ SidebarMenuItem.displayName = "SidebarMenuItem"
 
 
 const sidebarMenuButtonVariants = cva(
-  "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-data-[active=true]:bg-sidebar-accent group-data-[active=true]:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar:justify-center",
+  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-base font-medium outline-none ring-sidebar-ring transition-colors focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 group-data-[active=true]:bg-sidebar-accent group-data-[active=true]:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar:justify-center",
   {
     variants: {
       variant: {
-        default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        default: "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
       },
     },
     defaultVariants: {
