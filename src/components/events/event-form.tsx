@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -36,9 +37,11 @@ const formSchema = z.object({
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   location: z.string().min(3, { message: 'Location is required.' }),
   event_manager: z.string().min(2, { message: 'Event manager name is required.' }),
-  status: z.enum(['draft', 'published', 'canceled', 'pending']),
+  status: z.enum(['draft', 'published', 'canceled', 'pending', 'completed']),
   image_url: z.string().optional(),
   image_path: z.string().optional(),
+  attendee_limit: z.coerce.number().min(0, 'Attendee limit must be a positive number.'),
+  check_in_points: z.coerce.number().min(0, 'Check-in points must be a positive number.'),
 });
 
 type EventFormProps = {
@@ -65,6 +68,8 @@ export function EventForm({ event, onFinished, context = 'admin' }: EventFormPro
       status: defaultStatus,
       image_url: event?.image_url || '',
       image_path: event?.image_path || '',
+      attendee_limit: event?.attendee_limit || 0,
+      check_in_points: event?.check_in_points || 0,
     },
   });
 

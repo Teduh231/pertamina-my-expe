@@ -1,5 +1,5 @@
 
-export type EventStatus = 'draft' | 'published' | 'canceled' | 'pending';
+export type EventStatus = 'draft' | 'published' | 'canceled' | 'pending' | 'completed';
 
 export type Event = {
   id: string;
@@ -15,6 +15,8 @@ export type Event = {
   image_url?: string;
   image_path?: string;
   check_ins?: CheckIn[];
+  attendee_limit: number;
+  check_in_points: number;
 };
 
 export type Attendee = {
