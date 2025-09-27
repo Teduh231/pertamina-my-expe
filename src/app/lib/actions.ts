@@ -141,7 +141,7 @@ export async function createOrUpdateEvent(formData: Partial<Event>, eventId?: st
       return { success: false, error: 'Database error: Could not update event.' };
     }
     revalidatePath(`/events/${eventId}`);
-    revalidatePath(`/events/manage/${eventId}`);
+    revalidatePath(`/event-dashboard/${eventId}/settings`);
   } else {
     // Create new event
     dataToUpsert.user_id = user.id;
@@ -161,6 +161,7 @@ export async function createOrUpdateEvent(formData: Partial<Event>, eventId?: st
 
   revalidatePath('/events');
   revalidatePath('/dashboard');
+  revalidatePath(`/event-dashboard/${eventId}/overview`);
   return { success: true, eventId };
 }
 
@@ -249,7 +250,7 @@ export async function createRaffle(raffleData: Omit<Raffle, 'id' | 'status' | 'w
         console.error('Supabase error creating raffle:', error);
         return { success: false, error: 'Database error: Could not create raffle.' };
     }
-    revalidatePath(`/events/manage/${raffleData.event_id}`);
+    revalidatePath(`/event-dashboard/${raffleData.event_id}`);
     return { success: true };
 }
 
@@ -284,7 +285,7 @@ export async function drawRaffleWinner(raffleId: string, eventId: string) {
 
   if (eligibleAttendees.length === 0) {
     await supabaseAdmin.from('raffles').update({ status: 'finished' }).eq('id', raffleId);
-    revalidatePath(`/events/manage/${raffle.event_id}`);
+    revalidatePath(`/event-dashboard/${raffle.event_id}`);
     return { success: true, message: 'No more eligible attendees to draw.' };
   }
   
@@ -315,7 +316,7 @@ export async function drawRaffleWinner(raffleId: string, eventId: string) {
     return { success: false, error: 'Could not save the winner.' };
   }
   
-  revalidatePath(`/events/manage/${raffle.event_id}`);
+  revalidatePath(`/event-dashboard/${raffle.event_id}`);
   
   return { success: true, winner: newWinner };
 }
@@ -430,7 +431,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
         return { success: false, error: 'Database error: Could not create product.' };
     }
     
-    revalidatePath(`/events/manage/${productData.event_id}/pos`);
+    revalidatePath(`/event-dashboard/${productData.event_id}/pos`);
     return { success: true, product: data };
 }
 
@@ -493,7 +494,7 @@ export async function createCheckIn(eventId: string, phoneNumber: string) {
     }
     return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
   }
-  revalidatePath(`/events/manage/${eventId}/scanner`);
+  revalidatePath(`/event-dashboard/${eventId}/scanner`);
   return { success: true, checkIn: data };
 }
 
@@ -531,7 +532,7 @@ export async function createActivity(activityData: Omit<Activity, 'id' | 'create
         return { success: false, error: 'Database error: Could not create activity.' };
     }
     
-    revalidatePath(`/events/manage/${activityData.event_id}/activity`);
+    revalidatePath(`/event-dashboard/${activityData.event_id}/activity`);
     return { success: true, activity: data };
 }
 
@@ -590,8 +591,8 @@ export async function addActivityParticipant(activityId: string, attendeeId: str
         return { success: false, error: "Failed to record activity completion." };
     }
     
-    revalidatePath(`/events/manage/${activity.event_id}/activity`);
-    revalidatePath(`/events/manage/${activity.event_id}/activity/${activityId}`);
+    revalidatePath(`/event-dashboard/${activity.event_id}/activity`);
+    revalidatePath(`/event-dashboard/${activity.event_id}/activity/${activityId}`);
 
     return {
         success: true,
@@ -674,8 +675,8 @@ export async function redeemProduct(attendeeId: string, productId: string, event
         console.error("Failed to log transaction:", transactionError);
     }
     
-    revalidatePath(`/events/manage/${eventId}/pos`);
-    revalidatePath(`/events/manage/${eventId}/merchandise`);
+    revalidatePath(`/event-dashboard/${eventId}/pos`);
+    revalidatePath(`/event-dashboard/${eventId}/merchandise`);
 
     return {
         success: true,
@@ -684,3 +685,4 @@ export async function redeemProduct(attendeeId: string, productId: string, event
     };
 }
 
+    
