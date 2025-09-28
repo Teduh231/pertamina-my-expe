@@ -158,15 +158,12 @@ export function EventForm({ event, onFinished, context = 'admin' }: EventFormPro
                     name="image_url"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Event Banner</FormLabel>
+                        <FormLabel>Event Banner URL</FormLabel>
                         <FormControl>
-                            <ImageUpload
-                                onFileSelect={setImageFile}
-                                currentImageUrl={field.value}
-                            />
+                            <Input placeholder="https://example.com/banner.jpg" {...field} />
                         </FormControl>
                         <FormDescription>
-                            Upload a banner image for your event.
+                            Provide a direct link to the banner image.
                         </FormDescription>
                         <FormMessage />
                         </FormItem>
