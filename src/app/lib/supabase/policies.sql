@@ -1,4 +1,3 @@
-
 -- Enable RLS for the 'events' table if it's not already enabled.
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 
@@ -28,4 +27,3 @@ ON "public"."events"
 FOR SELECT
 TO public
 USING (status = 'published'::public.event_status);
-

@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabase as supabaseClient } from './supabase/client';
 import { supabaseAdmin } from './supabase/server';
-import { cookies }from 'next/headers';
+import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { format } from 'date-fns';
 
@@ -109,15 +109,15 @@ export async function exportAttendeesToCsv(eventId: string): Promise<string> {
 export async function createOrUpdateEvent(formData: Partial<Event>, eventId?: string) {
   const cookieStore = cookies();
   const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-          cookies: {
-              get(name: string) {
-                  return cookieStore.get(name)?.value
-              },
-          },
-      }
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
   );
   
   const { data: { user } } = await supabase.auth.getUser();
@@ -684,9 +684,3 @@ export async function redeemProduct(attendeeId: string, productId: string, event
         newTransaction,
     };
 }
-
-    
-
-    
-
-    
