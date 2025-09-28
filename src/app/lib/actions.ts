@@ -1,4 +1,3 @@
-
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
@@ -446,32 +445,17 @@ export async function verifyAttendeeWithPertaminaAPI(qrData: string): Promise<{ 
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  // --- REPLACE THIS WITH YOUR ACTUAL API CALL ---
-  // For demonstration, we'll assume the QR data is valid and we can derive a phone number.
-  // A real implementation would look something like this:
-  /*
-  try {
-    const response = await fetch('https://api.pertamina.com/verify-attendee', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.PERTAMINA_API_KEY}` },
-      body: JSON.stringify({ qr_token: qrData })
-    });
-    const data = await response.json();
-    if (data.isValid) {
-      return { success: true, phoneNumber: data.phoneNumber };
-    } else {
-      return { success: false, error: data.errorMessage || 'Invalid QR code.' };
-    }
-  } catch (apiError) {
-    console.error('Pertamina API call failed:', apiError);
-    return { success: false, error: 'Could not connect to verification service.' };
-  }
-  */
+  // --- This is a simulation of the API call flow ---
+  // In a real implementation, you would:
+  // 1. Generate a dynamic signature and timestamp.
+  // 2. Call the /auth/token endpoint to get a bearer token.
+  // 3. Call the /user endpoint with the bearer token and qrData.
   
   // For now, we'll just simulate a successful response with a dummy phone number.
-  const isSuccessful = true; //Math.random() > 0.1; // Simulate a 10% failure rate
+  const isSuccessful = true; 
   if (isSuccessful) {
-    const dummyPhoneNumber = `0812${Math.random().toString().slice(2, 12)}`;
+    // Generate a plausible-looking dummy phone number.
+    const dummyPhoneNumber = `081${Math.floor(100000000 + Math.random() * 900000000)}`;
     return { success: true, phoneNumber: dummyPhoneNumber };
   } else {
     return { success: false, error: "Verifikasi QR Code dari API Pertamina gagal." };
@@ -684,3 +668,5 @@ export async function redeemProduct(attendeeId: string, productId: string, event
         newTransaction,
     };
 }
+
+    
