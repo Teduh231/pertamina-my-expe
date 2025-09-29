@@ -27,6 +27,7 @@ export type Attendee = {
   custom_response?: string;
   qr_code_url?: string;
   points: number;
+  level?: string;
 };
 
 export type CheckIn = {

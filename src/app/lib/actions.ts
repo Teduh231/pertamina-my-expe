@@ -464,22 +464,51 @@ export async function verifyAttendeeWithPertaminaAPI(qrData: string): Promise<{ 
 
 
 export async function createCheckIn(eventId: string, phoneNumber: string) {
-  const { data, error } = await supabaseAdmin
+  noStore();
+  // Step 1: Find if attendee exists by phone number
+  let { data: attendee, error: findError } = await supabaseAdmin
+    .from('attendees')
+    .select('*')
+    .eq('phone_number', phoneNumber)
+    .single();
+
+  // If attendee doesn't exist, create one
+  if (findError || !attendee) {
+    const { data: newAttendee, error: createError } = await supabaseAdmin
+      .from('attendees')
+      .insert({
+        phone_number: phoneNumber,
+        name: `User ${phoneNumber.slice(-4)}`, // Placeholder name
+        points: 100, // Initial points
+        level: 'Bronze' // Initial level
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Supabase error creating attendee:', createError);
+      return { success: false, error: 'Failed to create new attendee record.' };
+    }
+    attendee = newAttendee;
+  }
+
+  // Step 2: Now that we're sure the attendee exists, create the check-in record
+  const { data: checkInData, error: checkInError } = await supabaseAdmin
     .from('check_ins')
     .insert({ event_id: eventId, phone_number: phoneNumber })
     .select()
     .single();
 
-  if (error) {
-    console.error('Supabase error creating check-in:', error);
-    // Handle unique constraint violation gracefully
-    if (error.code === '23505') {
+  if (checkInError) {
+    console.error('Supabase error creating check-in:', checkInError);
+    if (checkInError.code === '23505') { // unique constraint violation
       return { success: false, error: 'Nomor telepon ini sudah pernah check-in di event ini.' };
     }
-    return { success: false, error: `Database error: Could not record check-in. (${error.message})` };
+    return { success: false, error: `Database error: Could not record check-in. (${checkInError.message})` };
   }
+
   revalidatePath(`/event-dashboard/${eventId}/scanner`);
-  return { success: true, checkIn: data };
+  return { success: true, checkIn: checkInData };
 }
 
 export async function uploadImage(formData: FormData) {
@@ -668,5 +697,3 @@ export async function redeemProduct(attendeeId: string, productId: string, event
         newTransaction,
     };
 }
-
-    
