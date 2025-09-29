@@ -101,7 +101,7 @@ export function AttendeesContent({ attendees, eventName, eventId }: { attendees:
           <TableBody>
             {filteredAttendees.length > 0 ? (
               filteredAttendees.map((attendee) => (
-                <TableRow key={attendee.id}>
+                <TableRow key={`${attendee.id}-${attendee.checked_in_at}`}>
                   <TableCell className="font-medium">
                     <div>{attendee.name}</div>
                     <div className="text-muted-foreground text-sm sm:hidden">{attendee.phone_number}</div>
