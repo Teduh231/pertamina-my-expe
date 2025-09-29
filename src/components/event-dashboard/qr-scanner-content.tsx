@@ -46,7 +46,10 @@ type ScanResult = {
   phoneNumber?: string;
 };
 
-export function QrScannerContent({ event, products, activities }: { event: Event & { check_ins?: CheckIn[] }, products: Product[], activities: Activity[] }) {
+// The full CheckIn object with the nested Attendee object
+type RichCheckIn = CheckIn & { attendees: Attendee | null };
+
+export function QrScannerContent({ event, products, activities }: { event: Event & { check_ins?: RichCheckIn[] }, products: Product[], activities: Activity[] }) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -277,7 +280,10 @@ export function QrScannerContent({ event, products, activities }: { event: Event
                     <CardContent className="space-y-3">
                         {sortedCheckIns.length > 0 ? sortedCheckIns.map((checkIn) => (
                             <div key={checkIn.id} className="flex items-center justify-between text-sm">
-                                <p className="font-medium flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" />{checkIn.phone_number}</p>
+                                <div>
+                                    <p className="font-medium flex items-center gap-2">{checkIn.attendees?.name || 'Unknown User'}</p>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-2 pl-1"><Phone className="h-3 w-3" />{checkIn.phone_number}</p>
+                                </div>
                                 <p className="text-muted-foreground">{format(new Date(checkIn.checked_in_at), 'p')}</p>
                             </div>
                         )) : (
@@ -292,5 +298,3 @@ export function QrScannerContent({ event, products, activities }: { event: Event
     </div>
   );
 }
-
-    
