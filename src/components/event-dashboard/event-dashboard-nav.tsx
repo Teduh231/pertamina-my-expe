@@ -27,6 +27,11 @@ export function EventDashboardNav({
       icon: LayoutGrid,
     },
     {
+      href: `/event-dashboard/${eventId}/scanner`,
+      label: "Scanner",
+      icon: QrCode,
+    },
+    {
       href: `/event-dashboard/${eventId}/attendees`,
       label: "Attendees",
       icon: Users,
@@ -45,11 +50,6 @@ export function EventDashboardNav({
       href: `/event-dashboard/${eventId}/raffle`,
       label: "Raffle",
       icon: Ticket,
-    },
-    {
-      href: `/event-dashboard/${eventId}/scanner`,
-      label: "Scanner",
-      icon: QrCode,
     },
     {
       href: `/event-dashboard/${eventId}/settings`,
