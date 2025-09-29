@@ -3,9 +3,9 @@
 
 import React from 'react';
 import { Transaction } from '@/app/lib/definitions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, Calendar, Hash, DollarSign, ShoppingBag, CreditCard, Phone } from 'lucide-react';
+import { ArrowLeft, User, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Separator } from '../ui/separator';
@@ -66,7 +66,7 @@ export function TransactionDetailContent({ transaction, boothId }: TransactionDe
             <div className="space-y-4">
                  {transaction.items.map(item => (
                     <div key={item.product_id} className="flex items-center gap-4">
-                        <Image src={`https://picsum.photos/seed/${item.product_id}/100`} alt={item.product_name} width={56} height={56} className="rounded-md object-cover"/>
+                        <Image src={item.image_url || `https://picsum.photos/seed/${item.product_id}/100`} alt={item.product_name} width={56} height={56} className="rounded-md object-cover"/>
                         <div className="flex-1">
                             <p className="font-medium">{item.product_name}</p>
                             <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>

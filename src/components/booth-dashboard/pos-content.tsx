@@ -6,7 +6,7 @@ import { Booth, Product, Transaction } from '@/app/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, ShoppingCart, TrendingUp, Users, DollarSign, PlusCircle, ArrowRight, Eye, Package, ImageIcon } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Users, DollarSign, PlusCircle, Eye, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
