@@ -33,7 +33,7 @@ async function supabaseQuery(query: any) {
 
 export async function getEvents(): Promise<Event[]> {
   noStore();
-  const supabaseAdmin = createSupabaseServerClient();
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   try {
     const query = supabaseAdmin
       .from('events')
@@ -59,20 +59,13 @@ export async function getEventById(id: string): Promise<Event | undefined> {
   try {
     const { data: eventData, error: eventError } = await supabaseAdmin
       .from('events')
-      .select('*')
+      .select('*, check_ins(*, attendees(*))') // Fetch check_ins and related attendees
       .eq('id', id)
       .single();
       
     if (eventError) throw eventError;
 
-    const { data: checkInsData, error: checkInsError } = await supabaseAdmin
-        .from('check_ins')
-        .select('*')
-        .eq('event_id', id);
-
-    if (checkInsError) throw checkInsError;
-
-    return { ...eventData, check_ins: checkInsData } as Event;
+    return eventData as Event;
 
   } catch (error: any) {
     console.error(`Failed to fetch event ${id}, returning undefined:`, error.message);
@@ -82,7 +75,7 @@ export async function getEventById(id: string): Promise<Event | undefined> {
 
 export async function getAttendees(): Promise<Attendee[]> {
   noStore();
-  const supabaseAdmin = createSupabaseServerClient();
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   try {
     const query = supabaseAdmin
       .from('attendees')
@@ -122,7 +115,7 @@ export async function getAttendeesByName(name: string): Promise<Attendee[]> {
 
 export async function getRaffles(eventId?: string): Promise<Raffle[]> {
     noStore();
-    const supabaseAdmin = createSupabaseServerClient();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
       let query = supabaseAdmin
         .from('raffles')
@@ -147,7 +140,7 @@ export async function getRaffles(eventId?: string): Promise<Raffle[]> {
 
 export async function getProducts(): Promise<Product[]> {
     noStore();
-    const supabaseAdmin = createSupabaseServerClient();
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     try {
       const query = supabaseAdmin.from('products').select('*').order('points', { ascending: true });
       return await supabaseQuery(query);

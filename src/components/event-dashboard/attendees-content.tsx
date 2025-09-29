@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useMemo } from 'react';
-import { Attendee } from '@/app/lib/definitions';
+import { Attendee, CheckIn } from '@/app/lib/definitions';
 import {
   Card,
   CardContent,
@@ -24,7 +24,8 @@ import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportEventAttendeesToCsv } from '@/app/lib/actions';
 
-type AttendeeWithCheckin = Attendee & { checked_in_at: string };
+// The full CheckIn object with the nested Attendee object
+type AttendeeWithCheckin = CheckIn & { attendees: Attendee };
 
 export function AttendeesContent({ attendees, eventName, eventId }: { attendees: AttendeeWithCheckin[], eventName: string, eventId: string }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,9 +61,9 @@ export function AttendeesContent({ attendees, eventName, eventId }: { attendees:
     if (!searchTerm) return attendees;
     const lowercasedFilter = searchTerm.toLowerCase();
     return attendees.filter(
-      (attendee) =>
-        attendee.name.toLowerCase().includes(lowercasedFilter) ||
-        attendee.phone_number.toLowerCase().includes(lowercasedFilter)
+      (checkIn) =>
+        checkIn.attendees.name.toLowerCase().includes(lowercasedFilter) ||
+        checkIn.attendees.phone_number.toLowerCase().includes(lowercasedFilter)
     );
   }, [attendees, searchTerm]);
 
@@ -100,15 +101,15 @@ export function AttendeesContent({ attendees, eventName, eventId }: { attendees:
           </TableHeader>
           <TableBody>
             {filteredAttendees.length > 0 ? (
-              filteredAttendees.map((attendee) => (
-                <TableRow key={`${attendee.id}-${attendee.checked_in_at}`}>
+              filteredAttendees.map((checkIn) => (
+                <TableRow key={checkIn.id}>
                   <TableCell className="font-medium">
-                    <div>{attendee.name}</div>
-                    <div className="text-muted-foreground text-sm sm:hidden">{attendee.phone_number}</div>
+                    <div>{checkIn.attendees.name}</div>
+                    <div className="text-muted-foreground text-sm sm:hidden">{checkIn.attendees.phone_number}</div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{attendee.phone_number}</TableCell>
-                   <TableCell>{attendee.points}</TableCell>
-                  <TableCell className="hidden md:table-cell">{format(parseISO(attendee.checked_in_at), 'PPP p')}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{checkIn.attendees.phone_number}</TableCell>
+                   <TableCell>{checkIn.attendees.points}</TableCell>
+                  <TableCell className="hidden md:table-cell">{format(parseISO(checkIn.checked_in_at), 'PPP p')}</TableCell>
                 </TableRow>
               ))
             ) : (

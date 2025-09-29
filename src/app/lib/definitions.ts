@@ -35,6 +35,7 @@ export type CheckIn = {
   event_id: string;
   checked_in_at: string;
   phone_number: string;
+  attendees?: Attendee | null;
 };
 
 export type RaffleWinner = {
