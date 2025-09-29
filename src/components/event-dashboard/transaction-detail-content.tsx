@@ -3,9 +3,9 @@
 
 import React from 'react';
 import { Transaction } from '@/app/lib/definitions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, Calendar, Hash, DollarSign, ShoppingBag, CreditCard, Phone } from 'lucide-react';
+import { ArrowLeft, User, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Separator } from '../ui/separator';
