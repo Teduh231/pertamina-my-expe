@@ -1,7 +1,8 @@
+
 'use server';
 
 import { detectPii } from '@/ai/flows/pii-detection-for-registration';
-import { Activity, ActivityParticipant, Attendee, Event, Product, Raffle, RaffleWinner, Transaction } from './definitions';
+import { Activity, ActivityParticipant, Attendee, Product, Raffle, RaffleWinner, Transaction } from './definitions';
 import { getEventById, getAttendees, getAttendeeById, getActivityById, getProductById } from './data';
 import { revalidatePath } from 'next/cache';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -496,7 +497,7 @@ export async function createCheckIn(eventId: string, phoneNumber: string) {
   const { data: checkInData, error: checkInError } = await supabaseAdmin
     .from('check_ins')
     .insert({ event_id: eventId, phone_number: phoneNumber })
-    .select()
+    .select('*, attendees(*)')
     .single();
 
   if (checkInError) {

@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportEventAttendeesToCsv } from '@/app/lib/actions';
 
 // The full CheckIn object with the nested Attendee object
-type AttendeeWithCheckin = CheckIn & { attendees: Attendee };
+type AttendeeWithCheckin = CheckIn & { attendees: Attendee | null };
 
 export function AttendeesContent({ attendees, eventName, eventId }: { attendees: AttendeeWithCheckin[], eventName: string, eventId: string }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,8 +62,8 @@ export function AttendeesContent({ attendees, eventName, eventId }: { attendees:
     const lowercasedFilter = searchTerm.toLowerCase();
     return attendees.filter(
       (checkIn) =>
-        checkIn.attendees.name.toLowerCase().includes(lowercasedFilter) ||
-        checkIn.attendees.phone_number.toLowerCase().includes(lowercasedFilter)
+        checkIn.attendees?.name.toLowerCase().includes(lowercasedFilter) ||
+        checkIn.attendees?.phone_number.toLowerCase().includes(lowercasedFilter)
     );
   }, [attendees, searchTerm]);
 
@@ -104,11 +104,11 @@ export function AttendeesContent({ attendees, eventName, eventId }: { attendees:
               filteredAttendees.map((checkIn) => (
                 <TableRow key={checkIn.id}>
                   <TableCell className="font-medium">
-                    <div>{checkIn.attendees.name}</div>
-                    <div className="text-muted-foreground text-sm sm:hidden">{checkIn.attendees.phone_number}</div>
+                    <div>{checkIn.attendees?.name}</div>
+                    <div className="text-muted-foreground text-sm sm:hidden">{checkIn.attendees?.phone_number}</div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{checkIn.attendees.phone_number}</TableCell>
-                   <TableCell>{checkIn.attendees.points}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{checkIn.attendees?.phone_number}</TableCell>
+                   <TableCell>{checkIn.attendees?.points}</TableCell>
                   <TableCell className="hidden md:table-cell">{format(parseISO(checkIn.checked_in_at), 'PPP p')}</TableCell>
                 </TableRow>
               ))
