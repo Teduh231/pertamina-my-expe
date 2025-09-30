@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -25,10 +26,11 @@ import {
 import { Event } from '@/app/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import React, { useState } from 'react';
 import { createOrUpdateEvent, uploadImage } from '@/app/lib/actions';
-import { ImageUpload } from '../ui/image-upload';
+import { Separator } from '@/components/ui/separator';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }),
@@ -45,9 +47,10 @@ const formSchema = z.object({
 type EventFormProps = {
   event?: Event;
   onFinished?: () => void;
+  context?: 'admin' | 'tenant';
 };
 
-export function EventForm({ event, onFinished }: EventFormProps) {
+export function EventForm({ event, onFinished, context = 'admin' }: EventFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
