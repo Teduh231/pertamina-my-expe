@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -7,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, User, Phone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { Separator } from '../ui/separator';
-import { Badge } from '../ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 
 interface TransactionDetailContentProps {

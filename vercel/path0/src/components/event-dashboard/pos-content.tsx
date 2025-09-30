@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -8,9 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, TrendingUp, Users, DollarSign, PlusCircle, Eye, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ScrollArea } from '../ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,9 +20,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { createProduct, uploadImage } from '@/app/lib/actions';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
-import { Input } from '../ui/input';
-import { ImageUpload } from '../ui/image-upload';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 interface PosContentProps {
     event: Event;

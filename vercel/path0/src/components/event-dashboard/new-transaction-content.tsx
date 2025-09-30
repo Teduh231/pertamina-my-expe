@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -9,8 +10,8 @@ import { Loader2, Search, ShoppingCart, Trash2, QrCode, Plus, Minus } from 'luci
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { redeemProduct } from '@/app/lib/actions';
-import { ScrollArea } from '../ui/scroll-area';
-import { Separator } from '../ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { getAttendees } from '@/app/lib/data';
 
 type CartItem = Product & { quantity: number };
